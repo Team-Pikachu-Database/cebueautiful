@@ -14,8 +14,8 @@ const peso = new Intl.NumberFormat("en-PH", {
 const HOTELS = [
   {
     id: 1,
-    name: "Bayfront Hotel Cebu – North Reclamation",
-    town: "Kaohsiung Street, North Reclamation Area, Cebu City, Philippines",
+    name: "Thunderbird Resorts & Casinos",
+    town: "Cebu city",
 
     desc: `Bayfront Hotel Cebu – North Reclamation is conveniently located in Cebu City's commercial and business district, making it suitable for both leisure and business travelers. It is within walking distance of shopping destinations such as SM City Cebu and S&R. The hotel offers comfortable rooms with city views, safety boxes, flat-screen cable TVs, tea and coffee-making facilities, minibars, complimentary bottled water, private bathrooms, and free Wi-Fi. Guests can enjoy Filipino and international dishes at the hotel restaurant, with room service also available. Nearby attractions include Cebu Port, St. Joseph Parish, Ayala Center Cebu, Fort San Pedro, and Magellan's Cross. Mactan-Cebu International Airport is approximately 45 minutes away by car. The hotel also provides a 24-hour front desk, luggage storage assistance, airport transportation and car rental arrangements, and complimentary parking.`,
 
