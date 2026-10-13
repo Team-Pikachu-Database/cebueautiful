@@ -9,7 +9,7 @@ const peso = new Intl.NumberFormat("en-PH", {
   maximumFractionDigits: 0
 });
 
-/* Mock hotel data: 4 real staycations in Rizal */
+/* Mock hotel data: 4 real staycations in Cebu */
 const HOTELS = [
   {
     id: 1,
