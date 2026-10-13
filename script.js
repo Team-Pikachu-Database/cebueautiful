@@ -1,170 +1,592 @@
-"use strict";
-  
-const API_URL = "https://dummyjson.com/quotes?limit=6";
-const peso = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 0 });
 
-/* Mock hotel data: 4 real staycations in Rizal */
+"use strict";
+
+const API_URL = "https://dummyjson.com/quotes?limit=6";
+
+const peso = new Intl.NumberFormat("en-PH", {
+  style: "currency",
+  currency: "PHP",
+  maximumFractionDigits: 0
+});
+
+/* ---------- Hotel data ---------- */
+
 const HOTELS = [
   {
     id: 1,
-    name: "Thunderbird Resorts & Casinos",
-    town: "Cebu city",
-    desc: "Hilltop resort with Spanish-style villas, a casino, pools, and wide views of Laguna de Bay.",
+    name: "Bayfront Hotel Cebu – North Reclamation",
+    town: "Kaohsiung Street, North Reclamation Area, Cebu City, Philippines",
+
+    desc: `Bayfront Hotel Cebu – North Reclamation is conveniently located in Cebu City's commercial and business district, making it suitable for both leisure and business travelers. It is within walking distance of shopping destinations such as SM City Cebu and S&R. The hotel offers comfortable rooms with city views, safety boxes, flat-screen cable TVs, tea and coffee-making facilities, minibars, complimentary bottled water, private bathrooms, and free Wi-Fi. Guests can enjoy Filipino and international dishes at the hotel restaurant, with room service also available. Nearby attractions include Cebu Port, St. Joseph Parish, Ayala Center Cebu, Fort San Pedro, and Magellan's Cross. Mactan-Cebu International Airport is approximately 45 minutes away by car. The hotel also provides a 24-hour front desk, luggage storage assistance, airport transportation and car rental arrangements, and complimentary parking.`,
+
     amenities: ["Casino", "Infinity pool", "Lake view", "Free parking"],
-    price: 6800, score: 8.6, reviews: 1240, hues: [200, 215],
-    image: "hotel.jpg",
-  },
-  {
-    id: 2,
-    name: "Luljetta's Hanging Gardens Spa",
-    town: "Lapu-lapu City",
-    desc: "Garden spa hotel with hanging pools and Mediterranean-style rooms overlooking Metro Manila.",
-    amenities: ["Spa", "Hanging pools", "City view", "Restaurant"],
-    price: 4200, score: 8.2, reviews: 980, hues: [160, 190],
-    image: "hotel.jpg",
-  },
-  {
-    id: 3,
-    name: "LeBlanc Hotel and Resort",
-    town: "mandaue City",
-    desc: "Boutique hotel in the hills of Antipolo with a swimming pool, cozy rooms, and cool mountain air.",
-    amenities: ["Pool", "Free Wi-Fi", "Breakfast", "Family rooms"],
-    price: 3500, score: 7.9, reviews: 610, hues: [30, 45],
-    image: "hotel.jpg",
-  },
-  {
-    id: 4,
-    name: "Ten Cents to Heaven Leisure Camp",
-    town: "Bogo City",
-    desc: "Mountain camp in Tanay with campsites, cabins, and nature trails close to the Sierra Madre.",
-    amenities: ["Camping", "Cabins", "Hiking trails", "Bonfire area"],
-    price: 2400, score: 8.4, reviews: 355, hues: [120, 150],
-    image: "hotel.jpg",
-  },
-  {
-    id: 5,
-    name: "Sogo hotel",
-    town: "Carcar City",
-    desc: "nice 360 window view, so clean so good",
-    amenities: ["free Wi-fi", "family room", "delicious food"],
-    price: 2400, score: 9.4, reviews: 344, hues: [120, 150],
-    image: "hotel.jpg",
-  },
+    price: 6800,
+    score: 8.6,
+    reviews: 1240,
+    imagePrefix: "1"
+  }
 ];
+
+const TOTAL_IMAGES = 26;
+const VISIBLE_IMAGES = 4;
+const DESCRIPTION_PREVIEW_LENGTH = 180;
 
 const feed = document.getElementById("results-feed");
 const title = document.getElementById("results-title");
+
 const checkboxes = document.querySelectorAll('input[name="town"]');
+
 let hotels = [];
+
+/* ---------- Hotel detail modal ---------- */
+
+const hotelModal = document.getElementById("hotel-modal");
+const detailMainImage = document.getElementById("detail-main-image");
+const detailThumbnails = document.getElementById("detail-thumbnails");
+
+let activeDetailHotel = null;
+let activePhotoIndex = 1;
+let lastFocusedElement = null;
+
+function showDetailPhoto(index) {
+  if (!activeDetailHotel) return;
+
+  activePhotoIndex = Math.max(1, Math.min(TOTAL_IMAGES, index));
+
+  detailMainImage.src =
+    `images/${activeDetailHotel.imagePrefix}.${activePhotoIndex}.jpg`;
+
+  detailMainImage.alt =
+    `${activeDetailHotel.name} - photo ${activePhotoIndex}`;
+
+  [...detailThumbnails.children].forEach((button, i) => {
+    const isActive = i + 1 === activePhotoIndex;
+
+    button.classList.toggle("active", isActive);
+
+    if (isActive) {
+      button.setAttribute("aria-current", "true");
+    } else {
+      button.removeAttribute("aria-current");
+    }
+  });
+}
+
+function openHotelDetails(hotel, photoIndex = 1) {
+  activeDetailHotel = hotel;
+  lastFocusedElement = document.activeElement;
+
+  document.getElementById("detail-name").textContent = hotel.name;
+
+  document.getElementById("detail-location").textContent =
+    `${hotel.town}, Cebu`;
+
+  document.getElementById("detail-score").textContent =
+    hotel.score.toFixed(1);
+
+  document.getElementById("detail-score-label").textContent =
+    scoreLabel(hotel.score);
+
+  document.getElementById("detail-reviews").textContent =
+    `${hotel.reviews.toLocaleString("en-PH")} reviews`;
+
+  // Show the FULL description inside the popup.
+  document.getElementById("detail-description").textContent =
+    hotel.desc;
+
+  document.getElementById("detail-price").textContent =
+    peso.format(hotel.price * nights());
+
+  document.getElementById("detail-nights").textContent =
+    `${nights()} night${nights() > 1 ? "s" : ""} · 2 adults`;
+
+  // Render amenities.
+  const amenities = document.getElementById("detail-amenities");
+  amenities.replaceChildren();
+
+  hotel.amenities.forEach(item => {
+    amenities.appendChild(el("li", "", item));
+  });
+
+  // Render photo thumbnails.
+  detailThumbnails.replaceChildren();
+
+  for (let i = 1; i <= TOTAL_IMAGES; i++) {
+    const button = el("button", "detail-thumbnail");
+    button.type = "button";
+    button.setAttribute("aria-label", `Show photo ${i}`);
+
+    const img = document.createElement("img");
+
+    img.src = `images/${hotel.imagePrefix}.${i}.jpg`;
+    img.alt = "";
+    img.loading = "lazy";
+
+    img.addEventListener("error", () => {
+      button.hidden = true;
+    });
+
+    button.appendChild(img);
+
+    button.addEventListener("click", () => {
+      showDetailPhoto(i);
+    });
+
+    detailThumbnails.appendChild(button);
+  }
+
+  showDetailPhoto(photoIndex);
+
+  hotelModal.classList.add("is-open");
+  hotelModal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+
+  document.getElementById("modal-close").focus();
+}
+
+function closeHotelDetails() {
+  if (!hotelModal.classList.contains("is-open")) return;
+
+  hotelModal.classList.remove("is-open");
+  hotelModal.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("modal-open");
+
+  activeDetailHotel = null;
+
+  if (lastFocusedElement && typeof lastFocusedElement.focus === "function") {
+    lastFocusedElement.focus();
+  }
+}
+
+/* ---------- Modal controls ---------- */
+
+document
+  .getElementById("modal-close")
+  .addEventListener("click", closeHotelDetails);
+
+document
+  .getElementById("modal-backdrop")
+  .addEventListener("click", closeHotelDetails);
+
+document
+  .getElementById("photo-prev")
+  .addEventListener("click", () => {
+    showDetailPhoto(
+      activePhotoIndex <= 1
+        ? TOTAL_IMAGES
+        : activePhotoIndex - 1
+    );
+  });
+
+document
+  .getElementById("photo-next")
+  .addEventListener("click", () => {
+    showDetailPhoto(
+      activePhotoIndex >= TOTAL_IMAGES
+        ? 1
+        : activePhotoIndex + 1
+    );
+  });
+
+document.addEventListener("keydown", event => {
+  if (!hotelModal.classList.contains("is-open")) return;
+
+  if (event.key === "Escape") {
+    closeHotelDetails();
+  }
+
+  if (event.key === "ArrowLeft") {
+    showDetailPhoto(
+      activePhotoIndex <= 1
+        ? TOTAL_IMAGES
+        : activePhotoIndex - 1
+    );
+  }
+
+  if (event.key === "ArrowRight") {
+    showDetailPhoto(
+      activePhotoIndex >= TOTAL_IMAGES
+        ? 1
+        : activePhotoIndex + 1
+    );
+  }
+});
+
+/* ---------- Availability demo ---------- */
+
+document
+  .getElementById("detail-availability")
+  .addEventListener("click", () => {
+    if (!activeDetailHotel) return;
+
+    const checkin = document.getElementById("checkin").value;
+    const checkout = document.getElementById("checkout").value;
+
+    alert(
+      `Demo only: availability for ${activeDetailHotel.name} ` +
+      `from ${checkin} to ${checkout}.`
+    );
+  });
+
+/* ---------- HTML element helper ---------- */
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text !== undefined) node.textContent = text;
+
+  if (className) {
+    node.className = className;
+  }
+
+  if (text !== undefined) {
+    node.textContent = text;
+  }
+
   return node;
 }
 
-function scoreLabel(s) {
-  return s >= 8.5 ? "Excellent" : s >= 8 ? "Very good" : "Good";
+/* ---------- Rating label ---------- */
+
+function scoreLabel(score) {
+  if (score >= 8.5) return "Excellent";
+  if (score >= 8) return "Very good";
+  return "Good";
 }
+
+/* ---------- Calculate nights ---------- */
 
 function nights() {
-  const a = new Date(document.getElementById("checkin").value);
-  const b = new Date(document.getElementById("checkout").value);
-  const n = Math.round((b - a) / 86400000);
-  return n > 0 ? n : 1;
+  const checkin = document.getElementById("checkin").value;
+  const checkout = document.getElementById("checkout").value;
+
+  if (!checkin || !checkout) return 1;
+
+  const start = new Date(checkin + "T00:00:00");
+  const end = new Date(checkout + "T00:00:00");
+
+  const count = Math.round(
+    (end.getTime() - start.getTime()) / 86400000
+  );
+
+  return count > 0 ? count : 1;
 }
 
-function buildCard(h) {
+/* ---------- Four-image hotel gallery ---------- */
+
+function createHotelGallery(hotel) {
+  const gallery = el("div", "hotel-gallery");
+
+  gallery.setAttribute("aria-label", "Hotel photo gallery");
+
+  for (
+    let i = 1;
+    i <= Math.min(VISIBLE_IMAGES, TOTAL_IMAGES);
+    i++
+  ) {
+    const photo = el("button", "gallery-photo");
+    photo.type = "button";
+
+    photo.setAttribute(
+      "aria-label",
+      `Open ${hotel.name} photo ${i}`
+    );
+
+    photo.addEventListener("click", () => {
+      openHotelDetails(hotel, i);
+    });
+
+    const isLastVisible = i === VISIBLE_IMAGES;
+    const remainingImages = TOTAL_IMAGES - VISIBLE_IMAGES;
+
+    if (isLastVisible && remainingImages > 0) {
+      photo.classList.add("more-photos");
+    }
+
+    const img = document.createElement("img");
+
+    img.src = `images/${hotel.imagePrefix}.${i}.jpg`;
+    img.alt = `${hotel.name} - photo ${i}`;
+    img.loading = i === 1 ? "eager" : "lazy";
+
+    img.addEventListener("error", () => {
+      photo.classList.add("image-missing");
+      img.alt = `Photo ${i} is unavailable`;
+    });
+
+    photo.appendChild(img);
+
+    if (isLastVisible && remainingImages > 0) {
+      const overlay = el(
+        "div",
+        "photo-overlay",
+        `+${remainingImages}`
+      );
+
+      overlay.setAttribute(
+        "aria-label",
+        `${remainingImages} more photos`
+      );
+
+      photo.appendChild(overlay);
+    }
+
+    gallery.appendChild(photo);
+  }
+
+  return gallery;
+}
+
+/* ---------- Build hotel card ---------- */
+
+function buildCard(hotel) {
   const card = el("article", "card");
 
-  const thumb = el("div", "thumb");
-  const img = document.createElement("img");
-  img.src = h.image;
-  img.alt = `${h.name} in ${h.town}, Cebu`;
-  img.loading = "lazy";
-  thumb.appendChild(img);
-
+  const gallery = createHotelGallery(hotel);
   const info = el("div", "info");
-  info.append(el("h3", "", h.name), el("span", "location", `${h.town}, Cebu`), el("p", "desc", h.desc));
-  const list = el("ul", "amenities");
-  h.amenities.forEach((a) => list.appendChild(el("li", "", a)));
-  info.appendChild(list);
-  if (h.quote) info.appendChild(el("p", "review-quote", `Guest note: "${h.quote}"`));
 
+  info.append(
+    el("h3", "", hotel.name),
+    el("span", "location", `${hotel.town}, Cebu`)
+  );
+
+  // Short description on the homepage.
+  const description = el("p", "desc collapsed");
+
+  description.textContent =
+    `${hotel.desc.slice(0, DESCRIPTION_PREVIEW_LENGTH).trimEnd()}...`;
+
+  info.appendChild(description);
+
+  // See more opens the popup with the complete description.
+  if (hotel.desc.length > DESCRIPTION_PREVIEW_LENGTH) {
+    const seeMore = el("button", "see-more-btn", "See more");
+
+    seeMore.type = "button";
+    seeMore.setAttribute(
+      "aria-label",
+      `See full description of ${hotel.name}`
+    );
+
+    seeMore.addEventListener("click", () => {
+      openHotelDetails(hotel);
+    });
+
+    info.appendChild(seeMore);
+  } else {
+    description.textContent = hotel.desc;
+    description.classList.remove("collapsed");
+  }
+
+  // Amenities.
+  const list = el("ul", "amenities");
+
+  hotel.amenities.forEach(amenity => {
+    list.appendChild(el("li", "", amenity));
+  });
+
+  info.appendChild(list);
+
+  // Guest note.
+  if (hotel.quote) {
+    info.appendChild(
+      el("p", "review-quote", `Guest note: "${hotel.quote}"`)
+    );
+  }
+
+  // Rating.
   const side = el("div", "side");
   const score = el("div", "score");
-  const label = el("div", "score-label", scoreLabel(h.score));
-  label.appendChild(el("small", "", `${h.reviews.toLocaleString("en-PH")} reviews`));
-  score.append(label, el("span", "score-badge", h.score.toFixed(1)));
 
-  const n = nights();
+  const label = el(
+    "div",
+    "score-label",
+    scoreLabel(hotel.score)
+  );
+
+  label.appendChild(
+    el(
+      "small",
+      "",
+      `${hotel.reviews.toLocaleString("en-PH")} reviews`
+    )
+  );
+
+  score.append(
+    label,
+    el("span", "score-badge", hotel.score.toFixed(1))
+  );
+
+  // Price.
+  const stayNights = nights();
   const price = el("div", "price");
-  price.append(el("small", "", `${n} night${n > 1 ? "s" : ""}, 2 adults`), el("strong", "", peso.format(h.price * n)));
+
+  price.append(
+    el(
+      "small",
+      "",
+      `${stayNights} night${stayNights > 1 ? "s" : ""}, 2 adults`
+    ),
+    el("strong", "", peso.format(hotel.price * stayNights))
+  );
+
+  const bottom = el("div", "price-container");
+  bottom.appendChild(price);
+
   const cta = el("button", "btn btn-primary", "See availability");
   cta.type = "button";
 
-  const bottom = el("div");
-  bottom.append(price);
-  side.append(score, bottom, cta);
+  // Also allow the main card button to open the details popup.
+  cta.addEventListener("click", () => {
+    openHotelDetails(hotel);
+  });
 
-  card.append(thumb, info, side);
+  side.append(score, bottom, cta);
+  card.append(gallery, info, side);
+
   return card;
 }
 
-function render() {
-  const towns = [...checkboxes].filter((c) => c.checked).map((c) => c.value);
-  const list = towns.length ? hotels.filter((h) => towns.includes(h.town)) : hotels;
-  
+/* ---------- Render hotel results ---------- */
 
-  title.textContent = `${list.length} propert${list.length === 1 ? "y" : "ies"} found`
+function render() {
+  const selectedTowns = [...checkboxes]
+    .filter(checkbox => checkbox.checked)
+    .map(checkbox => checkbox.value);
+
+  const filteredHotels = selectedTowns.length
+    ? hotels.filter(hotel => selectedTowns.includes(hotel.town))
+    : hotels;
+
+  title.textContent =
+    `${filteredHotels.length} propert${
+      filteredHotels.length === 1 ? "y" : "ies"
+    } found`;
+
   feed.replaceChildren();
 
-  if (!list.length) {
-    feed.appendChild(el("div", "empty", "No properties match these towns yet. Clear a filter to see all stays."));
+  if (filteredHotels.length === 0) {
+    feed.appendChild(
+      el(
+        "div",
+        "empty",
+        "No properties match these towns yet. Clear a filter to see all stays."
+      )
+    );
+
     return;
   }
-  list.forEach((h) => feed.appendChild(buildCard(h)));
+
+  filteredHotels.forEach(hotel => {
+    feed.appendChild(buildCard(hotel));
+  });
 }
 
-/* Fetch from the API and merge a post title in as a guest note */
+/* ---------- Load guest notes ---------- */
+
 async function loadHotels() {
-  feed.replaceChildren(el("div", "skeleton"), el("div", "skeleton"));
+  feed.replaceChildren(
+    el("div", "skeleton"),
+    el("div", "skeleton")
+  );
+
   try {
-    const res = await fetch(API_URL);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    hotels = HOTELS.map((h, i) => ({ ...h, quote: data.quotes[i] ? data.quotes[i].quote : "great place!" }));
-  } catch (err) {
-    console.warn("API unavailable, using local data:", err);
-    hotels = HOTELS.map((h) => ({ ...h }));
+    const response = await fetch(API_URL);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    hotels = HOTELS.map((hotel, index) => ({
+      ...hotel,
+      quote: data.quotes[index]
+        ? data.quotes[index].quote
+        : "Great place!"
+    }));
+  } catch (error) {
+    console.warn("API unavailable, using local data:", error);
+
+    hotels = HOTELS.map(hotel => ({
+      ...hotel
+    }));
   }
+
   render();
 }
+
+/* ---------- Default check-in/check-out dates ---------- */
 
 function setDefaultDates() {
-  const iso = (d) => d.toISOString().slice(0, 10);
+  const formatDate = date => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  };
+
   const today = new Date();
-  const next = new Date(today.getTime() + 86400000);
-  const ci = document.getElementById("checkin");
-  const co = document.getElementById("checkout");
-  ci.min = iso(today); ci.value = iso(today);
-  co.min = iso(next); co.value = iso(next);
-  ci.addEventListener("change", () => {
-    const min = new Date(new Date(ci.value).getTime() + 86400000);
-    co.min = iso(min);
-    if (co.value <= ci.value) co.value = iso(min);
+
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+
+  const checkin = document.getElementById("checkin");
+  const checkout = document.getElementById("checkout");
+
+  checkin.min = formatDate(today);
+  checkin.value = formatDate(today);
+
+  checkout.min = formatDate(tomorrow);
+  checkout.value = formatDate(tomorrow);
+
+  checkin.addEventListener("change", () => {
+    if (!checkin.value) return;
+
+    const nextDay = new Date(checkin.value + "T00:00:00");
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    const minimumCheckout = formatDate(nextDay);
+
+    checkout.min = minimumCheckout;
+
+    if (!checkout.value || checkout.value <= checkin.value) {
+      checkout.value = minimumCheckout;
+    }
+
     render();
   });
-  co.addEventListener("change", render);
+
+  checkout.addEventListener("change", render);
 }
 
-document.getElementById("search-form").addEventListener("submit", (e) => { e.preventDefault(); render(); });
-checkboxes.forEach((c) => c.addEventListener("change", render));
-document.getElementById("clear-filters").addEventListener("click", () => {
-  checkboxes.forEach((c) => (c.checked = false));
-  render();
+/* ---------- Search form ---------- */
+
+document
+  .getElementById("search-form")
+  .addEventListener("submit", event => {
+    event.preventDefault();
+    render();
+  });
+
+/* ---------- Town filters ---------- */
+
+checkboxes.forEach(checkbox => {
+  checkbox.addEventListener("change", render);
 });
+
+/* ---------- Clear filters ---------- */
+
+document
+  .getElementById("clear-filters")
+  .addEventListener("click", () => {
+    checkboxes.forEach(checkbox => {
+      checkbox.checked = false;
+    });
+
+    render();
+  });
+
+/* ---------- Initialize app ---------- */
 
 setDefaultDates();
 loadHotels();

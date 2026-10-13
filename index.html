@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CebuStays – Hotels and staycations in cebu</title>
+  <title>CebuStays – Hotels and staycations in Cebu</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,15 +15,16 @@
     </div>
 
     <form class="search-bar container" id="search-form" role="search">
-      
       <label class="field">
         <span class="field-label">Check-in</span>
         <input type="date" id="checkin">
       </label>
+
       <label class="field">
         <span class="field-label">Check-out</span>
         <input type="date" id="checkout">
       </label>
+
       <button type="submit" class="btn btn-search">Search</button>
     </form>
   </header>
@@ -30,15 +32,39 @@
   <main class="container layout">
     <aside class="filters" aria-label="Filters">
       <h2>Filter by town</h2>
+
       <fieldset>
         <legend class="visually-hidden">Town in Cebu</legend>
-        <label class="check"><input type="checkbox" name="town" value="Cebu city"> Cebu city</label>
-        <label class="check"><input type="checkbox" name="town" value="Lapu-lapu City"> Lapu-lapu City</label>
-        <label class="check"><input type="checkbox" name="town" value="mandaue City"> mandaue City</label>
-        <label class="check"><input type="checkbox" name="town" value="Bogo City"> Bogo City</label>
-        <label class="check"><input type="checkbox" name="town" value="Carcar City"> Carcar City</label>
+
+        <label class="check">
+          <input type="checkbox" name="town" value="Cebu city">
+          Cebu city
+        </label>
+
+        <label class="check">
+          <input type="checkbox" name="town" value="Lapu-lapu City">
+          Lapu-lapu City
+        </label>
+
+        <label class="check">
+          <input type="checkbox" name="town" value="mandaue City">
+          mandaue City
+        </label>
+
+        <label class="check">
+          <input type="checkbox" name="town" value="Bogo City">
+          Bogo City
+        </label>
+
+        <label class="check">
+          <input type="checkbox" name="town" value="Carcar City">
+          Carcar City
+        </label>
       </fieldset>
-      <button type="button" class="btn btn-ghost" id="clear-filters">Clear filters</button>
+
+      <button type="button" class="btn btn-ghost" id="clear-filters">
+        Clear filters
+      </button>
     </aside>
 
     <section class="results" aria-live="polite">
@@ -48,8 +74,102 @@
   </main>
 
   <footer class="site-footer">
-    <div class="container">CebuStays is a demo project. Not affiliated with Booking.com.</div>
+    <div class="container">
+      CebuStays is a demo project. Not affiliated with Booking.com.
+    </div>
   </footer>
+
+  <!-- HOTEL DETAILS MODAL -->
+  <div class="hotel-modal" id="hotel-modal" aria-hidden="true">
+    <button
+      class="modal-backdrop"
+      id="modal-backdrop"
+      aria-label="Close hotel details">
+    </button>
+
+    <section
+      class="hotel-detail-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="detail-name">
+
+      <button
+        type="button"
+        class="modal-close"
+        id="modal-close"
+        aria-label="Close details">
+        ×
+      </button>
+
+      <!-- HOTEL PHOTOS -->
+      <div class="detail-gallery">
+        <div class="detail-main-photo">
+          <img
+            id="detail-main-image"
+            src=""
+            alt="Selected hotel photo">
+
+          <button
+            type="button"
+            class="gallery-arrow prev"
+            id="photo-prev"
+            aria-label="Previous photo">
+            ‹
+          </button>
+
+          <button
+            type="button"
+            class="gallery-arrow next"
+            id="photo-next"
+            aria-label="Next photo">
+            ›
+          </button>
+        </div>
+
+        <div
+          class="detail-thumbnails"
+          id="detail-thumbnails"
+          aria-label="More hotel photos">
+        </div>
+      </div>
+
+      <!-- HOTEL INFORMATION -->
+      <div class="detail-information">
+        <span class="detail-location" id="detail-location"></span>
+
+        <h2 id="detail-name"></h2>
+
+        <div class="detail-rating">
+          <span id="detail-score"></span>
+          <span id="detail-score-label"></span>
+          <span id="detail-reviews"></span>
+        </div>
+
+        <!-- FULL DESCRIPTION -->
+        <p id="detail-description"></p>
+
+        <h3>Hotel amenities</h3>
+        <ul class="detail-amenities" id="detail-amenities"></ul>
+
+        <div class="detail-price">
+          <span>Estimated total</span>
+          <strong id="detail-price"></strong>
+          <small id="detail-nights"></small>
+        </div>
+
+        <button
+          type="button"
+          class="btn btn-primary detail-availability"
+          id="detail-availability">
+          See availability
+        </button>
+
+        <p class="detail-note">
+          Demo listing — confirm hotel details and rates before booking.
+        </p>
+      </div>
+    </section>
+  </div>
 
   <script src="script.js"></script>
 </body>
