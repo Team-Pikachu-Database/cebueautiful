@@ -3,7 +3,7 @@
 const API_URL = "https://dummyjson.com/quotes?limit=6";
 const peso = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 0 });
 
-/* Mock hotel data: 4 real staycations in Rizal */
+
 const HOTELS = [
   {
     id: 1,
