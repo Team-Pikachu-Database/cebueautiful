@@ -1,7 +1,12 @@
-
 "use strict";
 
-const API_URL = "https://dummyjson.com/quotes?limit=6";
+const API_PORT = 3000;
+const previewHost = window.location.hostname.match(
+  /^(.*)-\d+\.app\.github\.dev$/
+);
+const API_URL = previewHost
+  ? `${window.location.protocol}//${previewHost[1]}-${API_PORT}.app.github.dev/api/hotels`
+  : "/api/hotels";
 
 const peso = new Intl.NumberFormat("en-PH", {
   style: "currency",
@@ -9,186 +14,101 @@ const peso = new Intl.NumberFormat("en-PH", {
   maximumFractionDigits: 0
 });
 
-/* ---------- HOTEL DATA ---------- */
-
-const HOTELS = [
-  {
-    id: 1,
-    name: "Thunderbird Resorts & Casinos",
-    town: "Cebu city",
-
-    desc: `Bayfront Hotel Cebu – North Reclamation is conveniently located in Cebu City's commercial and business district, making it suitable for both leisure and business travelers. It is within walking distance of shopping destinations such as SM City Cebu and S&R. The hotel offers comfortable rooms with city views, safety boxes, flat-screen cable TVs, tea and coffee-making facilities, minibars, complimentary bottled water, private bathrooms, and free Wi-Fi. Guests can enjoy Filipino and international dishes at the hotel restaurant, with room service also available. Nearby attractions include Cebu Port, St. Joseph Parish, Ayala Center Cebu, Fort San Pedro, and Magellan's Cross. Mactan-Cebu International Airport is approximately 45 minutes away by car. The hotel also provides a 24-hour front desk, luggage storage assistance, airport transportation and car rental arrangements, and complimentary parking.`,
-
-    amenities: [
-      "Casino",
-      "Infinity pool",
-      "Lake view",
-      "Free parking"
-    ],
-
-    price: 6800,
-    score: 8.6,
-    reviews: 1240,
-    imagePrefix: "1",
-    imageFolder: "images"
-  },
-
-  {
-    id: 2,
-    name: "Marco Polo Plaza Cebu",
-    town: "Cebu city",
-
-    desc: `Situated on Nivel Hills, Marco Polo Plaza Cebu offers 5 dining venues, a swimming pool, and rooms that look out over the mountains or the sea. Internet access and parking come free of charge.
-
-The roomy guestrooms at Marco Polo Plaza are decorated in a modern style and feature large windows throughout. Every nonsmoking room is bright with ample natural light and comes equipped with a 32-inch flat-screen TV offering cable channels.
-
-Car rental services and complimentary parking are available at the hotel. Guests can buy local souvenirs from the gift shop.
-
-Blu Bar & Grill offers expansive views over Cebu City and serves an excellent range of grilled dishes. Additional dining options include Asian cuisine at Café Marco and refreshing cocktails at El Viento.
-
-Cebu Marco Polo lies 11 mi from Mactan International Airport and 1.9 mi from Magellan's Cross.
-
-Couples especially appreciate the location – they gave it a rating of 8.2 for a two-person trip.`,
-
-    amenities: [
-      "5 dining venues",
-      "Swimming pool",
-      "Free parking",
-      "Gift shop",
-      "Car rental",
-      "Mountain or sea views"
-    ],
-
-    price: 8500,
-    score: 8.2,
-    reviews: 0,
-    imagePrefix: "1",
-    imageFolder: "images2",
-    imageCount: 25
-  },
-
-  {
-    id: 3,
-    name: "Seda Ayala Center Cebu City",
-    town: "Cebu city",
-
-    desc: `Located in the heart of Cebu, 492 feet from Ayala Mall and 1.1 mi from SM City Cebu, Seda Ayala Center Cebu City Multiple-Use Hotel offers an on-site restaurant, a fitness center, and an outdoor swimming pool complete with a pool bar. The property also provides a 24-hour front desk, and free WiFi is accessible throughout the hotel.
-
-Every room at Seda Ayala Center Cebu City Multiple-Use Hotel comes with air conditioning, a 48-inch LED TV with cable channels, and a safety deposit box. The rooms are also furnished with a desk, an electric kettle, and a refrigerator with mini-bar. The private bathroom features a hairdryer and a shower with complimentary toiletries.
-
-Guests can start the day with an a la carte or buffet Asian breakfast at the hotel, while Misto Restaurant serves international and local favorites. The restaurant also offers Japanese, Thai, and Indian specialties. The pool bar offers a relaxing spot beside the pool, serving your favorite cocktail right at hand. In-room dining and breakfast can also be arranged for guests.
-
-Laundry, ironing, and dry cleaning services are offered at an additional charge. The concierge can arrange airport shuttle or car rentals for guests who need them. Meeting and banquet facilities are also available.
-
-Seda Ayala Center Cebu City Multiple-Use Hotel is 1.2 mi from Museo Sugbo and 2.1 mi from Fort San Pedro. Magellan's Cross lies 2.3 mi from the hotel. The closest airport is Mactan-Cebu International Airport, 7.1 mi from the property.
-
-Couples especially appreciate the location – they gave it a rating of 9.4 for a two-person trip.`,
-
-    amenities: [
-      "Restaurant",
-      "Fitness center",
-      "Outdoor swimming pool",
-      "Pool bar",
-      "Free Wi-Fi",
-      "24-hour front desk",
-      "Airport shuttle",
-      "Meeting facilities"
-    ],
-
-    price: 8500,
-    score: 9.4,
-    reviews: 0,
-    imagePrefix: "1",
-    imageFolder: "images3",
-    imageCount: 22
-  },
-
-  {
-    id: 4,
-    name: "Hotel Elizabeth Cebu",
-    town: "Cebu city",
-
-    desc: `Hotel Elizabeth provides large accommodations just a 5-minute stroll from Ayala Mall and Cebu Business Park. The hotel features a fitness center, a restaurant, and complimentary Wi-Fi throughout.
-
-Hotel Elizabeth Cebu is a 30-minute journey from Mactan-Cebu International Airport and just 15 minutes from downtown.
-
-The rooms feature sophisticated decor and are fully equipped with air conditioning, a flat-screen cable television, and a mini-bar. Private bathrooms offer both hot and cold water services. Certain rooms provide a sitting area featuring a sofa.
-
-Flora Café offers dishes from around the world. Dining can take place in the comfort of individual rooms.
-
-Particularly, couples appreciate the location – they rated it 9.2 for trips for two.`,
-
-    amenities: [
-      "Fitness center",
-      "Restaurant",
-      "Complimentary Wi-Fi",
-      "Air conditioning",
-      "Flat-screen TV",
-      "Mini-bar",
-      "Private bathroom",
-      "Flora Café"
-    ],
-
-    price: 8500,
-    score: 9.2,
-    reviews: 0,
-    imagePrefix: "1",
-    imageFolder: "images4",
-    imageCount: 20
-  },
-
-  {
-    id: 5,
-    name: "NS Royal Hotel",
-    town: "Cebu city",
-
-    desc: `Situated on the vibrant Juana Osmena Street in Cebu City, NS Royal Hotel provides convenient lodging with free WiFi.
-
-Every room is equipped with air conditioning and includes a private bathroom offering both hot and cold showers. The rooms also feature a cable TV, telephone, and a work desk.
-
-Visitors can utilize the communal self-service laundry area, and complimentary parking is provided as well. The on-site cafe, Dre Cafe, serves food and drinks, and room service is provided as well.
-
-Grocery and convenience shops are a 2-minute stroll from NS Royal Hotel, and the well-known nightlife venues Mango Square and One Mango Place are only a 5-minute walk away. The closest airport is Mactan Cebu International Airport, which is a 30-minute drive away from the property.
-
-Couples especially appreciate the place – they gave it a score of 8.6 for a journey for two.`,
-
-    amenities: [
-      "Free Wi-Fi",
-      "Air conditioning",
-      "Private bathroom",
-      "Hot and cold showers",
-      "Cable TV",
-      "Telephone",
-      "Work desk",
-      "Self-service laundry",
-      "Complimentary parking",
-      "Dre Cafe",
-      "Room service"
-    ],
-
-    price: 8500,
-    score: 8.6,
-    reviews: 0,
-    imagePrefix: "1",
-    imageFolder: "images5",
-    imageCount: 20
-  }
-];
-
 const TOTAL_IMAGES = 26;
 const VISIBLE_IMAGES = 4;
 const DESCRIPTION_PREVIEW_LENGTH = 180;
 
+/* ---------- ADDITIONAL HOTEL LISTINGS ---------- */
+/*
+  bai Hotel Cebu is added to the frontend without deleting
+  existing hotels returned by the API.
+
+  Replace price and reviews with verified values when available.
+*/
+
+const ADDITIONAL_HOTELS = [
+  {
+    name: "bai Hotel Cebu",
+    location: "Quano Ave, Cor. Seno Blvd, North Reclamation Area",
+    town: "Mandaue City",
+
+    desc: "bai Hotel Cebu is a modern urban retreat offering skyline views of Cebu City, located 1.6 miles from SM Cebu City and 2.2 miles from Ayala Center Cebu. The property features eight dining choices, an outdoor swimming pool, and a gym. The rooms offer city views, a TV, a minibar, a dining table, and a private bathroom with complimentary toiletries. Guests can enjoy daily buffet breakfast, Cafe Bai, the pool bar, Twilight Roofdeck Lounge + Bar, and in-room dining. The hotel offers valet parking, car rental services, a business center, and a 24-hour front desk. It is 2.2 miles from the Grand Convention Center of Cebu and 3.1 miles from Mactan-Cebu International Airport. Couples particularly like the location, rating it 8.8 for a two-person trip.",
+
+    price: 0,
+    score: 8.8,
+    reviews: 0,
+
+    amenities: [
+      "Outdoor Swimming Pool",
+      "Fitness Center",
+      "Restaurants",
+      "Pool Bar",
+      "Cafe Bai",
+      "Rooftop Lounge",
+      "Buffet Breakfast",
+      "Valet Parking",
+      "Car Rental",
+      "Business Center",
+      "24-Hour Front Desk",
+      "Air Conditioning",
+      "City View",
+      "In-Room Dining"
+    ],
+
+    imageFolder: "images7",
+    imagePrefix: "1",
+    imageCount: 21
+  }
+];
+
+/* ---------- MERGE ADDITIONAL HOTELS ---------- */
+
+function mergeAdditionalHotels(apiHotels) {
+  const merged = [...apiHotels];
+
+  const existingNames = new Set(
+    apiHotels.map(hotel =>
+      String(hotel.name || "").trim().toLowerCase()
+    )
+  );
+
+  ADDITIONAL_HOTELS.forEach(hotel => {
+    const key = hotel.name.trim().toLowerCase();
+
+    if (!existingNames.has(key)) {
+      merged.push(hotel);
+      existingNames.add(key);
+    }
+  });
+
+  return merged;
+}
+
+/* ---------- HOTEL PRICE ---------- */
+
+function hotelPriceText(hotel, nightCount = nights()) {
+  const price = Number(hotel.price);
+
+  if (!Number.isFinite(price) || price <= 0) {
+    return "Rate not provided";
+  }
+
+  return peso.format(price * nightCount);
+}
+
 /* ---------- HOTEL IMAGE HELPERS ---------- */
 
 function hotelImageCount(hotel) {
-  return hotel.imageCount || TOTAL_IMAGES;
+  return Number(hotel.imageCount) > 0
+    ? Number(hotel.imageCount)
+    : TOTAL_IMAGES;
 }
 
 function hotelImagePath(hotel, index) {
   const folder = hotel.imageFolder || "images";
+  const prefix = hotel.imagePrefix || "1";
 
-  return `${folder}/${hotel.imagePrefix}.${index}.jpg`;
+  return `${folder}/${prefix}.${index}.jpg`;
 }
 
 /* ---------- MAIN ELEMENTS ---------- */
@@ -261,22 +181,25 @@ function openHotelDetails(hotel, photoIndex = 1) {
     hotel.name;
 
   document.getElementById("detail-location").textContent =
-    `${hotel.town}, Cebu`;
+    `${hotel.location}, ${hotel.town}, Cebu`;
+
+  const hotelScore = Number(hotel.score || 0);
+  const hotelReviews = Number(hotel.reviews || 0);
 
   document.getElementById("detail-score").textContent =
-    hotel.score.toFixed(1);
+    hotelScore.toFixed(1);
 
   document.getElementById("detail-score-label").textContent =
-    scoreLabel(hotel.score);
+    scoreLabel(hotelScore);
 
   document.getElementById("detail-reviews").textContent =
-    `${hotel.reviews.toLocaleString("en-PH")} reviews`;
+    `${hotelReviews.toLocaleString("en-PH")} reviews`;
 
   document.getElementById("detail-description").textContent =
-    hotel.desc;
+    hotel.desc || "";
 
   document.getElementById("detail-price").textContent =
-    peso.format(hotel.price * nights());
+    hotelPriceText(hotel, nights());
 
   document.getElementById("detail-nights").textContent =
     `${nights()} night${nights() > 1 ? "s" : ""} · 2 adults`;
@@ -289,7 +212,11 @@ function openHotelDetails(hotel, photoIndex = 1) {
 
   amenities.replaceChildren();
 
-  hotel.amenities.forEach(item => {
+  (
+    Array.isArray(hotel.amenities)
+      ? hotel.amenities
+      : []
+  ).forEach(item => {
     amenities.appendChild(el("li", "", item));
   });
 
@@ -368,7 +295,7 @@ document
   .getElementById("modal-backdrop")
   .addEventListener("click", closeHotelDetails);
 
-/* Previous photo */
+/* ---------- PREVIOUS PHOTO ---------- */
 
 document
   .getElementById("photo-prev")
@@ -382,7 +309,7 @@ document
     );
   });
 
-/* Next photo */
+/* ---------- NEXT PHOTO ---------- */
 
 document
   .getElementById("photo-next")
@@ -396,7 +323,7 @@ document
     );
   });
 
-/* Keyboard controls */
+/* ---------- KEYBOARD CONTROLS ---------- */
 
 document.addEventListener("keydown", event => {
   if (!hotelModal.classList.contains("is-open")) return;
@@ -570,21 +497,29 @@ function buildCard(hotel) {
 
   info.append(
     el("h3", "", hotel.name),
-    el("span", "location", `${hotel.town}, Cebu`)
+    el(
+      "span",
+      "location",
+      `${hotel.location}, ${hotel.town}, Philippines`
+    )
   );
 
   /* Short description */
 
+  const fullDescription = hotel.desc || "";
+
   const description = el("p", "desc collapsed");
 
   description.textContent =
-    `${hotel.desc.slice(0, DESCRIPTION_PREVIEW_LENGTH).trimEnd()}...`;
+    fullDescription.length > DESCRIPTION_PREVIEW_LENGTH
+      ? `${fullDescription.slice(0, DESCRIPTION_PREVIEW_LENGTH).trimEnd()}...`
+      : fullDescription;
 
   info.appendChild(description);
 
   /* See more */
 
-  if (hotel.desc.length > DESCRIPTION_PREVIEW_LENGTH) {
+  if (fullDescription.length > DESCRIPTION_PREVIEW_LENGTH) {
     const seeMore = el(
       "button",
       "see-more-btn",
@@ -604,8 +539,6 @@ function buildCard(hotel) {
 
     info.appendChild(seeMore);
   } else {
-    description.textContent = hotel.desc;
-
     description.classList.remove("collapsed");
   }
 
@@ -613,23 +546,15 @@ function buildCard(hotel) {
 
   const list = el("ul", "amenities");
 
-  hotel.amenities.forEach(amenity => {
+  (
+    Array.isArray(hotel.amenities)
+      ? hotel.amenities
+      : []
+  ).forEach(amenity => {
     list.appendChild(el("li", "", amenity));
   });
 
   info.appendChild(list);
-
-  /* Guest note */
-
-  if (hotel.quote) {
-    info.appendChild(
-      el(
-        "p",
-        "review-quote",
-        `Guest note: "${hotel.quote}"`
-      )
-    );
-  }
 
   /* Rating */
 
@@ -637,23 +562,30 @@ function buildCard(hotel) {
 
   const score = el("div", "score");
 
+  const hotelScore = Number(hotel.score || 0);
+  const hotelReviews = Number(hotel.reviews || 0);
+
   const label = el(
     "div",
     "score-label",
-    scoreLabel(hotel.score)
+    scoreLabel(hotelScore)
   );
 
   label.appendChild(
     el(
       "small",
       "",
-      `${hotel.reviews.toLocaleString("en-PH")} reviews`
+      `${hotelReviews.toLocaleString("en-PH")} reviews`
     )
   );
 
   score.append(
     label,
-    el("span", "score-badge", hotel.score.toFixed(1))
+    el(
+      "span",
+      "score-badge",
+      hotelScore.toFixed(1)
+    )
   );
 
   /* Price */
@@ -671,7 +603,7 @@ function buildCard(hotel) {
     el(
       "strong",
       "",
-      peso.format(hotel.price * stayNights)
+      hotelPriceText(hotel, stayNights)
     )
   );
 
@@ -701,14 +633,27 @@ function buildCard(hotel) {
 /* ---------- RENDER HOTEL RESULTS ---------- */
 
 function render() {
-  const selectedTowns = [...checkboxes]
+  const selectedFilters = [...checkboxes]
     .filter(checkbox => checkbox.checked)
-    .map(checkbox => checkbox.value);
+    .map(checkbox => checkbox.value.toLowerCase().trim());
 
-  const filteredHotels = selectedTowns.length
-    ? hotels.filter(hotel =>
-        selectedTowns.includes(hotel.town)
-      )
+  const filteredHotels = selectedFilters.length
+    ? hotels.filter(hotel => {
+        const town = String(hotel.town || "").toLowerCase().trim();
+      const location = String(hotel.location || "").toLowerCase().trim();
+
+      const amenities = (
+        Array.isArray(hotel.amenities)
+          ? hotel.amenities
+          : []
+      ).map(item => String(item).toLowerCase().trim());
+
+      return selectedFilters.some(filter =>
+        town === filter ||
+        location === filter ||
+        amenities.includes(filter)
+      );
+    })
     : hotels;
 
   title.textContent =
@@ -723,7 +668,7 @@ function render() {
       el(
         "div",
         "empty",
-        "No properties match these towns yet. Clear a filter to see all stays."
+        "No properties match these filters. Clear a filter to see all stays."
       )
     );
 
@@ -735,7 +680,7 @@ function render() {
   });
 }
 
-/* ---------- LOAD GUEST NOTES ---------- */
+/* ---------- LOAD HOTEL CATALOGUE ---------- */
 
 async function loadHotels() {
   feed.replaceChildren(
@@ -752,22 +697,31 @@ async function loadHotels() {
 
     const data = await response.json();
 
-    hotels = HOTELS.map((hotel, index) => ({
-      ...hotel,
+    if (!Array.isArray(data.hotels)) {
+      throw new Error(
+        "Hotel API returned an invalid response."
+      );
+    }
 
-      quote: data.quotes[index]
-        ? data.quotes[index].quote
-        : "Great place!"
-    }));
+    hotels = mergeAdditionalHotels(data.hotels);
+
   } catch (error) {
-    console.warn(
-      "API unavailable, using local data:",
+    console.error(
+      "Unable to load the hotel catalogue:",
       error
     );
 
-    hotels = HOTELS.map(hotel => ({
-      ...hotel
-    }));
+    title.textContent = "Properties could not be loaded";
+
+    feed.replaceChildren(
+      el(
+        "div",
+        "error",
+        "Unable to load properties. Please check your API connection and try again."
+      )
+    );
+
+    return;
   }
 
   render();
@@ -844,7 +798,7 @@ document
     render();
   });
 
-/* ---------- TOWN FILTERS ---------- */
+/* ---------- FILTERS ---------- */
 
 checkboxes.forEach(checkbox => {
   checkbox.addEventListener("change", render);

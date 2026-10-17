@@ -1,0 +1,25 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model sen {
+  id           BigInt   @id @default(autoincrement())
+  name         String   @default("")
+  location     String
+  town         String
+  description  String
+  price        Decimal  @default(0) @db.Decimal
+  rating       Decimal? @default(0) @db.Decimal
+  review_count Int      @db.SmallInt
+  amenities    String   @default("")
+  image_folder String
+  image_prefix Int      @default(1)
+  image_count  Int
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+}
