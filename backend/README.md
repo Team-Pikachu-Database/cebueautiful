@@ -1,15 +1,15 @@
 # CebuStays API
 
-The Node server serves the existing static site and a read-only hotel catalogue API from the same origin:
+The Node server is an API-only service on port `3000`. Serve the frontend separately on port `5505` (for example, with VS Code Live Server). This keeps the API's security headers from blocking the hotel's Supabase-hosted photos.
 
-- `GET /api/hotels` returns selected fields from `public.sen` and ordered image URLs from the public `hotel-images` Storage bucket, matched through `public.sen_images`.
+- `GET /api/hotels` returns selected fields from `public.sen` and ordered photos from `public.sen_images`. Photos in Supabase Storage use public bucket URLs; local-development photos in `images2` through `images8` use paths served by the frontend on port `5505`.
 - `GET /api/health` checks database connectivity.
 
 ## Run locally
 
 1. Keep the existing `backend/.env`; do not overwrite it. Ensure it contains a server-side Postgres URL in `DATABASE_URL` (preferred) or `SUPABASE_DATABASE_URL`. For this persistent server, use the Supabase shared session pooler on port `5432`. Use `DIRECT_URL` for Prisma schema operations where direct database networking is available.
 2. Download the database CA certificate from Supabase **Database Settings → SSL Configuration** and set `DATABASE_SSL_CA` to its local path. The server requires this CA and verifies the TLS certificate; it does not fall back to insecure TLS.
-3. Run on Node.js 24 or later and start the app with `npm start`; the prestart script generates the Prisma client. Open the address printed by the server. The static page normally uses same-origin API requests. In GitHub Codespaces previews, it targets the same workspace's forwarded API port 3000; the server allows that matching Codespaces origin. For other deployments with a separate browser origin, list exact origins in `CENTRAL_ALLOWED_ORIGINS`.
+3. Run on Node.js 24 or later and start the API with `npm start`; the prestart script generates the Prisma client. Open the frontend at `http://127.0.0.1:5505` using VS Code Live Server. Do not use port `3000` as the website; it is reserved for `/api/hotels` and `/api/health`. In GitHub Codespaces previews, the frontend on port 5505 targets the same workspace's forwarded API port 3000; the server allows that matching Codespaces origin. For other deployments with a separate browser origin, list exact origins in `CENTRAL_ALLOWED_ORIGINS`.
 
 Never place database credentials or Supabase secret keys in frontend code or commit them. `.gitignore` excludes `backend/.env`.
 

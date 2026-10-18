@@ -126,6 +126,44 @@ test("GET /api/hotels returns Supabase Storage images for a hotel", async () => 
   }]);
 });
 
+test("GET /api/hotels returns local image paths for the frontend origin", async () => {
+  const baseUrl = await startServer({
+    configuredOrigins: "",
+    logger: () => {},
+    prisma: {
+      $queryRaw: async () => [{
+        hotel_id: 44n,
+        alt_text: "Placeholder hotel photo",
+        sort_order: 1,
+        object_name: "images2/1.1.jpg",
+        is_local: true
+      }],
+      sen: {
+        findMany: async () => [{
+          id: 44n,
+          name: "Placeholder Hotel",
+          location: "Cebu",
+          town: "Cebu City",
+          description: "Placeholder listing.",
+          price: "900",
+          rating: "8",
+          review_count: 3,
+          amenities: "Wi-Fi"
+        }]
+      }
+    }
+  });
+
+  const response = await fetch(`${baseUrl}/api/hotels`);
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(body.hotels[0].images, [{
+    url: "/images2/1.1.jpg",
+    alt: "Placeholder hotel photo"
+  }]);
+});
+
 test("GET /api/hotels returns a safe error when the database is unavailable", async () => {
   const logged = [];
   const baseUrl = await startServer({
@@ -227,33 +265,18 @@ test("GET /api/health returns an unavailable status when the database check fail
   assert.equal(JSON.stringify(body).includes("private database detail"), false);
 });
 
-test("the Node server serves the existing frontend with a restrictive CSP", async () => {
+test("the API server does not serve frontend pages or local images", async () => {
   const baseUrl = await startServer({
     configuredOrigins: "",
     logger: () => {},
     prisma: { sen: { findMany: async () => [] } }
   });
 
-  const response = await fetch(baseUrl);
-  const html = await response.text();
+  for (const pathname of ["/", "/index.html", "/images7/1.1.jpg"]) {
+    const response = await fetch(`${baseUrl}${pathname}`);
+    const body = await response.json();
 
-  assert.equal(response.status, 200);
-  assert.match(html, /CebuStays/);
-  assert.match(
-    response.headers.get("content-security-policy"),
-    /default-src 'self'/
-  );
-});
-
-test("the Node server serves images for the additional hotel listing", async () => {
-  const baseUrl = await startServer({
-    configuredOrigins: "",
-    logger: () => {},
-    prisma: { sen: { findMany: async () => [] } }
-  });
-
-  const response = await fetch(`${baseUrl}/images7/1.1.jpg`);
-
-  assert.equal(response.status, 200);
-  assert.equal(response.headers.get("content-type"), "image/jpeg");
+    assert.equal(response.status, 404);
+    assert.equal(body.error, "Not found.");
+  }
 });

@@ -11,7 +11,7 @@ const API_URL = previewHost
   ? `${window.location.protocol}//${previewHost[1]}-${API_PORT}.app.github.dev/api/hotels`
   : isLocalLiveServer
     ? `${window.location.protocol}//${window.location.hostname}:${API_PORT}/api/hotels`
-  : "/api/hotels";
+    : "/api/hotels";
 
 const peso = new Intl.NumberFormat("en-PH", {
   style: "currency",
@@ -93,7 +93,10 @@ function showDetailPhoto(index) {
     activePhotoIndex
   );
 
-  detailMainImage.alt = hotelImageAlt(activeDetailHotel, activePhotoIndex);
+  detailMainImage.alt = hotelImageAlt(
+    activeDetailHotel,
+    activePhotoIndex
+  );
 
   [...detailThumbnails.children].forEach((button, i) => {
     const isActive = i + 1 === activePhotoIndex;
@@ -432,8 +435,35 @@ function buildCard(hotel) {
 
   const info = el("div", "info");
 
+  /* CLICKABLE HOTEL TITLE */
+
+  const hotelTitle = el(
+    "h3",
+    "clickable-hotel-title",
+    hotel.name
+  );
+
+  hotelTitle.setAttribute("role", "button");
+  hotelTitle.setAttribute("tabindex", "0");
+
+  hotelTitle.setAttribute(
+    "aria-label",
+    `View details for ${hotel.name}`
+  );
+
+  hotelTitle.addEventListener("click", () => {
+    openHotelDetails(hotel);
+  });
+
+  hotelTitle.addEventListener("keydown", event => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openHotelDetails(hotel);
+    }
+  });
+
   info.append(
-    el("h3", "", hotel.name),
+    hotelTitle,
     el(
       "span",
       "location",
@@ -576,21 +606,26 @@ function render() {
 
   const filteredHotels = selectedFilters.length
     ? hotels.filter(hotel => {
-        const town = String(hotel.town || "").toLowerCase().trim();
-      const location = String(hotel.location || "").toLowerCase().trim();
+        const town = String(hotel.town || "")
+          .toLowerCase()
+          .trim();
 
-      const amenities = (
-        Array.isArray(hotel.amenities)
-          ? hotel.amenities
-          : []
-      ).map(item => String(item).toLowerCase().trim());
+        const location = String(hotel.location || "")
+          .toLowerCase()
+          .trim();
 
-      return selectedFilters.some(filter =>
-        town === filter ||
-        location === filter ||
-        amenities.includes(filter)
-      );
-    })
+        const amenities = (
+          Array.isArray(hotel.amenities)
+            ? hotel.amenities
+            : []
+        ).map(item => String(item).toLowerCase().trim());
+
+        return selectedFilters.some(filter =>
+          town === filter ||
+          location === filter ||
+          amenities.includes(filter)
+        );
+      })
     : hotels;
 
   title.textContent =
@@ -626,7 +661,9 @@ async function loadHotels() {
   );
 
   try {
-    const response = await fetch(API_URL, { credentials: "include" });
+    const response = await fetch(API_URL, {
+      credentials: "include"
+    });
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);

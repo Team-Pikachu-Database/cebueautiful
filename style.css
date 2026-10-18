@@ -1181,3 +1181,22 @@ a:focus-visible {
     animation: none !important;
   }
 }
+
+/* =========================================
+   CLICKABLE HOTEL TITLES
+========================================= */
+
+.clickable-hotel-title {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.clickable-hotel-title:hover {
+  color: var(--blue-dark);
+  text-decoration: underline;
+}
+
+.clickable-hotel-title:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}

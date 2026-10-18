@@ -1,16 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
 import { createServer as createHttpServer } from "node:http";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
-const staticFiles = new Map([
-  ["/", ["index.html", "text/html; charset=utf-8"]],
-  ["/index.html", ["index.html", "text/html; charset=utf-8"]],
-  ["/script.js", ["script.js", "text/javascript; charset=utf-8"]],
-  ["/style.css", ["style.css", "text/css; charset=utf-8"]]
-]);
 
 function publicStorageUrl(supabaseUrl, objectName) {
   const encodedPath = objectName.split("/").map(encodeURIComponent).join("/");
@@ -54,7 +43,9 @@ function mapHotel(row, imageRows, supabaseUrl) {
     score,
     reviews: row.review_count,
     images: imageRows.map(image => ({
-      url: publicStorageUrl(supabaseUrl, image.object_name),
+      url: image.is_local
+        ? `/${image.object_name}`
+        : publicStorageUrl(supabaseUrl, image.object_name),
       alt: image.alt_text || `${row.name} photo ${image.sort_order}`
     }))
   };
@@ -102,28 +93,6 @@ function isCodespacesPreviewOriginAllowed(origin, requestHost, apiPort) {
   } catch {
     return false;
   }
-}
-
-async function serveStatic(pathname, response) {
-  let file = staticFiles.get(pathname);
-
-  if (!file) {
-    const imagePath = pathname.match(/^\/(images[2-8]?)\/([A-Za-z0-9._-]+\.jpg)$/);
-    if (!imagePath) return false;
-    file = [`${imagePath[1]}/${imagePath[2]}`, "image/jpeg"];
-  }
-
-  const absolutePath = path.join(projectRoot, file[0]);
-  const content = await readFile(absolutePath);
-
-  response.writeHead(200, {
-    "Content-Type": file[1],
-    "Cache-Control": file[1].startsWith("image/") ? "public, max-age=86400" : "no-cache",
-    "X-Content-Type-Options": "nosniff",
-    "Content-Security-Policy": "default-src 'self'; img-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'"
-  });
-  response.end(content);
-  return true;
 }
 
 export function createServer({
@@ -197,9 +166,11 @@ export function createServer({
         });
         const imageRows = typeof prisma.$queryRaw === "function"
           ? await prisma.$queryRaw`
-              SELECT i.hotel_id, i.alt_text, i.sort_order, storage_image.name AS object_name
+              SELECT i.hotel_id, i.alt_text, i.sort_order,
+                COALESCE(storage_image.name, i.storage_path) AS object_name,
+                storage_image.name IS NULL AS is_local
               FROM public.sen_images AS i
-              JOIN LATERAL (
+              LEFT JOIN LATERAL (
                 SELECT object.name
                 FROM storage.objects AS object
                 WHERE object.bucket_id = 'hotel-images'
@@ -210,6 +181,8 @@ export function createServer({
                 ORDER BY (object.name = i.storage_path) DESC
                 LIMIT 1
               ) AS storage_image ON true
+              WHERE storage_image.name IS NOT NULL
+                OR i.storage_path ~ '^images[2-8]/[A-Za-z0-9._-]+[.]jpg$'
               ORDER BY i.hotel_id, i.sort_order, i.id
             `
           : [];
@@ -281,17 +254,6 @@ export function createServer({
       return;
     }
 
-    try {
-      if (!(await serveStatic(pathname, response))) {
-        sendJson(response, 404, { error: "Not found.", requestId });
-      }
-    } catch (error) {
-      logger(JSON.stringify({
-        event: "static_asset_request_failed",
-        requestId,
-        errorCode: error?.code ?? "UNEXPECTED"
-      }));
-      sendJson(response, 500, { error: "Unable to serve this asset.", requestId });
-    }
+    sendJson(response, 404, { error: "Not found.", requestId });
   });
 }
