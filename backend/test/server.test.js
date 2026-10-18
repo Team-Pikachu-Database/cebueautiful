@@ -182,6 +182,23 @@ test("GET /api/hotels returns a safe error when the database is unavailable", as
   assert.equal(logged[0].event, "hotel_catalogue_request_failed");
 });
 
+test("the GitHub Pages project origin can load the public catalogue", async () => {
+  const origin = "https://team-pikachu-database.github.io";
+  const baseUrl = await startServer({
+    configuredOrigins: "",
+    logger: () => {},
+    prisma: { sen: { findMany: async () => [] } }
+  });
+
+  const response = await fetch(`${baseUrl}/api/hotels`, {
+    headers: { Origin: origin }
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("access-control-allow-origin"), origin);
+  assert.equal(response.headers.get("access-control-allow-credentials"), "true");
+});
+
 test("API rejects writes and disallowed browser origins", async () => {
   const baseUrl = await startServer({
     configuredOrigins: "",

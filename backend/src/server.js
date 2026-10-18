@@ -195,6 +195,7 @@ function allowedOriginSet(configuredOrigins = "", codespaceName = "") {
     "http://127.0.0.1:3000",
     "http://localhost:5505",
     "http://127.0.0.1:5505",
+    "https://team-pikachu-database.github.io",
     ...configuredOrigins.split(",").map(origin => origin.trim()).filter(Boolean)
   ];
 
