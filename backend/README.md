@@ -2,7 +2,7 @@
 
 The Node server serves the existing static site and a read-only hotel catalogue API from the same origin:
 
-- `GET /api/hotels` returns selected fields from `public.sen`.
+- `GET /api/hotels` returns selected fields from `public.sen` and ordered image URLs from the public `hotel-images` Storage bucket, matched through `public.sen_images`.
 - `GET /api/health` checks database connectivity.
 
 ## Run locally

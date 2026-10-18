@@ -12,6 +12,14 @@ if (!databaseUrl) {
   throw new Error("Set DATABASE_URL in backend/.env before starting the server.");
 }
 
+const databaseUsername = decodeURIComponent(new URL(databaseUrl).username);
+const supabaseProjectRef = databaseUsername.match(/^postgres\.([a-z0-9]+)$/i)?.[1];
+const supabaseUrl = process.env.SUPABASE_URL?.trim().replace(/\/+$/, "") ||
+  (supabaseProjectRef ? `https://${supabaseProjectRef}.supabase.co` : null);
+if (!supabaseUrl) {
+  throw new Error("Set SUPABASE_URL or use a Supabase database username containing the project reference.");
+}
+
 const sslCaPath = process.env.DATABASE_SSL_CA;
 if (!sslCaPath) {
   throw new Error(
@@ -42,6 +50,8 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 const server = createServer({
   prisma,
   configuredOrigins: process.env.CENTRAL_ALLOWED_ORIGINS,
+  codespaceName: process.env.CODESPACE_NAME,
+  supabaseUrl,
   apiPort: port
 });
 

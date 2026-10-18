@@ -4,8 +4,13 @@ const API_PORT = 3000;
 const previewHost = window.location.hostname.match(
   /^(.*)-\d+\.app\.github\.dev$/
 );
+const isLocalLiveServer =
+  ["localhost", "127.0.0.1"].includes(window.location.hostname) &&
+  window.location.port === "5505";
 const API_URL = previewHost
   ? `${window.location.protocol}//${previewHost[1]}-${API_PORT}.app.github.dev/api/hotels`
+  : isLocalLiveServer
+    ? `${window.location.protocol}//${window.location.hostname}:${API_PORT}/api/hotels`
   : "/api/hotels";
 
 const peso = new Intl.NumberFormat("en-PH", {
@@ -14,75 +19,8 @@ const peso = new Intl.NumberFormat("en-PH", {
   maximumFractionDigits: 0
 });
 
-const TOTAL_IMAGES = 26;
 const VISIBLE_IMAGES = 4;
 const DESCRIPTION_PREVIEW_LENGTH = 180;
-
-/* ---------- ADDITIONAL HOTEL LISTINGS ---------- */
-/*
-  bai Hotel Cebu is added to the frontend without deleting
-  existing hotels returned by the API.
-
-  Replace price and reviews with verified values when available.
-*/
-
-const ADDITIONAL_HOTELS = [
-  {
-    name: "bai Hotel Cebu",
-    location: "Quano Ave, Cor. Seno Blvd, North Reclamation Area",
-    town: "Mandaue City",
-
-    desc: "bai Hotel Cebu is a modern urban retreat offering skyline views of Cebu City, located 1.6 miles from SM Cebu City and 2.2 miles from Ayala Center Cebu. The property features eight dining choices, an outdoor swimming pool, and a gym. The rooms offer city views, a TV, a minibar, a dining table, and a private bathroom with complimentary toiletries. Guests can enjoy daily buffet breakfast, Cafe Bai, the pool bar, Twilight Roofdeck Lounge + Bar, and in-room dining. The hotel offers valet parking, car rental services, a business center, and a 24-hour front desk. It is 2.2 miles from the Grand Convention Center of Cebu and 3.1 miles from Mactan-Cebu International Airport. Couples particularly like the location, rating it 8.8 for a two-person trip.",
-
-    price: 0,
-    score: 8.8,
-    reviews: 0,
-
-    amenities: [
-      "Outdoor Swimming Pool",
-      "Fitness Center",
-      "Restaurants",
-      "Pool Bar",
-      "Cafe Bai",
-      "Rooftop Lounge",
-      "Buffet Breakfast",
-      "Valet Parking",
-      "Car Rental",
-      "Business Center",
-      "24-Hour Front Desk",
-      "Air Conditioning",
-      "City View",
-      "In-Room Dining"
-    ],
-
-    imageFolder: "images7",
-    imagePrefix: "1",
-    imageCount: 21
-  }
-];
-
-/* ---------- MERGE ADDITIONAL HOTELS ---------- */
-
-function mergeAdditionalHotels(apiHotels) {
-  const merged = [...apiHotels];
-
-  const existingNames = new Set(
-    apiHotels.map(hotel =>
-      String(hotel.name || "").trim().toLowerCase()
-    )
-  );
-
-  ADDITIONAL_HOTELS.forEach(hotel => {
-    const key = hotel.name.trim().toLowerCase();
-
-    if (!existingNames.has(key)) {
-      merged.push(hotel);
-      existingNames.add(key);
-    }
-  });
-
-  return merged;
-}
 
 /* ---------- HOTEL PRICE ---------- */
 
@@ -99,16 +37,16 @@ function hotelPriceText(hotel, nightCount = nights()) {
 /* ---------- HOTEL IMAGE HELPERS ---------- */
 
 function hotelImageCount(hotel) {
-  return Number(hotel.imageCount) > 0
-    ? Number(hotel.imageCount)
-    : TOTAL_IMAGES;
+  return Array.isArray(hotel.images) ? hotel.images.length : 0;
 }
 
 function hotelImagePath(hotel, index) {
-  const folder = hotel.imageFolder || "images";
-  const prefix = hotel.imagePrefix || "1";
+  return hotel.images?.[index - 1]?.url ?? "";
+}
 
-  return `${folder}/${prefix}.${index}.jpg`;
+function hotelImageAlt(hotel, index) {
+  return hotel.images?.[index - 1]?.alt ||
+    `${hotel.name} - photo ${index}`;
 }
 
 /* ---------- MAIN ELEMENTS ---------- */
@@ -155,8 +93,7 @@ function showDetailPhoto(index) {
     activePhotoIndex
   );
 
-  detailMainImage.alt =
-    `${activeDetailHotel.name} - photo ${activePhotoIndex}`;
+  detailMainImage.alt = hotelImageAlt(activeDetailHotel, activePhotoIndex);
 
   [...detailThumbnails.children].forEach((button, i) => {
     const isActive = i + 1 === activePhotoIndex;
@@ -237,7 +174,7 @@ function openHotelDetails(hotel, photoIndex = 1) {
     const img = document.createElement("img");
 
     img.src = hotelImagePath(hotel, i);
-    img.alt = "";
+    img.alt = hotelImageAlt(hotel, i);
     img.loading = "lazy";
 
     img.addEventListener("error", () => {
@@ -453,7 +390,7 @@ function createHotelGallery(hotel) {
 
     img.src = hotelImagePath(hotel, i);
 
-    img.alt = `${hotel.name} - photo ${i}`;
+    img.alt = hotelImageAlt(hotel, i);
 
     img.loading = i === 1 ? "eager" : "lazy";
 
@@ -689,7 +626,7 @@ async function loadHotels() {
   );
 
   try {
-    const response = await fetch(API_URL);
+    const response = await fetch(API_URL, { credentials: "include" });
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
@@ -703,7 +640,7 @@ async function loadHotels() {
       );
     }
 
-    hotels = mergeAdditionalHotels(data.hotels);
+    hotels = data.hotels;
 
   } catch (error) {
     console.error(

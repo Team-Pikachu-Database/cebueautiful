@@ -37,8 +37,15 @@ afterEach(async () => {
 test("GET /api/hotels returns the database catalogue in the frontend shape", async () => {
   const baseUrl = await startServer({
     configuredOrigins: "",
+    supabaseUrl: "https://example.supabase.co",
     logger: () => {},
     prisma: {
+      $queryRaw: async () => [{
+        hotel_id: 42n,
+        alt_text: "Hotel exterior",
+        sort_order: 1,
+        object_name: "Untitled folder/hotels/42/1.1.jpg"
+      }],
       sen: {
         findMany: async options => {
           assert.deepEqual(options.orderBy, { name: "asc" });
@@ -52,10 +59,7 @@ test("GET /api/hotels returns the database catalogue in the frontend shape", asy
             price: "1250.50",
             rating: "8.5",
             review_count: 12,
-            amenities: "[\"Wi-Fi\",\"Pool\"]",
-            image_folder: "images",
-            image_prefix: 1,
-            image_count: 5
+            amenities: "[\"Wi-Fi\",\"Pool\"]"
           }];
         }
       }
@@ -77,9 +81,48 @@ test("GET /api/hotels returns the database catalogue in the frontend shape", asy
     price: 1250.5,
     score: 8.5,
     reviews: 12,
-    imagePrefix: "1",
-    imageFolder: "images",
-    imageCount: 5
+    images: [{
+      url: "https://example.supabase.co/storage/v1/object/public/hotel-images/Untitled%20folder/hotels/42/1.1.jpg",
+      alt: "Hotel exterior"
+    }]
+  }]);
+});
+
+test("GET /api/hotels returns Supabase Storage images for a hotel", async () => {
+  const baseUrl = await startServer({
+    configuredOrigins: "",
+    supabaseUrl: "https://example.supabase.co",
+    logger: () => {},
+    prisma: {
+      $queryRaw: async () => [{
+        hotel_id: 43n,
+        alt_text: "Pool",
+        sort_order: 1,
+        object_name: "hotels/43/pool.jpg"
+      }],
+      sen: {
+        findMany: async () => [{
+          id: 43n,
+          name: "Another Hotel",
+          location: "Cebu",
+          town: "Cebu City",
+          description: "Another test listing.",
+          price: "900",
+          rating: "8",
+          review_count: 3,
+          amenities: "Wi-Fi"
+        }]
+      }
+    }
+  });
+
+  const catalogueResponse = await fetch(`${baseUrl}/api/hotels`);
+  const catalogue = await catalogueResponse.json();
+
+  assert.equal(catalogueResponse.status, 200);
+  assert.deepEqual(catalogue.hotels[0].images, [{
+    url: "https://example.supabase.co/storage/v1/object/public/hotel-images/hotels/43/pool.jpg",
+    alt: "Pool"
   }]);
 });
 
@@ -117,22 +160,22 @@ test("API rejects writes and disallowed browser origins", async () => {
   assert.equal(originResponse.status, 403);
 });
 
-test("Codespaces preview API accepts only the matching workspace origin", async () => {
+test("Codespaces preview API accepts its origin when the proxy rewrites the host", async () => {
   const baseUrl = await startServer({
     configuredOrigins: "",
+    codespaceName: "ideal-acorn-123",
     logger: () => {},
     prisma: { sen: { findMany: async () => [] } }
   });
-  const forwardedHost = "ideal-acorn-123-3000.app.github.dev";
 
   const matchingResponse = await requestFromOrigin(
     `${baseUrl}/api/hotels`,
-    forwardedHost,
+    "127.0.0.1:3000",
     "https://ideal-acorn-123-5505.app.github.dev"
   );
   const differentWorkspaceResponse = await requestFromOrigin(
     `${baseUrl}/api/hotels`,
-    forwardedHost,
+    "127.0.0.1:3000",
     "https://other-workspace-123-5505.app.github.dev"
   );
 

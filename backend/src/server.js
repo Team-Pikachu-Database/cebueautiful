@@ -12,23 +12,19 @@ const staticFiles = new Map([
   ["/style.css", ["style.css", "text/css; charset=utf-8"]]
 ]);
 
-function mapHotel(row) {
+function publicStorageUrl(supabaseUrl, objectName) {
+  const encodedPath = objectName.split("/").map(encodeURIComponent).join("/");
+  return `${supabaseUrl}/storage/v1/object/public/hotel-images/${encodedPath}`;
+}
+
+function mapHotel(row, imageRows, supabaseUrl) {
   const price = Number(row.price);
   const score = row.rating === null ? 0 : Number(row.rating);
-  const imageFolderIsValid = /^images[2-6]?$/.test(row.image_folder);
-  const imagePrefix = Number(row.image_prefix);
-  const imageCount = Number(row.image_count);
 
   if (
     !Number.isFinite(price) ||
     price < 0 ||
-    !Number.isFinite(score) ||
-    !imageFolderIsValid ||
-    !Number.isInteger(imagePrefix) ||
-    imagePrefix < 1 ||
-    !Number.isInteger(imageCount) ||
-    imageCount < 1 ||
-    imageCount > 200
+    !Number.isFinite(score)
   ) {
     throw new Error("Hotel catalogue contains an invalid value.");
   }
@@ -57,9 +53,10 @@ function mapHotel(row) {
     price,
     score,
     reviews: row.review_count,
-    imagePrefix: String(imagePrefix),
-    imageFolder: row.image_folder,
-    imageCount
+    images: imageRows.map(image => ({
+      url: publicStorageUrl(supabaseUrl, image.object_name),
+      alt: image.alt_text || `${row.name} photo ${image.sort_order}`
+    }))
   };
 }
 
@@ -71,7 +68,7 @@ function sendJson(response, status, body) {
   response.end(JSON.stringify(body));
 }
 
-function allowedOriginSet(configuredOrigins = "") {
+function allowedOriginSet(configuredOrigins = "", codespaceName = "") {
   const origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -79,6 +76,10 @@ function allowedOriginSet(configuredOrigins = "") {
     "http://127.0.0.1:5505",
     ...configuredOrigins.split(",").map(origin => origin.trim()).filter(Boolean)
   ];
+
+  if (/^[a-z0-9-]+$/i.test(codespaceName)) {
+    origins.push(`https://${codespaceName}-5505.app.github.dev`);
+  }
 
   return new Set(origins);
 }
@@ -107,7 +108,7 @@ async function serveStatic(pathname, response) {
   let file = staticFiles.get(pathname);
 
   if (!file) {
-    const imagePath = pathname.match(/^\/(images[2-7]?)\/([A-Za-z0-9._-]+\.jpg)$/);
+    const imagePath = pathname.match(/^\/(images[2-8]?)\/([A-Za-z0-9._-]+\.jpg)$/);
     if (!imagePath) return false;
     file = [`${imagePath[1]}/${imagePath[2]}`, "image/jpeg"];
   }
@@ -128,10 +129,12 @@ async function serveStatic(pathname, response) {
 export function createServer({
   prisma,
   configuredOrigins,
+  codespaceName,
+  supabaseUrl,
   apiPort = 3000,
   logger = console.error
 }) {
-  const allowedOrigins = allowedOriginSet(configuredOrigins);
+  const allowedOrigins = allowedOriginSet(configuredOrigins, codespaceName);
 
   return createHttpServer(async (request, response) => {
     const requestId = randomUUID();
@@ -153,6 +156,7 @@ export function createServer({
       response.setHeader("Access-Control-Allow-Origin", origin);
       response.setHeader("Vary", "Origin");
       response.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+      response.setHeader("Access-Control-Allow-Credentials", "true");
     }
 
     let pathname;
@@ -187,14 +191,42 @@ export function createServer({
             price: true,
             rating: true,
             review_count: true,
-            amenities: true,
-            image_folder: true,
-            image_prefix: true,
-            image_count: true
+            amenities: true
           },
           orderBy: { name: "asc" }
         });
-        const hotels = rows.map(mapHotel);
+        const imageRows = typeof prisma.$queryRaw === "function"
+          ? await prisma.$queryRaw`
+              SELECT i.hotel_id, i.alt_text, i.sort_order, storage_image.name AS object_name
+              FROM public.sen_images AS i
+              JOIN LATERAL (
+                SELECT object.name
+                FROM storage.objects AS object
+                WHERE object.bucket_id = 'hotel-images'
+                  AND object.name IN (
+                    i.storage_path,
+                    'Untitled folder/' || i.storage_path
+                  )
+                ORDER BY (object.name = i.storage_path) DESC
+                LIMIT 1
+              ) AS storage_image ON true
+              ORDER BY i.hotel_id, i.sort_order, i.id
+            `
+          : [];
+        const imagesByHotel = new Map();
+
+        for (const image of imageRows) {
+          const hotelId = image.hotel_id.toString();
+          const hotelImages = imagesByHotel.get(hotelId) ?? [];
+          hotelImages.push(image);
+          imagesByHotel.set(hotelId, hotelImages);
+        }
+
+        const hotels = rows.map(row => mapHotel(
+          row,
+          imagesByHotel.get(row.id.toString()) ?? [],
+          supabaseUrl
+        ));
 
         response.writeHead(200, {
           "Content-Type": "application/json; charset=utf-8",
