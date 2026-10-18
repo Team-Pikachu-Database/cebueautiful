@@ -72,6 +72,8 @@ if (configuredSiteDomain) {
     throw new Error("CEBUSTAYS_SITE_DOMAIN must be a hostname only.");
   }
   fs.writeFileSync(path.join(outputDirectory, "CNAME"), `${domain}\n`);
+} else {
+  fs.rmSync(path.join(outputDirectory, "CNAME"), { force: true });
 }
 
 console.log(`GitHub Pages site built in ${outputDirectory}`);

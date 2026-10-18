@@ -35,7 +35,6 @@ jobs:
         run: npm run build:pages
         env:
           CEBUSTAYS_API_BASE_URL: ${{ vars.CEBUSTAYS_API_BASE_URL }}
-          CEBUSTAYS_SITE_DOMAIN: www.pikachubookingsite.com
           REQUIRE_CEBUSTAYS_API: "true"
 
       - name: Verify the hosted API before publishing
