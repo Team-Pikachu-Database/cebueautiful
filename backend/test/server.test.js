@@ -193,9 +193,81 @@ test("API rejects writes and disallowed browser origins", async () => {
   const originResponse = await fetch(`${baseUrl}/api/hotels`, {
     headers: { Origin: "https://untrusted.example" }
   });
+  const missingAuthOriginResponse = await fetch(`${baseUrl}/api/auth/logout`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}"
+  });
 
   assert.equal(writeResponse.status, 405);
   assert.equal(originResponse.status, 403);
+  assert.equal(missingAuthOriginResponse.status, 403);
+});
+
+test("account registration, session lookup, and logout use an HttpOnly cookie", async () => {
+  const user = {
+    id: "d7df71f3-8fca-498a-b91d-93370d05ec6a",
+    email: "guest@example.com",
+    role: "standard",
+    createdAt: "2026-01-01T00:00:00.000Z"
+  };
+  let sessionToken = "";
+  let sessionRevoked = false;
+  const baseUrl = await startServer({
+    configuredOrigins: "",
+    logger: () => {},
+    auth: {
+      sessionTtlSeconds: 604800,
+      registerStandard: async email => ({ user: { ...user, email }, token: "s".repeat(43) }),
+      getSession: async token =>
+        !sessionRevoked && token === "s".repeat(43) ? user : null,
+      logout: async token => {
+        sessionToken = token;
+        sessionRevoked = true;
+      }
+    },
+    prisma: { sen: { findMany: async () => [] } }
+  });
+
+  const registration = await fetch(`${baseUrl}/api/auth/register`, {
+    method: "POST",
+    headers: {
+      Origin: "http://127.0.0.1:5505",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ email: user.email, password: "a-long-and-unique-passphrase" })
+  });
+  const registrationBody = await registration.json();
+  const cookie = registration.headers.get("set-cookie");
+
+  assert.equal(registration.status, 201);
+  assert.equal(registration.headers.get("access-control-allow-origin"), "http://127.0.0.1:5505");
+  assert.match(cookie, /HttpOnly/);
+  assert.match(cookie, /SameSite=Lax/);
+  assert.equal(registrationBody.user.role, "standard");
+  assert.equal("token" in registrationBody, false);
+  assert.equal(JSON.stringify(registrationBody).includes("password"), false);
+
+  const session = await fetch(`${baseUrl}/api/auth/me`, {
+    headers: { Cookie: `cebu_stays_session=${"s".repeat(43)}` }
+  });
+  assert.equal((await session.json()).user.email, user.email);
+
+  const logout = await fetch(`${baseUrl}/api/auth/logout`, {
+    method: "POST",
+    headers: {
+      Origin: "http://127.0.0.1:5505",
+      Cookie: `cebu_stays_session=${"s".repeat(43)}`
+    }
+  });
+  assert.equal(logout.status, 200);
+  assert.match(logout.headers.get("set-cookie"), /Max-Age=0/);
+  assert.equal(sessionToken, "s".repeat(43));
+
+  const afterLogout = await fetch(`${baseUrl}/api/auth/me`, {
+    headers: { Cookie: `cebu_stays_session=${"s".repeat(43)}` }
+  });
+  assert.equal((await afterLogout.json()).user, null);
 });
 
 test("Codespaces preview API accepts its origin when the proxy rewrites the host", async () => {

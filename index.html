@@ -10,7 +10,10 @@
   <header class="site-header">
     <div class="header-top container">
       <a href="#" class="logo" aria-label="CebuStays home">CebuStays</a>
-      <span class="currency-tag" title="Prices shown in Philippine pesos">PHP ₱</span>
+      <div class="header-actions">
+        <span class="currency-tag" title="Prices shown in Philippine pesos">PHP ₱</span>
+        <button type="button" class="btn btn-account" id="account-open">Account</button>
+      </div>
     </div>
 
     <form class="search-bar container" id="search-form" role="search">
@@ -108,6 +111,54 @@
     </div>
   </footer>
 
+  <dialog class="account-dialog" id="account-dialog" aria-labelledby="account-title">
+    <section class="account-panel">
+      <div class="account-heading">
+        <div>
+          <span class="account-kicker">CEBUSTAYS</span>
+          <h2 id="account-title">Your account</h2>
+        </div>
+        <button type="button" class="account-close" id="account-close" aria-label="Close account dialog">×</button>
+      </div>
+
+      <p class="account-message" id="account-message" aria-live="polite"></p>
+
+      <div class="account-signed-in" id="account-signed-in" hidden>
+        <span class="account-role" id="account-role"></span>
+        <strong id="account-email"></strong>
+        <button type="button" class="btn btn-ghost" id="account-logout">Sign out</button>
+      </div>
+
+      <div id="account-entry">
+        <div class="account-tabs" role="tablist" aria-label="Account access">
+          <button type="button" role="tab" id="account-tab-login" aria-selected="true" aria-controls="account-form-login" data-account-view="login">Sign in</button>
+          <button type="button" role="tab" id="account-tab-register" aria-selected="false" aria-controls="account-form-register" data-account-view="register">Create account</button>
+          <button type="button" role="tab" id="account-tab-developer" aria-selected="false" aria-controls="account-form-developer" data-account-view="developer">Developer</button>
+        </div>
+
+        <form class="account-form" id="account-form-login" data-account-form="login" role="tabpanel" aria-labelledby="account-tab-login">
+          <label>Email<input name="email" type="email" autocomplete="username" maxlength="254" required></label>
+          <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
+          <button class="btn btn-primary account-submit" type="submit">Sign in</button>
+        </form>
+
+        <form class="account-form" id="account-form-register" data-account-form="register" role="tabpanel" aria-labelledby="account-tab-register" hidden>
+          <label>Email<input name="email" type="email" autocomplete="email" maxlength="254" required></label>
+          <label>Password<input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
+          <span class="account-hint">Use at least 12 characters.</span>
+          <button class="btn btn-primary account-submit" type="submit">Create standard account</button>
+        </form>
+
+        <form class="account-form" id="account-form-developer" data-account-form="developer" role="tabpanel" aria-labelledby="account-tab-developer" hidden>
+          <label>Email<input name="email" type="email" autocomplete="email" maxlength="254" required></label>
+          <label>Password<input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
+          <label>Developer invite code<input name="inviteCode" type="password" autocomplete="off" required></label>
+          <button class="btn btn-primary account-submit" type="submit">Create developer account</button>
+        </form>
+      </div>
+    </section>
+  </dialog>
+
   <!-- HOTEL DETAILS MODAL -->
   <div class="hotel-modal" id="hotel-modal" aria-hidden="true">
     <button
@@ -200,6 +251,7 @@
     </section>
   </div>
 
+  <script src="config.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

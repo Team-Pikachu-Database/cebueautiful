@@ -4,7 +4,9 @@ import { defineConfig } from "prisma/config";
 dotenv.config({ path: "backend/.env" });
 
 const datasourceUrl =
-  process.env.DIRECT_URL ?? process.env.SUPABASE_DATABASE_URL;
+  process.env.DIRECT_URL ??
+  process.env.SUPABASE_DATABASE_URL ??
+  process.env.DATABASE_URL;
 
 if (!datasourceUrl) {
   throw new Error(

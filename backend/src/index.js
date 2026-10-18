@@ -3,7 +3,9 @@ import { readFileSync } from "node:fs";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client.ts";
+import { createAuthService } from "./auth.js";
 import { createServer } from "./server.js";
+import { createSiteServer } from "./site.js";
 
 dotenv.config({ path: "backend/.env" });
 
@@ -40,11 +42,25 @@ const pool = new Pool({
 });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
-const host = process.env.CENTRAL_HOST || "127.0.0.1";
-const port = Number(process.env.CENTRAL_PORT || 3000);
+const auth = createAuthService({
+  pool,
+  sessionTtlHours: process.env.CENTRAL_SESSION_TTL_HOURS
+});
+const host = process.env.CENTRAL_HOST || (process.env.PORT ? "0.0.0.0" : "127.0.0.1");
+const port = Number(process.env.PORT || process.env.CENTRAL_PORT || 3000);
+const frontendPort = Number(process.env.CENTRAL_FRONTEND_PORT || 5505);
+const serveSite = process.env.CENTRAL_SERVE_SITE !== "false";
 
-if (!Number.isInteger(port) || port < 1 || port > 65535) {
-  throw new Error("CENTRAL_PORT must be a valid TCP port.");
+if (
+  !Number.isInteger(port) || port < 1 || port > 65535 ||
+  (serveSite && (
+    !Number.isInteger(frontendPort) ||
+    frontendPort < 1 ||
+    frontendPort > 65535 ||
+    frontendPort === port
+  ))
+) {
+  throw new Error("CENTRAL_PORT and CENTRAL_FRONTEND_PORT must be distinct valid TCP ports.");
 }
 
 const server = createServer({
@@ -52,21 +68,37 @@ const server = createServer({
   configuredOrigins: process.env.CENTRAL_ALLOWED_ORIGINS,
   codespaceName: process.env.CODESPACE_NAME,
   supabaseUrl,
+  auth,
   apiPort: port
 });
+const siteServer = serveSite ? createSiteServer({
+  apiPort: port,
+  frontendPort,
+  configuredOrigins: process.env.CENTRAL_ALLOWED_ORIGINS,
+  codespaceName: process.env.CODESPACE_NAME
+}) : null;
 
 server.listen(port, host, () => {
-  console.log(`CebuStays server listening on http://${host}:${port}`);
+  console.log(`CebuStays API listening on http://${host}:${port}`);
+  if (siteServer) {
+    siteServer.listen(frontendPort, host, () => {
+      console.log(`CebuStays website listening on http://${host}:${frontendPort}`);
+    });
+  }
 });
 
 async function shutdown() {
-  server.close(async error => {
-    await prisma.$disconnect();
-    if (error) {
-      console.error("Server shutdown failed.");
-      process.exitCode = 1;
-    }
+  const close = instance => new Promise((resolve, reject) => {
+    instance.close(error => error ? reject(error) : resolve());
   });
+
+  try {
+    await Promise.all([server, siteServer].filter(Boolean).map(close));
+    await prisma.$disconnect();
+  } catch {
+    console.error("Server shutdown failed.");
+    process.exitCode = 1;
+  }
 }
 
 process.on("SIGINT", shutdown);

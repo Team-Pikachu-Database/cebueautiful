@@ -1,17 +1,9 @@
 "use strict";
 
-const API_PORT = 3000;
-const previewHost = window.location.hostname.match(
-  /^(.*)-\d+\.app\.github\.dev$/
-);
-const isLocalLiveServer =
-  ["localhost", "127.0.0.1"].includes(window.location.hostname) &&
-  window.location.port === "5505";
-const API_URL = previewHost
-  ? `${window.location.protocol}//${previewHost[1]}-${API_PORT}.app.github.dev/api/hotels`
-  : isLocalLiveServer
-    ? `${window.location.protocol}//${window.location.hostname}:${API_PORT}/api/hotels`
-    : "/api/hotels";
+const API_BASE_URL = typeof window.CEBUSTAYS_CONFIG?.apiBaseUrl === "string"
+  ? window.CEBUSTAYS_CONFIG.apiBaseUrl.trim().replace(/\/+$/, "")
+  : "";
+const API_URL = `${API_BASE_URL}/api/hotels`;
 
 const peso = new Intl.NumberFormat("en-PH", {
   style: "currency",
@@ -41,7 +33,13 @@ function hotelImageCount(hotel) {
 }
 
 function hotelImagePath(hotel, index) {
-  return hotel.images?.[index - 1]?.url ?? "";
+  const imageUrl = hotel.images?.[index - 1]?.url ?? "";
+  if (!imageUrl.startsWith("/") || imageUrl.startsWith("//")) {
+    return imageUrl;
+  }
+
+  const siteRoot = new URL(".", document.baseURI);
+  return new URL(imageUrl.slice(1), siteRoot).href;
 }
 
 function hotelImageAlt(hotel, index) {
@@ -59,6 +57,134 @@ const checkboxes = document.querySelectorAll(
 );
 
 let hotels = [];
+let signedInAccount = null;
+
+const accountDialog = document.getElementById("account-dialog");
+const accountMessage = document.getElementById("account-message");
+const accountEntry = document.getElementById("account-entry");
+const signedInPanel = document.getElementById("account-signed-in");
+
+function setAccountView(view) {
+  document.querySelectorAll("[data-account-view]").forEach(tab => {
+    const selected = tab.dataset.accountView === view;
+    tab.setAttribute("aria-selected", String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+  });
+
+  document.querySelectorAll("[data-account-form]").forEach(form => {
+    form.hidden = form.dataset.accountForm !== view;
+  });
+
+  accountMessage.textContent = "";
+}
+
+function updateAccountDisplay(user) {
+  signedInAccount = user;
+  const isSignedIn = Boolean(user);
+  const accountButton = document.getElementById("account-open");
+
+  accountEntry.hidden = isSignedIn;
+  signedInPanel.hidden = !isSignedIn;
+  accountButton.textContent = isSignedIn ? "Account" : "Sign in";
+
+  if (isSignedIn) {
+    document.getElementById("account-email").textContent = user.email;
+    document.getElementById("account-role").textContent =
+      user.role === "developer" ? "Developer account" : "Standard account";
+  } else {
+    setAccountView("login");
+  }
+}
+
+async function requestAccountApi(path, options = {}) {
+  const response = await fetch(`${API_BASE_URL}/api/auth${path}`, {
+    credentials: "include",
+    ...options
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error || "The account request could not be completed.");
+  }
+
+  return data;
+}
+
+async function submitAccountForm(event, endpoint) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const submit = form.querySelector("button[type=submit]");
+  const values = Object.fromEntries(new FormData(form));
+
+  submit.disabled = true;
+  accountMessage.textContent = "";
+
+  try {
+    const data = await requestAccountApi(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(values)
+    });
+    form.reset();
+    updateAccountDisplay(data.user);
+    accountMessage.textContent = "You're signed in.";
+  } catch (error) {
+    accountMessage.textContent = error.message;
+  } finally {
+    submit.disabled = false;
+  }
+}
+
+function initializeAccount() {
+  document.getElementById("account-open").addEventListener("click", () => {
+    accountDialog.showModal();
+  });
+
+  document.getElementById("account-close").addEventListener("click", () => {
+    accountDialog.close();
+  });
+
+  accountDialog.addEventListener("click", event => {
+    if (event.target === accountDialog) accountDialog.close();
+  });
+
+  document.querySelectorAll("[data-account-view]").forEach(tab => {
+    tab.addEventListener("click", () => setAccountView(tab.dataset.accountView));
+  });
+
+  document
+    .getElementById("account-form-login")
+    .addEventListener("submit", event => submitAccountForm(event, "/login"));
+
+  document
+    .getElementById("account-form-register")
+    .addEventListener("submit", event => submitAccountForm(event, "/register"));
+
+  document
+    .getElementById("account-form-developer")
+    .addEventListener("submit", event =>
+      submitAccountForm(event, "/developer/register")
+    );
+
+  document.getElementById("account-logout").addEventListener("click", async () => {
+    const button = document.getElementById("account-logout");
+    button.disabled = true;
+    try {
+      await requestAccountApi("/logout", { method: "POST" });
+      updateAccountDisplay(null);
+      accountMessage.textContent = "You have signed out. Sign in again to access your account.";
+      document.querySelector('#account-form-login input[name="email"]').focus();
+    } catch (error) {
+      accountMessage.textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  requestAccountApi("/me")
+    .then(data => updateAccountDisplay(data.user))
+    .catch(() => updateAccountDisplay(null));
+}
 
 /* ---------- HOTEL DETAIL MODAL ---------- */
 
@@ -793,5 +919,6 @@ document
 /* ---------- INITIALIZE APP ---------- */
 
 setDefaultDates();
+initializeAccount();
 
 loadHotels();

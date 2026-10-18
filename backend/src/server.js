@@ -1,5 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { createServer as createHttpServer } from "node:http";
+import { AuthError } from "./auth.js";
+
+const MAX_AUTH_BODY_BYTES = 8192;
+const SESSION_COOKIE_NAME = "cebu_stays_session";
 
 function publicStorageUrl(supabaseUrl, objectName) {
   const encodedPath = objectName.split("/").map(encodeURIComponent).join("/");
@@ -59,6 +63,132 @@ function sendJson(response, status, body) {
   response.end(JSON.stringify(body));
 }
 
+async function readJsonBody(request) {
+  const contentType = request.headers["content-type"]
+    ?.split(";", 1)[0]
+    .trim()
+    .toLowerCase();
+
+  if (contentType !== "application/json") {
+    throw new AuthError(415, "Send the request as JSON.", "UNSUPPORTED_CONTENT_TYPE");
+  }
+
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of request) {
+    size += chunk.length;
+    if (size > MAX_AUTH_BODY_BYTES) {
+      throw new AuthError(413, "The request is too large.", "REQUEST_TOO_LARGE");
+    }
+    chunks.push(chunk);
+  }
+
+  let body;
+  try {
+    body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  } catch {
+    throw new AuthError(400, "Send valid JSON.", "INVALID_JSON");
+  }
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    throw new AuthError(400, "Send a JSON object.", "INVALID_JSON_BODY");
+  }
+
+  return body;
+}
+
+function sessionTokenFromRequest(request) {
+  for (const cookie of (request.headers.cookie ?? "").split(";")) {
+    const separator = cookie.indexOf("=");
+    if (separator < 0) continue;
+
+    if (cookie.slice(0, separator).trim() === SESSION_COOKIE_NAME) {
+      return cookie.slice(separator + 1).trim();
+    }
+  }
+
+  return "";
+}
+
+function setSessionCookie(request, response, token, maxAge) {
+  const forwardedProtocol = request.headers["x-forwarded-proto"]
+    ?.split(",", 1)[0]
+    .trim();
+  const secure = request.socket.encrypted ||
+    forwardedProtocol === "https" ||
+    process.env.NODE_ENV === "production" ||
+    /\.app\.github\.dev(?::\d+)?$/i.test(request.headers.host ?? "");
+  response.setHeader(
+    "Set-Cookie",
+    `${SESSION_COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure ? "; Secure" : ""}`
+  );
+}
+
+async function handleAuthRequest({ request, response, pathname, auth, requestId }) {
+  if (!auth) {
+    sendJson(response, 503, {
+      error: "Account service is not configured.",
+      requestId
+    });
+    return;
+  }
+
+  if (pathname === "/api/auth/me" && request.method === "GET") {
+    const user = await auth.getSession(sessionTokenFromRequest(request));
+    sendJson(response, 200, { user, requestId });
+    return;
+  }
+
+  if (request.method !== "POST") {
+    response.setHeader("Allow", "GET, POST, OPTIONS");
+    sendJson(response, 405, { error: "Method not allowed.", requestId });
+    return;
+  }
+
+  try {
+    if (pathname === "/api/auth/logout") {
+      await auth.logout(sessionTokenFromRequest(request));
+      setSessionCookie(request, response, "", 0);
+      sendJson(response, 200, { ok: true, requestId });
+      return;
+    }
+
+    const body = await readJsonBody(request);
+    let result;
+    let status = 200;
+    if (pathname === "/api/auth/login") {
+      result = await auth.login(body.email, body.password);
+    } else if (pathname === "/api/auth/register") {
+      result = await auth.registerStandard(body.email, body.password);
+      status = 201;
+    } else if (pathname === "/api/auth/developer/register") {
+      result = await auth.registerDeveloper(body.email, body.password, body.inviteCode);
+      status = 201;
+    } else {
+      sendJson(response, 404, { error: "Account route not found.", requestId });
+      return;
+    }
+
+    setSessionCookie(request, response, result.token, auth.sessionTtlSeconds);
+    sendJson(response, status, { user: result.user, requestId });
+  } catch (error) {
+    const status = error instanceof AuthError ? error.status : 500;
+    if (status >= 500) {
+      console.error(JSON.stringify({
+        event: "account_request_failed",
+        requestId,
+        errorCode: error?.code ?? "UNEXPECTED"
+      }));
+    }
+    sendJson(response, status, {
+      error: error instanceof AuthError
+        ? error.message
+        : "The account request could not be completed.",
+      requestId
+    });
+  }
+}
+
 function allowedOriginSet(configuredOrigins = "", codespaceName = "") {
   const origins = [
     "http://localhost:3000",
@@ -100,6 +230,7 @@ export function createServer({
   configuredOrigins,
   codespaceName,
   supabaseUrl,
+  auth,
   apiPort = 3000,
   logger = console.error
 }) {
@@ -124,7 +255,7 @@ export function createServer({
 
       response.setHeader("Access-Control-Allow-Origin", origin);
       response.setHeader("Vary", "Origin");
-      response.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+      response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
       response.setHeader("Access-Control-Allow-Credentials", "true");
     }
 
@@ -139,6 +270,18 @@ export function createServer({
     if (request.method === "OPTIONS") {
       response.writeHead(204);
       response.end();
+      return;
+    }
+
+    if (pathname.startsWith("/api/auth/")) {
+      if (request.method === "POST" && !origin) {
+        sendJson(response, 403, {
+          error: "An allowed browser origin is required.",
+          requestId
+        });
+        return;
+      }
+      await handleAuthRequest({ request, response, pathname, auth, requestId });
       return;
     }
 

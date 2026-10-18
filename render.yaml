@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: cebustays-api
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci && npm run db:generate
+    startCommand: npm run start:api
+    healthCheckPath: /api/health
+    domains:
+      - api.pikachubookingsite.com
+    envVars:
+      - key: NODE_VERSION
+        value: 24.21.0
+      - key: NODE_ENV
+        value: production
+      - key: CENTRAL_ALLOWED_ORIGINS
+        value: https://www.pikachubookingsite.com
+      - key: CENTRAL_SESSION_TTL_HOURS
+        value: "168"
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_SSL_CA
+        value: /etc/secrets/supabase-prod-ca-2021.crt

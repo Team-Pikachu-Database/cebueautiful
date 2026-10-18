@@ -8,3 +8,5 @@ backend/certs/
 node_modules/
 backend/node_modules/
 backend/generated/
+dist/
+public-pages/
