@@ -98,18 +98,29 @@ img {
   letter-spacing: -0.02em;
 }
 
-.currency-tag {
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  border-radius: 4px;
-  padding: 4px 10px;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
 .header-actions {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.btn-project {
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  color: #fff;
+  background: transparent;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.btn-project:hover {
+  color: var(--navy);
+  background: #fff;
+}
+
+.btn-project[hidden] {
+  display: none;
 }
 
 .btn-account {
@@ -286,6 +297,197 @@ img {
 
 .account-signed-in strong {
   overflow-wrap: anywhere;
+}
+
+/* =========================================
+   DEVELOPER PROJECT CHOOSER
+========================================= */
+
+.developer-page {
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+.developer-badge {
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.developer-main {
+  padding-block: clamp(40px, 9vh, 88px);
+}
+
+.developer-card {
+  width: min(760px, 100%);
+  margin-inline: auto;
+  padding: clamp(24px, 5vw, 48px);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 12px 36px rgba(0, 30, 60, 0.08);
+}
+
+.developer-card h1 {
+  margin: 4px 0 0;
+  color: var(--navy);
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+  line-height: 1.2;
+}
+
+.developer-intro {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.developer-status {
+  min-height: 1.5em;
+  margin: 16px 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.developer-destinations {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.developer-destinations[hidden],
+.developer-actions[hidden],
+.developer-retry[hidden] {
+  display: none;
+}
+
+.developer-destination {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 260px;
+  padding: 20px;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  color: #f0f6fc;
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+}
+
+.developer-destination:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+}
+
+.destination-supabase {
+  border-color: #263c36;
+  background: #171d1a;
+}
+
+.destination-supabase:hover {
+  border-color: #3ecf8e;
+}
+
+.destination-github {
+  border-color: #30363d;
+  background: #0d1117;
+}
+
+.destination-github:hover {
+  border-color: #8b949e;
+}
+
+.destination-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  margin-bottom: 4px;
+}
+
+.destination-logo {
+  display: block;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.supabase-logo {
+  border-radius: 6px;
+}
+
+.github-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.destination-brand-name {
+  color: #f0f6fc;
+  font-size: 1.08rem;
+  font-weight: 700;
+}
+
+.destination-kicker {
+  color: #8b949e;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.developer-destination strong {
+  color: #f0f6fc;
+  font-size: 1.2rem;
+  overflow-wrap: anywhere;
+}
+
+.destination-description {
+  color: #a5adb8;
+  font-size: 0.88rem;
+}
+
+.destination-action {
+  align-self: end;
+  margin-top: auto;
+  padding-top: 14px;
+  color: #f0f6fc;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.destination-supabase .destination-action {
+  color: #3ecf8e;
+}
+
+.developer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.developer-actions strong {
+  margin-right: auto;
+  overflow-wrap: anywhere;
+}
+
+.developer-home {
+  color: var(--blue);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.developer-home:hover {
+  text-decoration: underline;
+}
+
+.developer-retry {
+  min-height: 42px;
+  padding-inline: 18px;
 }
 
 /* =========================================
@@ -826,18 +1028,18 @@ img {
   cursor: default;
 }
 
-/* Popup panel: image left, information right */
+/* Popup panel: image, property summary, and room booking */
 
 .hotel-detail-panel {
   position: relative;
   z-index: 1;
 
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  grid-template-columns: minmax(280px, 1.1fr) minmax(230px, 0.95fr) minmax(250px, 0.85fr);
   align-items: start;
   gap: 20px;
 
-  width: min(960px, 100%);
+  width: min(1180px, 100%);
   max-height: 88vh;
   margin: auto;
   padding: 22px;
@@ -1035,6 +1237,17 @@ img {
   overflow-wrap: anywhere;
 }
 
+.booking-panel {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-self: stretch;
+  padding: 18px;
+  border: 1px solid #d8e5ef;
+  border-radius: 9px;
+  background: #f4f8fb;
+}
+
 .detail-location {
   display: block;
   margin: 0 35px 6px 0;
@@ -1124,7 +1337,7 @@ img {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  margin-top: 18px;
+  margin-top: 0;
 }
 
 .detail-price > span {
@@ -1148,8 +1361,92 @@ img {
   margin-top: 12px;
 }
 
+.detail-availability:disabled,
+.booking-submit:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.booking-status {
+  min-height: 1.5em;
+  margin: 10px 0 !important;
+  color: var(--navy);
+  font-size: 0.86rem !important;
+  line-height: 1.5 !important;
+}
+
+.booking-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.booking-form[hidden] {
+  display: none;
+}
+
+.booking-form label {
+  display: grid;
+  gap: 5px;
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.booking-form label:nth-of-type(4),
+.booking-form label:nth-of-type(5) {
+  grid-column: 1 / -1;
+}
+
+.booking-form input,
+.booking-form select {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 9px;
+  border: 1px solid #bac5d0;
+  border-radius: 4px;
+  color: var(--text);
+  background: #fff;
+}
+
+.booking-form input:focus,
+.booking-form select:focus {
+  border-color: var(--blue);
+}
+
+.booking-total,
+.booking-submit,
+.booking-payment-note {
+  grid-column: 1 / -1;
+}
+
+.booking-total {
+  margin: 0 !important;
+  color: var(--navy);
+  font-size: 0.9rem !important;
+  font-weight: 700;
+}
+
+.booking-submit {
+  width: 100%;
+  min-height: 44px;
+}
+
+.booking-payment-note {
+  margin-top: -6px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  text-align: center;
+}
+
 .detail-note {
-  margin-top: 10px !important;
+  margin: 12px 0 0 !important;
   color: var(--muted);
   font-size: 0.75rem !important;
   line-height: 1.6 !important;
@@ -1197,6 +1494,20 @@ img {
     padding: 20px;
   }
 
+  .hotel-detail-panel {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .detail-gallery {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .detail-information,
+  .booking-panel {
+    grid-column: 2;
+  }
+
   .detail-main-photo {
     height: 250px;
   }
@@ -1224,8 +1535,9 @@ img {
     gap: 8px;
   }
 
-  .currency-tag {
-    padding-inline: 7px;
+  .btn-project {
+    min-height: 38px;
+    padding-inline: 9px;
     font-size: 0.8rem;
   }
 
@@ -1236,6 +1548,18 @@ img {
 
   .account-panel {
     padding: 20px 16px;
+  }
+
+  .developer-destinations {
+    grid-template-columns: 1fr;
+  }
+
+  .developer-destination {
+    min-height: 180px;
+  }
+
+  .developer-actions strong {
+    width: 100%;
   }
 
   .logo {
@@ -1321,6 +1645,17 @@ img {
     border-radius: 10px;
   }
 
+  .detail-gallery,
+  .detail-information,
+  .booking-panel {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .booking-panel {
+    padding: 14px;
+  }
+
   .detail-main-photo {
     height: 210px;
   }
@@ -1337,6 +1672,16 @@ img {
 
   .detail-information {
     padding: 0;
+  }
+
+  .booking-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .booking-total,
+  .booking-submit,
+  .booking-payment-note {
+    grid-column: auto;
   }
 
   .detail-information h2 {

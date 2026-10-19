@@ -24,11 +24,32 @@ test("the site serves the frontend and local hotel photos with a Supabase image 
   const baseUrl = await listen(createSiteServer({ logger: () => {} }));
   const pageResponse = await fetch(baseUrl);
   const html = await pageResponse.text();
+  const developerPageResponse = await fetch(`${baseUrl}/developer.html`);
+  const developerHtml = await developerPageResponse.text();
+  const developerScriptResponse = await fetch(`${baseUrl}/developer.js`);
+  const githubLogoResponse = await fetch(`${baseUrl}/logo_folder/github.png`);
+  const supabaseLogoResponse = await fetch(`${baseUrl}/logo_folder/supabase.jpeg`);
   const configResponse = await fetch(`${baseUrl}/config.js`);
   const imageResponse = await fetch(`${baseUrl}/images2/1.1.jpg`);
 
   assert.equal(pageResponse.status, 200);
   assert.match(html, /account-dialog/);
+  assert.match(html, /id="booking-form"/);
+  assert.match(html, /Confirm reservation/);
+  assert.equal(developerPageResponse.status, 200);
+  assert.match(developerHtml, /developer-destinations/);
+  assert.match(
+    developerHtml,
+    /href="https:\/\/supabase\.com\/dashboard\/project\/jgsrgzrgiznknvtxhats"/
+  );
+  assert.match(developerHtml, /href="https:\/\/github\.com\/Team-Pikachu-Database"/);
+  assert.match(developerHtml, /src="logo_folder\/github\.png"/);
+  assert.match(developerHtml, /src="logo_folder\/supabase\.jpeg"/);
+  assert.equal(developerScriptResponse.status, 200);
+  assert.equal(githubLogoResponse.status, 200);
+  assert.equal(githubLogoResponse.headers.get("content-type"), "image/png");
+  assert.equal(supabaseLogoResponse.status, 200);
+  assert.equal(supabaseLogoResponse.headers.get("content-type"), "image/jpeg");
   assert.match(
     pageResponse.headers.get("content-security-policy"),
     /img-src 'self' https:\/\/\*\.supabase\.co/

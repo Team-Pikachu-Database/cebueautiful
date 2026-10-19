@@ -199,6 +199,86 @@ test("the GitHub Pages project origin can load the public catalogue", async () =
   assert.equal(response.headers.get("access-control-allow-credentials"), "true");
 });
 
+test("availability and booking routes serve date-specific rooms and reservation confirmations", async () => {
+  const stay = {
+    checkIn: "2027-05-10",
+    checkOut: "2027-05-12"
+  };
+  const baseUrl = await startServer({
+    configuredOrigins: "",
+    logger: () => {},
+    bookings: {
+      getAvailability: async (hotelId, checkIn, checkOut) => ({
+        hotelId,
+        checkIn,
+        checkOut,
+        totalRooms: 5,
+        bookedRooms: 2,
+        availableRooms: 3
+      }),
+      createBooking: async input => ({
+        reference: "CS-ABC123DEF456",
+        hotelName: "Example Hotel",
+        checkIn: input.checkIn,
+        checkOut: input.checkOut,
+        rooms: input.rooms,
+        totalPrice: 2500
+      })
+    },
+    prisma: { sen: { findMany: async () => [] } }
+  });
+
+  const availabilityResponse = await fetch(
+    `${baseUrl}/api/hotels/42/availability?checkIn=${stay.checkIn}&checkOut=${stay.checkOut}`
+  );
+  const availabilityBody = await availabilityResponse.json();
+  assert.equal(availabilityResponse.status, 200);
+  assert.equal(availabilityBody.availability.availableRooms, 3);
+
+  const reservationResponse = await fetch(`${baseUrl}/api/bookings`, {
+    method: "POST",
+    headers: {
+      Origin: "http://127.0.0.1:5505",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      hotelId: "42",
+      ...stay,
+      rooms: 1,
+      guestName: "Cebu Guest",
+      guestEmail: "guest@example.com"
+    })
+  });
+  const reservationBody = await reservationResponse.json();
+  assert.equal(reservationResponse.status, 201);
+  assert.equal(reservationBody.booking.reference, "CS-ABC123DEF456");
+  assert.equal(reservationBody.booking.totalPrice, 2500);
+});
+
+test("booking writes require an allowed browser origin", async () => {
+  let createCalled = false;
+  const baseUrl = await startServer({
+    configuredOrigins: "",
+    logger: () => {},
+    bookings: {
+      createBooking: async () => {
+        createCalled = true;
+        return {};
+      },
+      getAvailability: async () => ({})
+    },
+    prisma: { sen: { findMany: async () => [] } }
+  });
+
+  const response = await fetch(`${baseUrl}/api/bookings`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}"
+  });
+  assert.equal(response.status, 403);
+  assert.equal(createCalled, false);
+});
+
 test("API rejects writes and disallowed browser origins", async () => {
   const baseUrl = await startServer({
     configuredOrigins: "",

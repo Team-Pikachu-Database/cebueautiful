@@ -40,9 +40,15 @@ if (configuredApiUrl) {
 
 fs.mkdirSync(outputDirectory, { recursive: true });
 
-for (const file of ["index.html", "script.js", "style.css"]) {
+for (const file of ["index.html", "developer.html", "script.js", "developer.js", "style.css"]) {
   fs.copyFileSync(path.join(projectRoot, file), path.join(outputDirectory, file));
 }
+
+fs.cpSync(
+  path.join(projectRoot, "logo_folder"),
+  path.join(outputDirectory, "logo_folder"),
+  { recursive: true }
+);
 
 for (const directory of [
   "images",

@@ -11,7 +11,7 @@
     <div class="header-top container">
       <a href="#" class="logo" aria-label="CebuStays home">CebuStays</a>
       <div class="header-actions">
-        <span class="currency-tag" title="Prices shown in Philippine pesos">PHP ₱</span>
+        <a class="btn btn-project" id="developer-project-link" href="developer.html" hidden>Go to project</a>
         <button type="button" class="btn btn-account" id="account-open">Account</button>
       </div>
     </div>
@@ -213,7 +213,7 @@
         </div>
       </div>
 
-      <!-- HOTEL INFORMATION -->
+      <!-- HOTEL SUMMARY -->
       <div class="detail-information">
         <span class="detail-location" id="detail-location"></span>
 
@@ -230,7 +230,9 @@
 
         <h3>Hotel amenities</h3>
         <ul class="detail-amenities" id="detail-amenities"></ul>
+      </div>
 
+      <section class="booking-panel" aria-label="Room booking">
         <div class="detail-price">
           <span>Estimated total</span>
           <strong id="detail-price"></strong>
@@ -241,13 +243,43 @@
           type="button"
           class="btn btn-primary detail-availability"
           id="detail-availability">
-          See availability
+          Check availability
         </button>
 
+        <p class="booking-status" id="booking-status" aria-live="polite"></p>
+
+        <form class="booking-form" id="booking-form" hidden>
+          <label>
+            Check-in
+            <input type="date" id="booking-checkin" name="checkIn" required>
+          </label>
+          <label>
+            Check-out
+            <input type="date" id="booking-checkout" name="checkOut" required>
+          </label>
+          <label>
+            Rooms
+            <select id="booking-rooms" name="rooms" required>
+              <option value="1">1 room</option>
+            </select>
+          </label>
+          <label>
+            Guest name
+            <input name="guestName" type="text" autocomplete="name" minlength="2" maxlength="120" required>
+          </label>
+          <label>
+            Guest email address
+            <input name="guestEmail" type="email" autocomplete="email" maxlength="254" required>
+          </label>
+          <p class="booking-total" id="booking-total"></p>
+          <button class="btn btn-primary booking-submit" type="submit">Confirm reservation</button>
+          <small class="booking-payment-note">No online payment is collected. You can pay the property directly.</small>
+        </form>
+
         <p class="detail-note">
-          Demo listing — confirm hotel details and rates before booking.
+          Room availability is limited. Your dates and rooms are reserved when your booking is confirmed.
         </p>
-      </div>
+      </section>
     </section>
   </div>
 

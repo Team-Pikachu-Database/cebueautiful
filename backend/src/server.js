@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { createServer as createHttpServer } from "node:http";
 import { AuthError } from "./auth.js";
+import { BookingError } from "./bookings.js";
 
 const MAX_AUTH_BODY_BYTES = 8192;
 const SESSION_COOKIE_NAME = "cebu_stays_session";
@@ -232,6 +233,7 @@ export function createServer({
   codespaceName,
   supabaseUrl,
   auth,
+  bookings,
   apiPort = 3000,
   logger = console.error
 }) {
@@ -283,6 +285,64 @@ export function createServer({
         return;
       }
       await handleAuthRequest({ request, response, pathname, auth, requestId });
+      return;
+    }
+
+    const availabilityMatch = pathname.match(/^\/api\/hotels\/([1-9]\d{0,18})\/availability$/);
+    if (availabilityMatch || pathname === "/api/bookings") {
+      if (!bookings) {
+        sendJson(response, 503, { error: "Booking service is not configured.", requestId });
+        return;
+      }
+
+      if (pathname === "/api/bookings" && request.method === "POST" && !origin) {
+        sendJson(response, 403, {
+          error: "An allowed browser origin is required.",
+          requestId
+        });
+        return;
+      }
+
+      try {
+        if (availabilityMatch && request.method === "GET") {
+          const checkIn = new URL(request.url, "http://localhost").searchParams.get("checkIn");
+          const checkOut = new URL(request.url, "http://localhost").searchParams.get("checkOut");
+          const availability = await bookings.getAvailability(
+            availabilityMatch[1],
+            checkIn,
+            checkOut
+          );
+          sendJson(response, 200, { availability, requestId });
+          return;
+        }
+
+        if (pathname === "/api/bookings" && request.method === "POST") {
+          const body = await readJsonBody(request);
+          const booking = await bookings.createBooking(body);
+          sendJson(response, 201, { booking, requestId });
+          return;
+        }
+
+        response.setHeader("Allow", availabilityMatch ? "GET, OPTIONS" : "POST, OPTIONS");
+        sendJson(response, 405, { error: "Method not allowed.", requestId });
+      } catch (error) {
+        const status = error instanceof BookingError || error instanceof AuthError
+          ? error.status
+          : 500;
+        if (status >= 500) {
+          logger(JSON.stringify({
+            event: "booking_request_failed",
+            requestId,
+            errorCode: error?.code ?? "UNEXPECTED"
+          }));
+        }
+        sendJson(response, status, {
+          error: error instanceof BookingError || error instanceof AuthError
+            ? error.message
+            : "The booking request could not be completed.",
+          requestId
+        });
+      }
       return;
     }
 

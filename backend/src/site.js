@@ -7,9 +7,13 @@ const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const staticFiles = new Map([
   ["/", ["index.html", "text/html; charset=utf-8"]],
   ["/index.html", ["index.html", "text/html; charset=utf-8"]],
+  ["/developer.html", ["developer.html", "text/html; charset=utf-8"]],
   ["/config.js", ["config.js", "text/javascript; charset=utf-8"]],
+  ["/developer.js", ["developer.js", "text/javascript; charset=utf-8"]],
   ["/script.js", ["script.js", "text/javascript; charset=utf-8"]],
-  ["/style.css", ["style.css", "text/css; charset=utf-8"]]
+  ["/style.css", ["style.css", "text/css; charset=utf-8"]],
+  ["/logo_folder/github.png", ["logo_folder/github.png", "image/png"]],
+  ["/logo_folder/supabase.jpeg", ["logo_folder/supabase.jpeg", "image/jpeg"]]
 ]);
 
 function sendJson(response, status, body) {

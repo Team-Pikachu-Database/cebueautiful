@@ -4,6 +4,7 @@ import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client.ts";
 import { createAuthService } from "./auth.js";
+import { createBookingService } from "./bookings.js";
 import { createServer } from "./server.js";
 import { createSiteServer } from "./site.js";
 
@@ -46,6 +47,7 @@ const auth = createAuthService({
   pool,
   sessionTtlHours: process.env.CENTRAL_SESSION_TTL_HOURS
 });
+const bookings = createBookingService({ pool });
 const publicHost = process.env.CENTRAL_HOST || (process.env.PORT ? "0.0.0.0" : "127.0.0.1");
 const publicPort = Number(process.env.PORT || process.env.CENTRAL_PORT || 3000);
 const frontendPort = Number(
@@ -83,6 +85,7 @@ const server = createServer({
   codespaceName: process.env.CODESPACE_NAME,
   supabaseUrl,
   auth,
+  bookings,
   apiPort
 });
 const siteServer = serveSite ? createSiteServer({

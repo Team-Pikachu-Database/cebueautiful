@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Developer workspace – CebuStays</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="developer-page">
+  <header class="site-header">
+    <div class="header-top container">
+      <a href="./" class="logo" aria-label="CebuStays home">CebuStays</a>
+      <span class="developer-badge">Developer workspace</span>
+    </div>
+  </header>
+
+  <main class="container developer-main">
+    <section class="developer-card" aria-labelledby="developer-title">
+      <span class="account-kicker">CEBUSTAYS DEVELOPER</span>
+      <h1 id="developer-title">Choose a project</h1>
+      <p class="developer-intro">Select where you want to continue.</p>
+      <p class="developer-status" id="developer-status" aria-live="polite">Checking your developer session…</p>
+
+      <div class="developer-destinations" id="developer-destinations" hidden>
+        <a class="developer-destination destination-supabase" href="https://supabase.com/dashboard/project/jgsrgzrgiznknvtxhats" target="_blank" rel="noopener noreferrer">
+          <span class="destination-brand">
+            <img class="destination-logo supabase-logo" src="logo_folder/supabase.jpeg" alt="">
+            <span class="destination-brand-name">supabase</span>
+          </span>
+          <span class="destination-kicker">DATABASE &amp; BACKEND</span>
+          <strong>Supabase project</strong>
+          <span class="destination-description">Open the CebuStays project dashboard</span>
+          <span class="destination-action">Open project <span aria-hidden="true">↗</span></span>
+        </a>
+        <a class="developer-destination destination-github" href="https://github.com/Team-Pikachu-Database" target="_blank" rel="noopener noreferrer">
+          <span class="destination-brand">
+            <img class="destination-logo github-logo" src="logo_folder/github.png" alt="">
+            <span class="destination-brand-name">GitHub</span>
+          </span>
+          <span class="destination-kicker">SOURCE CODE</span>
+          <strong>Team-Pikachu-Database</strong>
+          <span class="destination-description">Open the GitHub organization and its repositories</span>
+          <span class="destination-action">Open organization <span aria-hidden="true">↗</span></span>
+        </a>
+      </div>
+
+      <div class="developer-actions" id="developer-actions" hidden>
+        <strong id="developer-email"></strong>
+        <button class="btn btn-ghost" type="button" id="developer-logout">Sign out</button>
+        <a class="developer-home" href="./">Return to CebuStays</a>
+      </div>
+
+      <button class="btn btn-primary developer-retry" type="button" id="developer-retry" hidden>Try again</button>
+    </section>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="developer.js"></script>
+</body>
+</html>

@@ -3,6 +3,8 @@
 `npm start` runs the private API on port `3000` and the website with a same-origin API proxy on port `5505`. The browser calls only port `5505`; the site server forwards `/api/*` requests internally to port `3000`. This avoids Codespaces cross-port preflight failures without exposing the database API publicly.
 
 - `GET /api/hotels` returns selected fields from `public.sen` and ordered photos from `public.sen_images`. Photos in Supabase Storage use public bucket URLs; local-development photos in `images2` through `images8` use paths served by the frontend on port `5505`.
+- `GET /api/hotels/:id/availability?checkIn=YYYY-MM-DD&checkOut=YYYY-MM-DD` returns remaining rooms for a date range.
+- `POST /api/bookings` creates a no-online-payment reservation. Inventory is locked per property during checkout so concurrent reservations cannot exceed its room limit. The API calculates the total from the stored nightly rate.
 - `GET /api/health` checks database connectivity.
 - `/api/auth/*` provides email/password registration, sign-in, sign-out, and session lookup. Passwords use scrypt hashes; sessions are stored as hashes in PostgreSQL and sent as HttpOnly cookies. Developer registration requires a private invite code.
 
@@ -12,7 +14,7 @@
 2. Download the database CA certificate from Supabase **Database Settings → SSL Configuration** and set `DATABASE_SSL_CA` to its local path. The server requires this CA and verifies the TLS certificate; it does not fall back to insecure TLS.
 3. Run on Node.js 24 or later and start the app with `npm start`; the prestart script generates the Prisma client. Open the frontend at `http://127.0.0.1:5505` or use the forwarded Codespaces port 5505. Do not run VS Code Live Server at the same time; `npm start` now owns port `5505`. Port `3000` remains the private API service.
 
-4. Run `npm run db:accounts` to create or verify the account, session, and invite tables. To issue unique, one-use developer codes, run `npm run accounts:invites -- 12`. The command prints the codes once and stores only their hashes; save the printed codes securely. Standard accounts do not need an invite code. Each developer code can create only one account.
+4. Run `npm run db:accounts` to create or verify the account, session, invite, and room-booking tables. Existing properties receive an initial limit of five rooms each. To change a property's limit, update `public.hotel_room_inventory.total_rooms` for its `hotel_id`. To issue unique, one-use developer codes, run `npm run accounts:invites -- 12`. The command prints the codes once and stores only their hashes; save the printed codes securely. Standard accounts do not need an invite code. Each developer code can create only one account.
 
 ## GitHub Pages frontend with a hosted API
 
@@ -26,6 +28,6 @@ Never place database credentials or Supabase secret keys in frontend code or com
 
 ## Database access boundary
 
-This server exposes only the hotel's public catalogue and has no write routes. It selects only fields required by the listing UI. The live table has RLS enabled but no policies; the current server-side database connection may bypass RLS if it uses an owner or privileged role. Before production, use a dedicated database login limited to `SELECT` on `public.sen` and configure an explicit, reviewed read policy for that login. Do not use this connection for guest data, bookings, payments, or role management.
+The hotel catalogue selects only fields required by the listing UI. Booking writes are handled server-side; the browser never connects directly to the database. The booking and inventory tables have RLS enabled and direct access revoked from `anon` and `authenticated`. The server database connection must be allowed to insert and update these tables. Before production, use a dedicated least-privilege database login with only the required catalogue read and booking/inventory permissions.
 
-Booking, password reset, email verification, payment, and persistent rate limiting are not implemented. A developer invite grants a developer role only; authorization for future developer-only features must still be enforced by the API.
+Online payment, booking email notifications, password reset, email verification, and persistent rate limiting are not implemented. The reservation confirmation is displayed to the guest with a booking reference. A developer invite grants a developer role only; authorization for future developer-only features must still be enforced by the API.
