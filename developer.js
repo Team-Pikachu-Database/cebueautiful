@@ -1,8 +1,11 @@
 "use strict";
 
-const API_BASE_URL = typeof window.CEBUSTAYS_CONFIG?.apiBaseUrl === "string"
+const configuredApiBaseUrl = typeof window.CEBUSTAYS_CONFIG?.apiBaseUrl === "string"
   ? window.CEBUSTAYS_CONFIG.apiBaseUrl.trim().replace(/\/+$/, "")
   : "";
+const API_BASE_URL = window.location.port === "5505"
+  ? ""
+  : configuredApiBaseUrl;
 const status = document.getElementById("developer-status");
 const destinations = document.getElementById("developer-destinations");
 const actions = document.getElementById("developer-actions");

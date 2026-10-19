@@ -36,6 +36,8 @@ Run `npm run build:pages` to create the static artifact locally. It includes `in
 
 Run `npm test` and `npm run db:validate` before pushing. GitHub Pages does not run the Node API, so hotel data, registration, sign-in, and sign-out require the separately deployed API to be healthy.
 
+For a local VS Code Live Server preview on port `5500`, `config.js` points to the hosted Render API, so collaborators do not need database credentials just to load listings. The API must be redeployed after changes to its CORS allowlist. Local Live Server bookings use the shared database and create real reservations; use the Node backend on port `5505` with a separate test database for booking tests.
+
 ## Still needed
 
 - Rotate the Supabase database password exposed through `backend/.env` history and update the Render secret `DATABASE_URL`.

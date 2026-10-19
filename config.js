@@ -1,3 +1,3 @@
 window.CEBUSTAYS_CONFIG = Object.freeze({
-  apiBaseUrl: ""
+  apiBaseUrl: "https://cebustays-api.onrender.com"
 });

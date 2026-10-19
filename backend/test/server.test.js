@@ -199,6 +199,22 @@ test("the GitHub Pages project origin can load the public catalogue", async () =
   assert.equal(response.headers.get("access-control-allow-credentials"), "true");
 });
 
+test("local Live Server origins can load the hosted catalogue", async () => {
+  const baseUrl = await startServer({
+    configuredOrigins: "",
+    logger: () => {},
+    prisma: { sen: { findMany: async () => [] } }
+  });
+
+  for (const origin of ["http://127.0.0.1:5500", "http://localhost:5500"]) {
+    const response = await fetch(`${baseUrl}/api/hotels`, {
+      headers: { Origin: origin }
+    });
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("access-control-allow-origin"), origin);
+  }
+});
+
 test("availability and booking routes serve date-specific rooms and reservation confirmations", async () => {
   const stay = {
     checkIn: "2027-05-10",
