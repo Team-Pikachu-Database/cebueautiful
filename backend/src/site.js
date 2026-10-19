@@ -35,13 +35,13 @@ function allowedSiteOrigins(configuredOrigins = "", codespaceName = "") {
   return new Set(origins);
 }
 
-function forwardApiRequest(request, response, { apiPort, frontendPort }) {
+function forwardApiRequest(request, response, { apiPort }) {
   const headers = { ...request.headers, host: `127.0.0.1:${apiPort}` };
   delete headers.connection;
   delete headers["transfer-encoding"];
 
   if (request.headers.origin) {
-    headers.origin = `http://127.0.0.1:${frontendPort}`;
+    headers.origin = `http://127.0.0.1:${apiPort}`;
   }
 
   const upstream = httpRequest({
@@ -116,7 +116,7 @@ export function createSiteServer({
         return;
       }
 
-      forwardApiRequest(request, response, { apiPort, frontendPort });
+      forwardApiRequest(request, response, { apiPort });
       return;
     }
 

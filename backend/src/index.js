@@ -46,46 +46,69 @@ const auth = createAuthService({
   pool,
   sessionTtlHours: process.env.CENTRAL_SESSION_TTL_HOURS
 });
-const host = process.env.CENTRAL_HOST || (process.env.PORT ? "0.0.0.0" : "127.0.0.1");
-const port = Number(process.env.PORT || process.env.CENTRAL_PORT || 3000);
-const frontendPort = Number(process.env.CENTRAL_FRONTEND_PORT || 5505);
+const publicHost = process.env.CENTRAL_HOST || (process.env.PORT ? "0.0.0.0" : "127.0.0.1");
+const publicPort = Number(process.env.PORT || process.env.CENTRAL_PORT || 3000);
+const frontendPort = Number(
+  process.env.CENTRAL_FRONTEND_PORT || (process.env.PORT ? publicPort : 5505)
+);
+const singleOrigin = process.env.CENTRAL_SINGLE_ORIGIN === "true";
+const apiHost = singleOrigin ? "127.0.0.1" : publicHost;
+const apiPort = singleOrigin
+  ? Number(process.env.CENTRAL_API_INTERNAL_PORT || 3101)
+  : publicPort;
 const serveSite = process.env.CENTRAL_SERVE_SITE !== "false";
 
 if (
-  !Number.isInteger(port) || port < 1 || port > 65535 ||
+  !Number.isInteger(publicPort) || publicPort < 1 || publicPort > 65535 ||
+  !Number.isInteger(apiPort) || apiPort < 1 || apiPort > 65535 ||
   (serveSite && (
     !Number.isInteger(frontendPort) ||
     frontendPort < 1 ||
     frontendPort > 65535 ||
-    frontendPort === port
-  ))
+    (!singleOrigin && frontendPort === publicPort)
+  )) ||
+  (singleOrigin && (!serveSite || apiPort === publicPort))
 ) {
-  throw new Error("CENTRAL_PORT and CENTRAL_FRONTEND_PORT must be distinct valid TCP ports.");
+  throw new Error("Configured API and website ports must be valid and distinct where required.");
 }
+
+const configuredOrigins = process.env.CENTRAL_ALLOWED_ORIGINS;
+const apiOrigins = singleOrigin
+  ? [configuredOrigins, `http://127.0.0.1:${apiPort}`].filter(Boolean).join(",")
+  : configuredOrigins;
 
 const server = createServer({
   prisma,
-  configuredOrigins: process.env.CENTRAL_ALLOWED_ORIGINS,
+  configuredOrigins: apiOrigins,
   codespaceName: process.env.CODESPACE_NAME,
   supabaseUrl,
   auth,
-  apiPort: port
+  apiPort
 });
 const siteServer = serveSite ? createSiteServer({
-  apiPort: port,
+  apiPort,
   frontendPort,
-  configuredOrigins: process.env.CENTRAL_ALLOWED_ORIGINS,
+  configuredOrigins,
   codespaceName: process.env.CODESPACE_NAME
 }) : null;
 
-server.listen(port, host, () => {
-  console.log(`CebuStays API listening on http://${host}:${port}`);
-  if (siteServer) {
-    siteServer.listen(frontendPort, host, () => {
-      console.log(`CebuStays website listening on http://${host}:${frontendPort}`);
+if (siteServer && singleOrigin) {
+  server.listen(apiPort, apiHost, () => {
+    console.log(`CebuStays internal API listening on http://${apiHost}:${apiPort}`);
+    siteServer.listen(publicPort, publicHost, () => {
+      console.log(`CebuStays website/API listening on http://${publicHost}:${publicPort}`);
     });
-  }
-});
+  });
+} else {
+  server.listen(publicPort, publicHost, () => {
+    console.log(`CebuStays API listening on http://${publicHost}:${publicPort}`);
+    if (siteServer) {
+      siteServer.listen(frontendPort, publicHost, () => {
+        console.log(`CebuStays website listening on http://${publicHost}:${frontendPort}`);
+      });
+    }
+  });
+}
 
 async function shutdown() {
   const close = instance => new Promise((resolve, reject) => {

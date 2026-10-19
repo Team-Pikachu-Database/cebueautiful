@@ -69,7 +69,7 @@ test("the site proxies Codespaces API requests to the local API origin", async (
 
   assert.equal(response.status, 200);
   assert.equal(body.path, "/api/auth/me");
-  assert.equal(body.origin, "http://127.0.0.1:5505");
+  assert.equal(body.origin, `http://127.0.0.1:${apiPort}`);
   assert.equal(body.host, `127.0.0.1:${apiPort}`);
   assert.equal(body.cookie, "cebu_stays_session=browser-session");
   assert.match(response.headers.get("set-cookie"), /HttpOnly/);
