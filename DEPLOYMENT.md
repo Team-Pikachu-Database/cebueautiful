@@ -8,7 +8,7 @@
 - The API uses Render's free service URL: `https://cebustays-api.onrender.com`.
 - The public static-only repository is `Team-Pikachu-Database/cebueautiful`; backend code and database credentials remain in the private source repository.
 - The frontend uses a Node API for hotel data and accounts. GitHub Pages cannot host that API.
-- No paid domain or separate DNS provider is required for the free URLs. However, GitHub Pages and Render are on different site domains, so browsers may block the cross-site HttpOnly account cookie. The public hotel catalogue can still use the API; sign-in and registration are not reliable in this setup.
+- No paid domain or separate DNS provider is required for the free URLs. GitHub Pages and Render are on different site domains; secure API deployments use `SameSite=None; Secure` for the HttpOnly account cookie, but browsers may still block third-party cookies. Use same-site custom subdomains if the browser blocks account sessions.
 - The free deployment uses GitHub Pages for static files and Render for the API; custom DNS is not needed.
 
 ## Prepare the backend

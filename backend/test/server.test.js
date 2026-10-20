@@ -446,6 +446,45 @@ test("account registration, session lookup, and logout use an HttpOnly cookie", 
   assert.equal((await afterLogout.json()).user, null);
 });
 
+test("secure preview sessions use cross-site cookie attributes", async () => {
+  const origin = "https://preview-5505.app.github.dev";
+  const baseUrl = await startServer({
+    configuredOrigins: "",
+    logger: () => {},
+    auth: {
+      sessionTtlSeconds: 604800,
+      login: async () => ({
+        user: { id: "user-1", email: "developer@example.com", role: "developer" },
+        token: "s".repeat(43)
+      })
+    },
+    prisma: { sen: { findMany: async () => [] } }
+  });
+
+  const response = await new Promise((resolve, reject) => {
+    const request = httpRequest(`${baseUrl}/api/auth/login`, {
+      method: "POST",
+      headers: {
+        host: "preview-3000.app.github.dev",
+        origin,
+        "content-type": "application/json"
+      }
+    }, result => {
+      result.resume();
+      result.on("end", () => resolve(result));
+    });
+    request.on("error", reject);
+    request.end(JSON.stringify({
+      email: "developer@example.com",
+      password: "valid-password"
+    }));
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.match(response.headers["set-cookie"][0], /SameSite=None/);
+  assert.match(response.headers["set-cookie"][0], /; Secure/);
+});
+
 test("Codespaces preview API accepts its origin when the proxy rewrites the host", async () => {
   const baseUrl = await startServer({
     configuredOrigins: "",

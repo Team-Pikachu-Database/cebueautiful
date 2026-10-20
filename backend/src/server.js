@@ -119,9 +119,10 @@ function setSessionCookie(request, response, token, maxAge) {
     forwardedProtocol === "https" ||
     process.env.NODE_ENV === "production" ||
     /\.app\.github\.dev(?::\d+)?$/i.test(request.headers.host ?? "");
+  const sameSite = secure ? "None" : "Lax";
   response.setHeader(
     "Set-Cookie",
-    `${SESSION_COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure ? "; Secure" : ""}`
+    `${SESSION_COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=${sameSite}; Max-Age=${maxAge}${secure ? "; Secure" : ""}`
   );
 }
 
