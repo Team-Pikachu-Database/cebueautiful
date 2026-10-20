@@ -61,6 +61,8 @@ const checkboxes = document.querySelectorAll(
 
 let hotels = [];
 let signedInAccount = null;
+let appliedCheckIn = "";
+let appliedCheckOut = "";
 
 const accountDialog = document.getElementById("account-dialog");
 const accountMessage = document.getElementById("account-message");
@@ -255,10 +257,8 @@ function openHotelDetails(hotel, photoIndex = 1) {
   bookingForm.reset();
   bookingForm.hidden = true;
   document.getElementById("booking-status").textContent = "";
-  document.getElementById("booking-checkin").value =
-    document.getElementById("checkin").value;
-  document.getElementById("booking-checkout").value =
-    document.getElementById("checkout").value;
+  document.getElementById("booking-checkin").value = appliedCheckIn;
+  document.getElementById("booking-checkout").value = appliedCheckOut;
   setBookingDateLimits();
 
   document.getElementById("detail-name").textContent =
@@ -626,8 +626,8 @@ function scoreLabel(score) {
 /* ---------- CALCULATE NIGHTS ---------- */
 
 function nights() {
-  const checkin = document.getElementById("checkin").value;
-  const checkout = document.getElementById("checkout").value;
+  const checkin = appliedCheckIn;
+  const checkout = appliedCheckOut;
 
   if (!checkin || !checkout) return 1;
 
@@ -1023,10 +1023,14 @@ function setDefaultDates() {
   checkin.min = formatDate(today);
 
   checkin.value = formatDate(today);
+  checkin.required = true;
 
   checkout.min = formatDate(tomorrow);
 
   checkout.value = formatDate(tomorrow);
+  checkout.required = true;
+  appliedCheckIn = checkin.value;
+  appliedCheckOut = checkout.value;
 
   checkin.addEventListener("change", () => {
     if (!checkin.value) return;
@@ -1048,10 +1052,8 @@ function setDefaultDates() {
       checkout.value = minimumCheckout;
     }
 
-    render();
   });
 
-  checkout.addEventListener("change", render);
 }
 
 /* ---------- SEARCH FORM ---------- */
@@ -1061,6 +1063,12 @@ document
   .addEventListener("submit", event => {
     event.preventDefault();
 
+    const checkin = document.getElementById("checkin");
+    const checkout = document.getElementById("checkout");
+    if (!checkin.reportValidity() || !checkout.reportValidity()) return;
+
+    appliedCheckIn = checkin.value;
+    appliedCheckOut = checkout.value;
     render();
   });
 
