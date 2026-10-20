@@ -13,7 +13,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: CENTRAL_ALLOWED_ORIGINS
-        value: https://team-pikachu-database.github.io
+        value: https://team-pikachu-database.github.io,https://ideal-acorn-jr5xjggj7xrx3qpwj-5506.app.github.dev
       - key: CENTRAL_SESSION_TTL_HOURS
         value: "168"
       - key: DATABASE_URL

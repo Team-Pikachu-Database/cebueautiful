@@ -215,6 +215,46 @@ test("local Live Server origins can load the hosted catalogue", async () => {
   }
 });
 
+test("the configured Codespaces preview origin can load the hosted catalogue", async () => {
+  const origin = "https://ideal-acorn-jr5xjggj7xrx3qpwj-5506.app.github.dev";
+  const baseUrl = await startServer({
+    configuredOrigins: origin,
+    logger: () => {},
+    prisma: { sen: { findMany: async () => [] } }
+  });
+
+  const response = await fetch(`${baseUrl}/api/hotels`, {
+    headers: { Origin: origin }
+  });
+  const unconfiguredOriginResponse = await fetch(`${baseUrl}/api/health`, {
+    headers: { Origin: "https://other-codespace-5506.app.github.dev" }
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("access-control-allow-origin"), origin);
+  assert.equal(unconfiguredOriginResponse.status, 403);
+});
+
+test("Codespaces origins can read the public catalogue without opening other API routes", async () => {
+  const origin = "https://another-codespace-5506.app.github.dev";
+  const baseUrl = await startServer({
+    configuredOrigins: "",
+    logger: () => {},
+    prisma: { sen: { findMany: async () => [] } }
+  });
+
+  const catalogueResponse = await fetch(`${baseUrl}/api/hotels`, {
+    headers: { Origin: origin }
+  });
+  const healthResponse = await fetch(`${baseUrl}/api/health`, {
+    headers: { Origin: origin }
+  });
+
+  assert.equal(catalogueResponse.status, 200);
+  assert.equal(catalogueResponse.headers.get("access-control-allow-origin"), origin);
+  assert.equal(healthResponse.status, 403);
+});
+
 test("availability and booking routes serve date-specific rooms and reservation confirmations", async () => {
   const stay = {
     checkIn: "2027-05-10",
@@ -397,7 +437,7 @@ test("Codespaces preview API accepts its origin when the proxy rewrites the host
     "https://ideal-acorn-123-5505.app.github.dev"
   );
   const differentWorkspaceResponse = await requestFromOrigin(
-    `${baseUrl}/api/hotels`,
+    `${baseUrl}/api/health`,
     "127.0.0.1:3000",
     "https://other-workspace-123-5505.app.github.dev"
   );

@@ -229,6 +229,21 @@ function isCodespacesPreviewOriginAllowed(origin, requestHost, apiPort) {
   }
 }
 
+function isCodespacesCatalogueOriginAllowed(origin, pathname, method) {
+  if (pathname !== "/api/hotels" || !["GET", "OPTIONS"].includes(method)) {
+    return false;
+  }
+
+  try {
+    const originUrl = new URL(origin);
+    return originUrl.protocol === "https:" &&
+      originUrl.origin === origin &&
+      /^[a-z0-9-]+-\d+\.app\.github\.dev$/i.test(originUrl.hostname);
+  } catch {
+    return false;
+  }
+}
+
 export function createServer({
   prisma,
   configuredOrigins,
@@ -248,11 +263,20 @@ export function createServer({
     response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     response.setHeader("X-Frame-Options", "DENY");
 
+    let pathname;
+    try {
+      pathname = new URL(request.url, "http://localhost").pathname;
+    } catch {
+      sendJson(response, 400, { error: "Invalid request URL.", requestId });
+      return;
+    }
+
     const origin = request.headers.origin;
     if (origin) {
       if (
         !allowedOrigins.has(origin) &&
-        !isCodespacesPreviewOriginAllowed(origin, request.headers.host ?? "", apiPort)
+        !isCodespacesPreviewOriginAllowed(origin, request.headers.host ?? "", apiPort) &&
+        !isCodespacesCatalogueOriginAllowed(origin, pathname, request.method)
       ) {
         sendJson(response, 403, { error: "Origin is not allowed.", requestId });
         return;
@@ -262,14 +286,6 @@ export function createServer({
       response.setHeader("Vary", "Origin");
       response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
       response.setHeader("Access-Control-Allow-Credentials", "true");
-    }
-
-    let pathname;
-    try {
-      pathname = new URL(request.url, "http://localhost").pathname;
-    } catch {
-      sendJson(response, 400, { error: "Invalid request URL.", requestId });
-      return;
     }
 
     if (request.method === "OPTIONS") {
