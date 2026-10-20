@@ -1,8 +1,11 @@
 "use strict";
 
-const API_BASE_URL = typeof window.CEBUSTAYS_CONFIG?.apiBaseUrl === "string"
+const configuredApiBaseUrl = typeof window.CEBUSTAYS_CONFIG?.apiBaseUrl === "string"
   ? window.CEBUSTAYS_CONFIG.apiBaseUrl.trim().replace(/\/+$/, "")
   : "";
+const API_BASE_URL = window.location.port === "5505"
+  ? ""
+  : configuredApiBaseUrl;
 const API_URL = `${API_BASE_URL}/api/hotels`;
 
 const peso = new Intl.NumberFormat("en-PH", {
@@ -82,10 +85,12 @@ function updateAccountDisplay(user) {
   signedInAccount = user;
   const isSignedIn = Boolean(user);
   const accountButton = document.getElementById("account-open");
+  const developerProjectLink = document.getElementById("developer-project-link");
 
   accountEntry.hidden = isSignedIn;
   signedInPanel.hidden = !isSignedIn;
   accountButton.textContent = isSignedIn ? "Account" : "Sign in";
+  developerProjectLink.hidden = user?.role !== "developer";
 
   if (isSignedIn) {
     document.getElementById("account-email").textContent = user.email;
@@ -127,6 +132,10 @@ async function submitAccountForm(event, endpoint) {
     });
     form.reset();
     updateAccountDisplay(data.user);
+    if (data.user?.role === "developer") {
+      window.location.assign("developer.html");
+      return;
+    }
     accountMessage.textContent = "You're signed in.";
   } catch (error) {
     accountMessage.textContent = error.message;
@@ -242,6 +251,15 @@ function showDetailPhoto(index) {
 function openHotelDetails(hotel, photoIndex = 1) {
   activeDetailHotel = hotel;
   lastFocusedElement = document.activeElement;
+  const bookingForm = document.getElementById("booking-form");
+  bookingForm.reset();
+  bookingForm.hidden = true;
+  document.getElementById("booking-status").textContent = "";
+  document.getElementById("booking-checkin").value =
+    document.getElementById("checkin").value;
+  document.getElementById("booking-checkout").value =
+    document.getElementById("checkout").value;
+  setBookingDateLimits();
 
   document.getElementById("detail-name").textContent =
     hotel.name;
@@ -416,21 +434,169 @@ document.addEventListener("keydown", event => {
   }
 });
 
-/* ---------- AVAILABILITY DEMO ---------- */
+/* ---------- ROOM AVAILABILITY AND BOOKING ---------- */
+
+function setBookingDateLimits() {
+  const checkin = document.getElementById("booking-checkin");
+  const checkout = document.getElementById("booking-checkout");
+  const today = new Date();
+  const todayText = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, "0"),
+    String(today.getDate()).padStart(2, "0")
+  ].join("-");
+
+  checkin.min = todayText;
+  if (!checkin.value || checkin.value < todayText) checkin.value = todayText;
+  const minCheckoutDate = new Date(`${checkin.value || todayText}T00:00:00`);
+  minCheckoutDate.setDate(minCheckoutDate.getDate() + 1);
+  checkout.min = [
+    minCheckoutDate.getFullYear(),
+    String(minCheckoutDate.getMonth() + 1).padStart(2, "0"),
+    String(minCheckoutDate.getDate()).padStart(2, "0")
+  ].join("-");
+  if (!checkout.value || checkout.value < checkout.min) {
+    checkout.value = checkout.min;
+  }
+}
+
+function updateBookingTotal() {
+  if (!activeDetailHotel) return;
+  const checkin = document.getElementById("booking-checkin").value;
+  const checkout = document.getElementById("booking-checkout").value;
+  const rooms = Number(document.getElementById("booking-rooms").value || 1);
+  const stayNights = Math.max(
+    1,
+    Math.round((Date.parse(`${checkout}T00:00:00`) -
+      Date.parse(`${checkin}T00:00:00`)) / 86400000)
+  );
+  const total = Number(activeDetailHotel.price) * stayNights * rooms;
+  document.getElementById("booking-total").textContent =
+    `Estimated total for ${rooms} room${rooms === 1 ? "" : "s"} · ` +
+    `${stayNights} night${stayNights === 1 ? "" : "s"}: ` +
+    (Number.isFinite(total) && total >= 0 ? peso.format(total) : "Rate not provided");
+}
+
+async function refreshBookingAvailability() {
+  if (!activeDetailHotel) return;
+
+  const checkIn = document.getElementById("booking-checkin").value;
+  const checkOut = document.getElementById("booking-checkout").value;
+  const status = document.getElementById("booking-status");
+  const form = document.getElementById("booking-form");
+  const checkButton = document.getElementById("detail-availability");
+
+  if (!checkIn || !checkOut || checkOut <= checkIn) {
+    status.textContent = "Choose a check-in and check-out date (at least one night).";
+    form.hidden = true;
+    return;
+  }
+
+  checkButton.disabled = true;
+  checkButton.textContent = "Checking rooms…";
+  status.textContent = "";
+
+  try {
+    const params = new URLSearchParams({ checkIn, checkOut });
+    const response = await fetch(
+      `${API_BASE_URL}/api/hotels/${encodeURIComponent(activeDetailHotel.id)}/availability?${params}`,
+      { credentials: "include" }
+    );
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || "Availability could not be checked.");
+    }
+
+    const availableRooms = data.availability.availableRooms;
+    const roomsSelect = document.getElementById("booking-rooms");
+    const previousRooms = Number(roomsSelect.value || 1);
+    roomsSelect.replaceChildren();
+    for (let count = 1; count <= Math.min(availableRooms, 10); count++) {
+      roomsSelect.appendChild(el(
+        "option",
+        "",
+        `${count} room${count === 1 ? "" : "s"}`
+      ));
+      roomsSelect.lastElementChild.value = String(count);
+    }
+
+    if (availableRooms > 0) {
+      roomsSelect.value = String(Math.min(previousRooms, availableRooms));
+      form.hidden = false;
+      status.textContent =
+        `${availableRooms} of ${data.availability.totalRooms} rooms available for these dates.`;
+      updateBookingTotal();
+    } else {
+      form.hidden = true;
+      status.textContent = "Sorry, no rooms are available for those dates.";
+    }
+  } catch (error) {
+    form.hidden = true;
+    status.textContent = error.message;
+  } finally {
+    checkButton.disabled = false;
+    checkButton.textContent = "Check availability";
+  }
+}
 
 document
   .getElementById("detail-availability")
-  .addEventListener("click", () => {
-    if (!activeDetailHotel) return;
+  .addEventListener("click", refreshBookingAvailability);
 
-    const checkin = document.getElementById("checkin").value;
-    const checkout = document.getElementById("checkout").value;
+document.getElementById("booking-checkin").addEventListener("change", () => {
+  setBookingDateLimits();
+  updateBookingTotal();
+  if (!document.getElementById("booking-form").hidden) refreshBookingAvailability();
+});
 
-    alert(
-      `Demo only: availability for ${activeDetailHotel.name} ` +
-      `from ${checkin} to ${checkout}.`
-    );
-  });
+document.getElementById("booking-checkout").addEventListener("change", () => {
+  updateBookingTotal();
+  if (!document.getElementById("booking-form").hidden) refreshBookingAvailability();
+});
+
+document.getElementById("booking-rooms").addEventListener("change", updateBookingTotal);
+
+document.getElementById("booking-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!activeDetailHotel) return;
+
+  const form = event.currentTarget;
+  const submit = form.querySelector('button[type="submit"]');
+  const values = Object.fromEntries(new FormData(form));
+  const status = document.getElementById("booking-status");
+  submit.disabled = true;
+  status.textContent = "Saving your reservation…";
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/bookings`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...values,
+        hotelId: activeDetailHotel.id,
+        rooms: Number(values.rooms)
+      })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || "Your reservation could not be saved.");
+    }
+
+    const booking = data.booking;
+    form.hidden = true;
+    status.textContent =
+      `Reservation confirmed for ${booking.hotelName}. ` +
+      `Reference: ${booking.reference}. ${booking.rooms} room${booking.rooms === 1 ? "" : "s"}, ` +
+      `${booking.checkIn} to ${booking.checkOut}. Estimated total: ` +
+      `${peso.format(booking.totalPrice)}. No payment was collected.`;
+  } catch (error) {
+    status.textContent = error.message;
+    if (error.message.includes("remain")) await refreshBookingAvailability();
+  } finally {
+    submit.disabled = false;
+  }
+});
 
 /* ---------- HTML ELEMENT HELPER ---------- */
 
