@@ -235,6 +235,29 @@ test("the configured Codespaces preview origin can load the hosted catalogue", a
   assert.equal(unconfiguredOriginResponse.status, 403);
 });
 
+test("the login preflight allows the JSON content-type header", async () => {
+  const origin = "https://ideal-acorn-jr5xjggj7xrx3qpwj-5506.app.github.dev";
+  const baseUrl = await startServer({
+    configuredOrigins: origin,
+    logger: () => {},
+    prisma: { sen: { findMany: async () => [] } }
+  });
+
+  const response = await fetch(`${baseUrl}/api/auth/login`, {
+    method: "OPTIONS",
+    headers: {
+      Origin: origin,
+      "Access-Control-Request-Method": "POST",
+      "Access-Control-Request-Headers": "content-type"
+    }
+  });
+
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get("access-control-allow-origin"), origin);
+  assert.equal(response.headers.get("access-control-allow-methods"), "GET, POST, OPTIONS");
+  assert.equal(response.headers.get("access-control-allow-headers"), "Content-Type");
+});
+
 test("Codespaces origins can read the public catalogue without opening other API routes", async () => {
   const origin = "https://another-codespace-5506.app.github.dev";
   const baseUrl = await startServer({
