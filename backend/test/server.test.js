@@ -293,6 +293,29 @@ test("the login preflight allows the JSON content-type header", async () => {
   assert.equal(response.headers.get("access-control-allow-headers"), "Content-Type");
 });
 
+test("local Live Server on port 5506 can preflight account creation", async () => {
+  const origin = "http://localhost:5506";
+  const baseUrl = await startServer({
+    configuredOrigins: "",
+    logger: () => {},
+    prisma: { sen: { findMany: async () => [] } }
+  });
+
+  const response = await fetch(`${baseUrl}/api/auth/register`, {
+    method: "OPTIONS",
+    headers: {
+      Origin: origin,
+      "Access-Control-Request-Method": "POST",
+      "Access-Control-Request-Headers": "content-type"
+    }
+  });
+
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get("access-control-allow-origin"), origin);
+  assert.equal(response.headers.get("access-control-allow-credentials"), "true");
+  assert.equal(response.headers.get("access-control-allow-headers"), "Content-Type");
+});
+
 test("Codespaces origins can read the public catalogue without opening other API routes", async () => {
   const origin = "https://another-codespace-5506.app.github.dev";
   const baseUrl = await startServer({
@@ -318,9 +341,18 @@ test("availability and booking routes serve date-specific rooms and reservation 
     checkIn: "2027-05-10",
     checkOut: "2027-05-12"
   };
+  const user = {
+    id: "d7df71f3-8fca-498a-b91d-93370d05ec6a",
+    email: "current-account@example.com",
+    displayName: "Current Account"
+  };
+  let bookingInput;
   const baseUrl = await startServer({
     configuredOrigins: "",
     logger: () => {},
+    auth: {
+      getSession: async token => token === "s".repeat(43) ? user : null
+    },
     bookings: {
       getAvailability: async (hotelId, checkIn, checkOut) => ({
         hotelId,
@@ -330,14 +362,17 @@ test("availability and booking routes serve date-specific rooms and reservation 
         bookedRooms: 2,
         availableRooms: 3
       }),
-      createBooking: async input => ({
-        reference: "CS-ABC123DEF456",
-        hotelName: "Example Hotel",
-        checkIn: input.checkIn,
-        checkOut: input.checkOut,
-        rooms: input.rooms,
-        totalPrice: 2500
-      })
+      createBooking: async input => {
+        bookingInput = input;
+        return {
+          reference: "CS-ABC123DEF456",
+          hotelName: "Example Hotel",
+          checkIn: input.checkIn,
+          checkOut: input.checkOut,
+          rooms: input.rooms,
+          totalPrice: 2500
+        };
+      }
     },
     prisma: { sen: { findMany: async () => [] } }
   });
@@ -353,6 +388,7 @@ test("availability and booking routes serve date-specific rooms and reservation 
     method: "POST",
     headers: {
       Origin: "http://127.0.0.1:5505",
+      Cookie: `cebu_stays_session=${"s".repeat(43)}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
@@ -367,6 +403,37 @@ test("availability and booking routes serve date-specific rooms and reservation 
   assert.equal(reservationResponse.status, 201);
   assert.equal(reservationBody.booking.reference, "CS-ABC123DEF456");
   assert.equal(reservationBody.booking.totalPrice, 2500);
+  assert.equal(bookingInput.guestName, user.displayName);
+  assert.equal(bookingInput.guestEmail, user.email);
+});
+
+test("guests cannot create reservations through the booking API", async () => {
+  let createCalled = false;
+  const baseUrl = await startServer({
+    configuredOrigins: "",
+    logger: () => {},
+    auth: { getSession: async () => null },
+    bookings: {
+      createBooking: async () => {
+        createCalled = true;
+        return {};
+      }
+    },
+    prisma: { sen: { findMany: async () => [] } }
+  });
+
+  const response = await fetch(`${baseUrl}/api/bookings`, {
+    method: "POST",
+    headers: {
+      Origin: "http://127.0.0.1:5505",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ hotelId: "42" })
+  });
+
+  assert.equal(response.status, 401);
+  assert.equal((await response.json()).error, "Sign in to submit a reservation.");
+  assert.equal(createCalled, false);
 });
 
 test("booking writes require an allowed browser origin", async () => {
@@ -680,14 +747,16 @@ test("booking ownership is assigned from the session, not the request body", asy
       checkIn: "2027-05-10",
       checkOut: "2027-05-12",
       rooms: 1,
-      guestName: "Dave Guest",
-      guestEmail: user.email,
+      guestName: "Previous Account",
+      guestEmail: "previous-account@example.com",
       userId: "attacker-selected-id"
     })
   });
 
   assert.equal(response.status, 201);
   assert.equal(bookingInput.userId, user.id);
+  assert.equal(bookingInput.guestName, "guest");
+  assert.equal(bookingInput.guestEmail, user.email);
 });
 
 test("secure preview sessions use cross-site cookie attributes", async () => {

@@ -231,6 +231,8 @@ function allowedOriginSet(configuredOrigins = "", codespaceName = "") {
     "http://127.0.0.1:3000",
     "http://localhost:5505",
     "http://127.0.0.1:5505",
+    "http://localhost:5506",
+    "http://127.0.0.1:5506",
     "http://localhost:5500",
     "http://127.0.0.1:5500",
     "https://team-pikachu-database.github.io",
@@ -474,11 +476,20 @@ export function createServer({
         }
 
         if (pathname === "/api/bookings" && request.method === "POST") {
-          const body = await readJsonBody(request);
           const user = auth
             ? await auth.getSession(sessionTokenFromRequest(request))
             : null;
-          const booking = await bookings.createBooking({ ...body, userId: user?.id });
+          if (!user) {
+            sendJson(response, 401, { error: "Sign in to submit a reservation.", requestId });
+            return;
+          }
+          const body = await readJsonBody(request);
+          const booking = await bookings.createBooking({
+            ...body,
+            userId: user.id,
+            guestName: user.displayName || user.email.split("@", 1)[0],
+            guestEmail: user.email
+          });
           sendJson(response, 201, { booking, requestId });
           return;
         }
