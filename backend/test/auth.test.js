@@ -37,6 +37,7 @@ test("standard registration persists a standard role and only a password hash", 
             id: values[0],
             email: values[1],
             role: values[3],
+            full_name: values[4],
             created_at: new Date("2026-01-01T00:00:00.000Z")
           }] };
         }
@@ -49,12 +50,15 @@ test("standard registration persists a standard role and only a password hash", 
 
   const result = await auth.registerStandard(
     "  GUEST@EXAMPLE.COM ",
-    "a-long-and-unique-passphrase"
+    "a-long-and-unique-passphrase",
+    "Dave Guest"
   );
   const insert = queries.find(query => query.sql.startsWith("INSERT INTO public.app_users"));
 
   assert.equal(result.user.email, "guest@example.com");
   assert.equal(result.user.role, "standard");
+  assert.equal(result.user.displayName, "Dave Guest");
+  assert.equal(insert.values[4], "Dave Guest");
   assert.match(insert.values[2], /^scrypt\$/);
   assert.notEqual(insert.values[2], "a-long-and-unique-passphrase");
   assert.match(result.token, /^[A-Za-z0-9_-]{40,50}$/);
@@ -108,6 +112,7 @@ test("developer registration assigns the protected developer role with a valid i
             id: values[0],
             email: values[1],
             role: values[3],
+            full_name: values[4],
             created_at: new Date("2026-01-01T00:00:00.000Z")
           }] };
         }
@@ -126,5 +131,29 @@ test("developer registration assigns the protected developer role with a valid i
 
   assert.equal(insertedRole, "developer");
   assert.equal(result.user.role, "developer");
+  assert.equal(result.user.displayName, "dev");
   assert.equal(inviteWasClaimed, true);
+});
+
+test("profile updates normalize and persist the display name", async () => {
+  let values;
+  const auth = createAuthService({
+    pool: {
+      query: async (sql, parameters) => {
+        values = parameters;
+        return { rows: [{
+          id: parameters[0],
+          email: "guest@example.com",
+          role: "standard",
+          full_name: parameters[1],
+          created_at: new Date("2026-01-01T00:00:00.000Z")
+        }] };
+      }
+    }
+  });
+
+  const user = await auth.updateProfile("user-1", "  Dave   Guest  ");
+
+  assert.deepEqual(values, ["user-1", "Dave Guest"]);
+  assert.equal(user.displayName, "Dave Guest");
 });

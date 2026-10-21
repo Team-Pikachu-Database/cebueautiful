@@ -254,7 +254,7 @@ test("the login preflight allows the JSON content-type header", async () => {
 
   assert.equal(response.status, 204);
   assert.equal(response.headers.get("access-control-allow-origin"), origin);
-  assert.equal(response.headers.get("access-control-allow-methods"), "GET, POST, OPTIONS");
+  assert.equal(response.headers.get("access-control-allow-methods"), "GET, POST, PATCH, OPTIONS");
   assert.equal(response.headers.get("access-control-allow-headers"), "Content-Type");
 });
 
@@ -444,6 +444,129 @@ test("account registration, session lookup, and logout use an HttpOnly cookie", 
     headers: { Cookie: `cebu_stays_session=${"s".repeat(43)}` }
   });
   assert.equal((await afterLogout.json()).user, null);
+});
+
+test("account profile updates require an authenticated session", async () => {
+  const user = {
+    id: "user-1",
+    email: "guest@example.com",
+    role: "standard",
+    displayName: "Dave Guest"
+  };
+  const baseUrl = await startServer({
+    configuredOrigins: "",
+    logger: () => {},
+    auth: {
+      getSession: async token => token === "s".repeat(43) ? user : null,
+      updateProfile: async (id, displayName) => ({ ...user, id, displayName })
+    },
+    prisma: { sen: { findMany: async () => [] } }
+  });
+
+  const unauthorized = await fetch(`${baseUrl}/api/auth/me`, {
+    method: "PATCH",
+    headers: {
+      Origin: "http://127.0.0.1:5505",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ displayName: "Dave Updated" })
+  });
+  assert.equal(unauthorized.status, 401);
+
+  const originless = await fetch(`${baseUrl}/api/auth/me`, {
+    method: "PATCH",
+    headers: {
+      Cookie: `cebu_stays_session=${"s".repeat(43)}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ displayName: "Dave Updated" })
+  });
+  assert.equal(originless.status, 403);
+
+  const response = await fetch(`${baseUrl}/api/auth/me`, {
+    method: "PATCH",
+    headers: {
+      Origin: "http://127.0.0.1:5505",
+      Cookie: `cebu_stays_session=${"s".repeat(43)}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ displayName: "Dave Updated" })
+  });
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).user.displayName, "Dave Updated");
+});
+
+test("reservation history requires a session and uses that account ID", async () => {
+  const user = { id: "user-1", email: "guest@example.com", role: "standard" };
+  let requestedEmail = "";
+  const baseUrl = await startServer({
+    configuredOrigins: "",
+    logger: () => {},
+    auth: {
+      getSession: async token => token === "s".repeat(43) ? user : null
+    },
+    bookings: {
+      listForUser: async userId => {
+        requestedEmail = userId;
+        return [{ reference: "CS-ABC123DEF456" }];
+      }
+    },
+    prisma: { sen: { findMany: async () => [] } }
+  });
+
+  const unauthorized = await fetch(`${baseUrl}/api/bookings/mine`);
+  assert.equal(unauthorized.status, 401);
+
+  const response = await fetch(`${baseUrl}/api/bookings/mine`, {
+    headers: { Cookie: `cebu_stays_session=${"s".repeat(43)}` }
+  });
+  assert.equal(response.status, 200);
+  assert.equal(requestedEmail, user.id);
+  assert.deepEqual((await response.json()).reservations, [{ reference: "CS-ABC123DEF456" }]);
+});
+
+test("booking ownership is assigned from the session, not the request body", async () => {
+  const user = {
+    id: "d7df71f3-8fca-498a-b91d-93370d05ec6a",
+    email: "guest@example.com",
+    role: "standard"
+  };
+  let bookingInput;
+  const baseUrl = await startServer({
+    configuredOrigins: "",
+    logger: () => {},
+    auth: {
+      getSession: async token => token === "s".repeat(43) ? user : null
+    },
+    bookings: {
+      createBooking: async input => {
+        bookingInput = input;
+        return { reference: "CS-ABC123DEF456" };
+      }
+    },
+    prisma: { sen: { findMany: async () => [] } }
+  });
+
+  const response = await fetch(`${baseUrl}/api/bookings`, {
+    method: "POST",
+    headers: {
+      Origin: "http://127.0.0.1:5505",
+      Cookie: `cebu_stays_session=${"s".repeat(43)}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      hotelId: "42",
+      checkIn: "2027-05-10",
+      checkOut: "2027-05-12",
+      rooms: 1,
+      guestName: "Dave Guest",
+      guestEmail: user.email,
+      userId: "attacker-selected-id"
+    })
+  });
+
+  assert.equal(response.status, 201);
+  assert.equal(bookingInput.userId, user.id);
 });
 
 test("secure preview sessions use cross-site cookie attributes", async () => {

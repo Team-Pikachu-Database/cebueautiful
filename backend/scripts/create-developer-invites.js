@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import fs from "node:fs";
 import { Pool } from "pg";
 import { hashInviteCode } from "../src/auth.js";
+import { normalizeDatabaseUrl } from "../src/database-url.js";
 
 dotenv.config({ path: "backend/.env" });
 
@@ -21,13 +22,8 @@ if (!sslCaPath) {
   throw new Error("Set DATABASE_SSL_CA in backend/.env before issuing invite codes.");
 }
 
-const connectionUrl = new URL(databaseUrl);
-for (const parameter of ["sslmode", "sslrootcert", "sslcert", "sslkey"]) {
-  connectionUrl.searchParams.delete(parameter);
-}
-
 const pool = new Pool({
-  connectionString: connectionUrl.toString(),
+  connectionString: normalizeDatabaseUrl(databaseUrl),
   ssl: { ca: fs.readFileSync(sslCaPath, "utf8") },
   connectionTimeoutMillis: 5000
 });

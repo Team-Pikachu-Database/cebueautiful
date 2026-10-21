@@ -13,7 +13,21 @@
       <a href="#" class="logo" aria-label="CebuStays home">CebuStays</a>
       <div class="header-actions">
         <a class="btn btn-project" id="developer-project-link" href="developer.html" hidden>Go to project</a>
-        <button type="button" class="btn btn-account" id="account-open">Account</button>
+        <button type="button" class="btn btn-account" id="account-open">Sign in</button>
+        <div class="account-menu" id="account-menu" hidden>
+          <span class="account-greeting">Hi, <strong id="account-greeting-name">guest</strong>, ready for your next stay?</span>
+          <button type="button" class="account-menu-trigger" id="account-menu-trigger" aria-label="Open account menu" aria-expanded="false" aria-controls="account-menu-panel">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="12" cy="8" r="3.5"></circle>
+              <path d="M4.8 20c.5-3.4 3.3-5.5 7.2-5.5s6.7 2.1 7.2 5.5"></path>
+            </svg>
+          </button>
+          <div class="account-menu-panel" id="account-menu-panel" hidden>
+            <button type="button" data-account-action="settings">Account settings</button>
+            <button type="button" data-account-action="reservations">My reservation history</button>
+            <button type="button" class="account-menu-logout" id="account-menu-logout">Log out</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -144,6 +158,7 @@
         </form>
 
         <form class="account-form" id="account-form-register" data-account-form="register" role="tabpanel" aria-labelledby="account-tab-register" hidden>
+          <label>Display name<input name="displayName" type="text" autocomplete="name" maxlength="80"></label>
           <label>Email<input name="email" type="email" autocomplete="email" maxlength="254" required></label>
           <label>Password<input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
           <span class="account-hint">Use at least 12 characters.</span>
@@ -151,12 +166,45 @@
         </form>
 
         <form class="account-form" id="account-form-developer" data-account-form="developer" role="tabpanel" aria-labelledby="account-tab-developer" hidden>
+          <label>Display name<input name="displayName" type="text" autocomplete="name" maxlength="80"></label>
           <label>Email<input name="email" type="email" autocomplete="email" maxlength="254" required></label>
           <label>Password<input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
           <label>Developer invite code<input name="inviteCode" type="password" autocomplete="off" required></label>
           <button class="btn btn-primary account-submit" type="submit">Create developer account</button>
         </form>
       </div>
+    </section>
+  </dialog>
+
+  <dialog class="account-dialog" id="account-settings-dialog" aria-labelledby="account-settings-title">
+    <section class="account-panel">
+      <div class="account-heading">
+        <div>
+          <span class="account-kicker">YOUR PROFILE</span>
+          <h2 id="account-settings-title">Account settings</h2>
+        </div>
+        <button type="button" class="account-close" data-dialog-close aria-label="Close account settings">×</button>
+      </div>
+      <p class="account-message" id="profile-message" aria-live="polite"></p>
+      <form class="account-form" id="profile-form">
+        <label>Display name<input id="profile-display-name" name="displayName" type="text" autocomplete="name" maxlength="80" required></label>
+        <label>Email address<input id="profile-email" type="email" readonly></label>
+        <button class="btn btn-primary account-submit" id="profile-save" type="submit">Save changes</button>
+      </form>
+    </section>
+  </dialog>
+
+  <dialog class="account-dialog reservation-dialog" id="reservation-history-dialog" aria-labelledby="reservation-title">
+    <section class="account-panel">
+      <div class="account-heading">
+        <div>
+          <span class="account-kicker">YOUR TRIPS</span>
+          <h2 id="reservation-title">Reservation history</h2>
+        </div>
+        <button type="button" class="account-close" data-dialog-close aria-label="Close reservation history">×</button>
+      </div>
+      <p class="reservation-message" id="reservation-message" aria-live="polite">Loading reservations…</p>
+      <div class="reservation-list" id="reservation-list"></div>
     </section>
   </dialog>
 

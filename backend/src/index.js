@@ -5,6 +5,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client.ts";
 import { createAuthService } from "./auth.js";
 import { createBookingService } from "./bookings.js";
+import { normalizeDatabaseUrl } from "./database-url.js";
 import { createServer } from "./server.js";
 import { createSiteServer } from "./site.js";
 
@@ -15,7 +16,8 @@ if (!databaseUrl) {
   throw new Error("Set DATABASE_URL in backend/.env before starting the server.");
 }
 
-const databaseUsername = decodeURIComponent(new URL(databaseUrl).username);
+const connectionString = normalizeDatabaseUrl(databaseUrl);
+const databaseUsername = decodeURIComponent(new URL(connectionString).username);
 const supabaseProjectRef = databaseUsername.match(/^postgres\.([a-z0-9]+)$/i)?.[1];
 const supabaseUrl = process.env.SUPABASE_URL?.trim().replace(/\/+$/, "") ||
   (supabaseProjectRef ? `https://${supabaseProjectRef}.supabase.co` : null);
@@ -30,13 +32,8 @@ if (!sslCaPath) {
   );
 }
 
-const connectionUrl = new URL(databaseUrl);
-for (const parameter of ["sslmode", "sslrootcert", "sslcert", "sslkey"]) {
-  connectionUrl.searchParams.delete(parameter);
-}
-
 const pool = new Pool({
-  connectionString: connectionUrl.toString(),
+  connectionString,
   ssl: { ca: readFileSync(sslCaPath, "utf8") },
   max: 5,
   connectionTimeoutMillis: 5000

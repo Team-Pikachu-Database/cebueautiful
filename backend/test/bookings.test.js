@@ -68,6 +68,42 @@ test("availability returns remaining rooms for overlapping date ranges", async (
   assert.deepEqual(mock.queries[0].values, ["42", stay.checkIn, stay.checkOut, 5]);
 });
 
+test("reservation history filters by the authenticated account ID", async () => {
+  let query;
+  const bookings = createBookingService({
+    pool: {
+      query: async (sql, values) => {
+        query = { sql, values };
+        return { rows: [{
+          reference: "CS-ABC123DEF456",
+          hotel_name: "Test Hotel",
+          check_in: "2027-05-10",
+          check_out: "2027-05-12",
+          rooms: 1,
+          total_price: "2000.00",
+          created_at: new Date("2026-10-20T12:00:00.000Z"),
+          cancelled_at: null
+        }] };
+      }
+    }
+  });
+
+  const result = await bookings.listForUser("user-123");
+
+  assert.deepEqual(query.values, ["user-123"]);
+  assert.match(query.sql, /booking\.user_id = \$1/);
+  assert.deepEqual(result, [{
+    reference: "CS-ABC123DEF456",
+    hotelName: "Test Hotel",
+    checkIn: "2027-05-10",
+    checkOut: "2027-05-12",
+    rooms: 1,
+    totalPrice: 2000,
+    createdAt: "2026-10-20T12:00:00.000Z",
+    cancelledAt: null
+  }]);
+});
+
 test("reservation calculates its server-side total and commits within a transaction", async () => {
   const mock = mockBookingPool({ capacity: 5, booked: 1 });
   const bookings = createBookingService({ pool: mock.pool });
@@ -75,6 +111,7 @@ test("reservation calculates its server-side total and commits within a transact
 
   const result = await bookings.createBooking({
     hotelId: "42",
+    userId: "user-123",
     ...stay,
     rooms: 2,
     guestName: "  Cebu   Guest ",
@@ -88,9 +125,10 @@ test("reservation calculates its server-side total and commits within a transact
   assert.equal(mock.committed, true);
   assert.equal(mock.rolledBack, false);
   assert.match(mock.queries[2].sql, /FOR UPDATE OF inventory/);
-  assert.equal(mock.bookingInsert[3], "Cebu Guest");
-  assert.equal(mock.bookingInsert[4], "guest@example.com");
-  assert.equal(mock.bookingInsert[8], 4000);
+  assert.equal(mock.bookingInsert[3], "user-123");
+  assert.equal(mock.bookingInsert[4], "Cebu Guest");
+  assert.equal(mock.bookingInsert[5], "guest@example.com");
+  assert.equal(mock.bookingInsert[9], 4000);
 });
 
 test("reservation rolls back if requested rooms exceed remaining inventory", async () => {

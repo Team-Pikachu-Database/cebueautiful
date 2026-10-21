@@ -6,7 +6,8 @@
 - `GET /api/hotels/:id/availability?checkIn=YYYY-MM-DD&checkOut=YYYY-MM-DD` returns remaining rooms for a date range.
 - `POST /api/bookings` creates a no-online-payment reservation. Inventory is locked per property during checkout so concurrent reservations cannot exceed its room limit. The API calculates the total from the stored nightly rate.
 - `GET /api/health` checks database connectivity.
-- `/api/auth/*` provides email/password registration, sign-in, sign-out, and session lookup. Passwords use scrypt hashes; sessions are stored as hashes in PostgreSQL and sent as HttpOnly cookies. Developer registration requires a private invite code.
+- `/api/auth/*` provides email/password registration, sign-in, sign-out, session lookup, and signed-in display-name updates. Passwords use scrypt hashes; sessions are stored as hashes in PostgreSQL and sent as HttpOnly cookies. Developer registration requires a private invite code.
+- `GET /api/bookings/mine` returns up to 100 reservations linked to the signed-in account. New bookings store their owner from the server-side session; the browser cannot choose another account as the owner.
 
 ## Run locally
 
@@ -14,7 +15,7 @@
 2. Download the database CA certificate from Supabase **Database Settings → SSL Configuration** and set `DATABASE_SSL_CA` to its local path. The server requires this CA and verifies the TLS certificate; it does not fall back to insecure TLS.
 3. Run on Node.js 24 or later and start the app with `npm start`; the prestart script generates the Prisma client. Open the frontend at `http://127.0.0.1:5505` or use the forwarded Codespaces port 5505. Do not run VS Code Live Server at the same time as `npm start`; `npm start` owns port `5505`. Port `3000` remains the private API service. For a static Live Server preview on port `5500`, the checked-in frontend config uses the shared hosted API; that preview reads live property data and booking submissions are real reservations, not test data.
 
-4. Run `npm run db:accounts` to create or verify the account, session, invite, and room-booking tables. Existing properties receive an initial limit of five rooms each. To change a property's limit, update `public.hotel_room_inventory.total_rooms` for its `hotel_id`. To issue unique, one-use developer codes, run `npm run accounts:invites -- 12`. The command prints the codes once and stores only their hashes; save the printed codes securely. Standard accounts do not need an invite code. Each developer code can create only one account.
+4. Run `npm run db:accounts` to create or verify the account, display-name, session, invite, reservation-owner, and room-booking schema. Existing reservations remain unowned and will not appear in a user's history automatically. Existing properties receive an initial limit of five rooms each. To change a property's limit, update `public.hotel_room_inventory.total_rooms` for its `hotel_id`. To issue unique, one-use developer codes, run `npm run accounts:invites -- 12`. The command prints the codes once and stores only their hashes; save the printed codes securely. Standard accounts do not need an invite code. Each developer code can create only one account.
 
 ## GitHub Pages frontend with a hosted API
 

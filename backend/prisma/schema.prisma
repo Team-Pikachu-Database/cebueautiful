@@ -37,6 +37,7 @@ model hotelRoomInventory {
 
 model roomBooking {
   id               String             @id @db.Uuid
+  user_id          String?            @db.Uuid
   booking_reference String            @unique
   hotel_id         BigInt
   guest_name       String
@@ -48,6 +49,7 @@ model roomBooking {
   cancelled_at     DateTime?          @db.Timestamptz(6)
   created_at       DateTime           @default(now()) @db.Timestamptz(6)
   inventory        hotelRoomInventory @relation(fields: [hotel_id], references: [hotel_id], onDelete: Cascade)
+  user             appUser?           @relation(fields: [user_id], references: [id], onDelete: SetNull)
 
   @@index([hotel_id, check_in, check_out])
   @@map("room_bookings")
@@ -58,9 +60,11 @@ model appUser {
   email         String        @unique
   password_hash String
   role          String        @default("standard")
+  full_name     String        @default("")
   created_at    DateTime      @default(now()) @db.Timestamptz(6)
   sessions      appSession[]
   developerInvites appDeveloperInvite[]
+  bookings      roomBooking[]
 
   @@map("app_users")
 }

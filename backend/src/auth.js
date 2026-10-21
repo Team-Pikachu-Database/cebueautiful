@@ -122,11 +122,25 @@ function publicAccount(row) {
   return {
     id: row.id,
     email: row.email,
+    displayName: row.full_name?.trim() || row.email.split("@", 1)[0],
     role: row.role,
     createdAt: row.created_at instanceof Date
       ? row.created_at.toISOString()
       : row.created_at
   };
+}
+
+function parseDisplayName(value, fallbackEmail = "") {
+  const suppliedName = typeof value === "string"
+    ? value.trim().replace(/\s+/g, " ")
+    : "";
+  const displayName = suppliedName || fallbackEmail.split("@", 1)[0];
+
+  if (!displayName || displayName.length > 80) {
+    throw new AuthError(400, "Enter a name up to 80 characters.", "INVALID_NAME");
+  }
+
+  return displayName;
 }
 
 function sessionTokenHash(token) {
@@ -155,8 +169,9 @@ export function createAuthService({
     return token;
   }
 
-  async function register(emailValue, password, role, inviteCode = "") {
+  async function register(emailValue, password, role, inviteCode = "", displayNameValue = "") {
     const email = normalizeEmail(emailValue);
+    const displayName = parseDisplayName(displayNameValue, email);
     validatePassword(password);
     const passwordHash = await hashPassword(password);
     const client = await pool.connect();
@@ -165,10 +180,10 @@ export function createAuthService({
     try {
       await client.query("BEGIN");
       const inserted = await client.query(
-        `INSERT INTO public.app_users (id, email, password_hash, role)
-         VALUES ($1, $2, $3, $4)
-         RETURNING id, email, role, created_at`,
-        [accountId, email, passwordHash, role]
+        `INSERT INTO public.app_users (id, email, password_hash, role, full_name)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, email, role, full_name, created_at`,
+        [accountId, email, passwordHash, role, displayName]
       );
 
       if (role === "developer") {
@@ -204,12 +219,12 @@ export function createAuthService({
   return {
     sessionTtlSeconds: ttlHours * 60 * 60,
 
-    registerStandard(email, password) {
-      return register(email, password, "standard");
+    registerStandard(email, password, displayName) {
+      return register(email, password, "standard", "", displayName);
     },
 
-    registerDeveloper(email, password, inviteCode) {
-      return register(email, password, "developer", inviteCode);
+    registerDeveloper(email, password, inviteCode, displayName) {
+      return register(email, password, "developer", inviteCode, displayName);
     },
 
     async login(emailValue, password) {
@@ -222,7 +237,7 @@ export function createAuthService({
       }
 
       const result = await pool.query(
-        "SELECT id, email, password_hash, role, created_at FROM public.app_users WHERE email = $1",
+        "SELECT id, email, password_hash, role, full_name, created_at FROM public.app_users WHERE email = $1",
         [email]
       );
       const account = result.rows[0];
@@ -250,7 +265,7 @@ export function createAuthService({
       }
 
       const result = await pool.query(
-        `SELECT u.id, u.email, u.role, u.created_at
+        `SELECT u.id, u.email, u.role, u.full_name, u.created_at
          FROM public.app_sessions AS s
          JOIN public.app_users AS u ON u.id = s.user_id
          WHERE s.token_hash = $1 AND s.expires_at > now()`,
@@ -258,6 +273,21 @@ export function createAuthService({
       );
 
       return result.rows[0] ? publicAccount(result.rows[0]) : null;
+    },
+
+    async updateProfile(userId, displayNameValue) {
+      const displayName = parseDisplayName(displayNameValue);
+      const result = await pool.query(
+        `UPDATE public.app_users
+         SET full_name = $2
+         WHERE id = $1
+         RETURNING id, email, role, full_name, created_at`,
+        [userId, displayName]
+      );
+      if (!result.rows[0]) {
+        throw new AuthError(401, "Your account session has expired. Sign in again.", "INVALID_SESSION");
+      }
+      return publicAccount(result.rows[0]);
     },
 
     async logout(token) {

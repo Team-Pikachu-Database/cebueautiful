@@ -88,13 +88,18 @@ function updateAccountDisplay(user) {
   const isSignedIn = Boolean(user);
   const accountButton = document.getElementById("account-open");
   const developerProjectLink = document.getElementById("developer-project-link");
+  const accountMenu = document.getElementById("account-menu");
 
   accountEntry.hidden = isSignedIn;
   signedInPanel.hidden = !isSignedIn;
-  accountButton.textContent = isSignedIn ? "Account" : "Sign in";
+  accountButton.hidden = isSignedIn;
+  accountMenu.hidden = !isSignedIn;
   developerProjectLink.hidden = user?.role !== "developer";
 
   if (isSignedIn) {
+    const displayName = user.displayName || user.email.split("@", 1)[0];
+    document.getElementById("account-greeting-name").textContent =
+      displayName.charAt(0).toLocaleUpperCase() + displayName.slice(1);
     document.getElementById("account-email").textContent = user.email;
     document.getElementById("account-role").textContent =
       user.role === "developer" ? "Developer account" : "Standard account";
@@ -103,8 +108,8 @@ function updateAccountDisplay(user) {
   }
 }
 
-async function requestAccountApi(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}/api/auth${path}`, {
+async function requestApi(path, options = {}) {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     credentials: "include",
     ...options
   });
@@ -115,6 +120,10 @@ async function requestAccountApi(path, options = {}) {
   }
 
   return data;
+}
+
+async function requestAccountApi(path, options = {}) {
+  return requestApi(`/api/auth${path}`, options);
 }
 
 async function submitAccountForm(event, endpoint) {
@@ -134,6 +143,7 @@ async function submitAccountForm(event, endpoint) {
     });
     form.reset();
     updateAccountDisplay(data.user);
+    if (data.user) accountDialog.close();
     if (data.user?.role === "developer") {
       window.location.assign("developer.html");
       return;
@@ -153,6 +163,10 @@ function initializeAccount() {
 
   document.getElementById("account-close").addEventListener("click", () => {
     accountDialog.close();
+  });
+
+  document.querySelectorAll("[data-dialog-close]").forEach(button => {
+    button.addEventListener("click", () => button.closest("dialog").close());
   });
 
   accountDialog.addEventListener("click", event => {
@@ -195,6 +209,148 @@ function initializeAccount() {
   requestAccountApi("/me")
     .then(data => updateAccountDisplay(data.user))
     .catch(() => updateAccountDisplay(null));
+
+  initializeAccountMenu();
+}
+
+function initializeAccountMenu() {
+  const menu = document.getElementById("account-menu");
+  const trigger = document.getElementById("account-menu-trigger");
+  const menuPanel = document.getElementById("account-menu-panel");
+  const settingsDialog = document.getElementById("account-settings-dialog");
+  const reservationsDialog = document.getElementById("reservation-history-dialog");
+
+  function closeMenu() {
+    menuPanel.hidden = true;
+    trigger.setAttribute("aria-expanded", "false");
+  }
+
+  trigger.addEventListener("click", () => {
+    const isOpen = !menuPanel.hidden;
+    menuPanel.hidden = isOpen;
+    trigger.setAttribute("aria-expanded", String(!isOpen));
+  });
+
+  document.addEventListener("click", event => {
+    if (!menu.contains(event.target)) closeMenu();
+  });
+
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape") closeMenu();
+  });
+
+  menu.querySelector('[data-account-action="settings"]')
+    .addEventListener("click", () => {
+      closeMenu();
+      document.getElementById("profile-display-name").value =
+        signedInAccount?.displayName || signedInAccount?.email.split("@", 1)[0] || "";
+      document.getElementById("profile-email").value = signedInAccount?.email || "";
+      document.getElementById("profile-message").textContent = "";
+      settingsDialog.showModal();
+    });
+
+  menu.querySelector('[data-account-action="reservations"]')
+    .addEventListener("click", () => {
+      closeMenu();
+      reservationsDialog.showModal();
+      loadReservationHistory();
+    });
+
+  document.getElementById("profile-form").addEventListener("submit", async event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = document.getElementById("profile-save");
+    const message = document.getElementById("profile-message");
+    button.disabled = true;
+    message.textContent = "Saving your changes…";
+
+    try {
+      const data = await requestAccountApi("/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(Object.fromEntries(new FormData(form)))
+      });
+      updateAccountDisplay(data.user);
+      message.textContent = "Your account settings have been saved.";
+    } catch (error) {
+      message.textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  document.getElementById("account-menu-logout").addEventListener("click", async event => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    closeMenu();
+    try {
+      await requestAccountApi("/logout", { method: "POST" });
+      updateAccountDisplay(null);
+    } catch (error) {
+      window.alert(error.message);
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  [settingsDialog, reservationsDialog].forEach(dialog => {
+    dialog.addEventListener("click", event => {
+      if (event.target === dialog) dialog.close();
+    });
+  });
+}
+
+function formatReservationDate(value) {
+  return new Date(`${value}T00:00:00`).toLocaleDateString("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
+}
+
+async function loadReservationHistory() {
+  const message = document.getElementById("reservation-message");
+  const list = document.getElementById("reservation-list");
+  list.replaceChildren();
+  message.textContent = "Loading reservations…";
+
+  try {
+    const data = await requestApi("/api/bookings/mine");
+    if (!data.reservations.length) {
+      message.textContent = "No reservations yet.";
+      return;
+    }
+
+    message.textContent = `${data.reservations.length} reservation${data.reservations.length === 1 ? "" : "s"}`;
+    const today = new Date().toISOString().slice(0, 10);
+    data.reservations.forEach(reservation => {
+      const item = document.createElement("article");
+      item.className = "reservation-item";
+
+      const heading = document.createElement("div");
+      heading.className = "reservation-item-heading";
+      const hotelName = document.createElement("h3");
+      hotelName.textContent = reservation.hotelName;
+      const status = document.createElement("span");
+      status.className = reservation.cancelledAt ? "reservation-status is-cancelled" : "reservation-status";
+      status.textContent = reservation.cancelledAt
+        ? "Cancelled"
+        : reservation.checkOut < today ? "Completed" : "Confirmed";
+      heading.append(hotelName, status);
+
+      const dates = document.createElement("p");
+      dates.textContent = `${formatReservationDate(reservation.checkIn)} – ${formatReservationDate(reservation.checkOut)}`;
+      const details = document.createElement("p");
+      details.textContent = `${reservation.rooms} room${reservation.rooms === 1 ? "" : "s"} · ${peso.format(reservation.totalPrice)}`;
+      const reference = document.createElement("small");
+      reference.textContent = `Confirmation ${reservation.reference}`;
+
+      item.append(heading, dates, details, reference);
+      list.append(item);
+    });
+  } catch (error) {
+    message.textContent = error.message;
+  }
 }
 
 /* ---------- HOTEL DETAIL MODAL ---------- */
@@ -256,6 +412,11 @@ function openHotelDetails(hotel, photoIndex = 1) {
   const bookingForm = document.getElementById("booking-form");
   bookingForm.reset();
   bookingForm.hidden = true;
+  if (signedInAccount) {
+    bookingForm.elements.namedItem("guestName").value =
+      signedInAccount.displayName || signedInAccount.email.split("@", 1)[0];
+    bookingForm.elements.namedItem("guestEmail").value = signedInAccount.email;
+  }
   document.getElementById("booking-status").textContent = "";
   document.getElementById("booking-checkin").value = appliedCheckIn;
   document.getElementById("booking-checkout").value = appliedCheckOut;

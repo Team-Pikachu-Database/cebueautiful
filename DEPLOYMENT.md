@@ -32,7 +32,7 @@ Keep `DATABASE_URL`, the CA certificate, developer invites, and Supabase secret/
 
 ## Local validation
 
-Run `npm run build:pages` to create the static artifact locally. It includes `index.html`, `developer.html`, `style.css`, `script.js`, `developer.js`, generated `config.js`, and the logo/image folders; it excludes backend code, certificates, database configuration, and `.env` files. Developer sign-ins open a page with links to the Supabase project and GitHub organization. Room availability and no-payment reservations require the room-booking database migration to be applied with `npm run db:accounts` before deploying the updated API. The initial capacity is five rooms per property. The production workflow requires an HTTPS API origin before it can publish.
+Run `npm run build:pages` to create the static artifact locally. It includes `index.html`, `developer.html`, `style.css`, `script.js`, `developer.js`, generated `config.js`, and the logo/image folders; it excludes backend code, certificates, database configuration, and `.env` files. The account menu supports profile display-name updates and authenticated reservation history. Apply all pending account and booking migrations with `npm run db:accounts` before deploying the updated API. Existing reservations remain unowned; only bookings created by signed-in users after the migration appear in their account history. The initial capacity is five rooms per property. The production workflow requires an HTTPS API origin before it can publish.
 
 Run `npm test` and `npm run db:validate` before pushing. GitHub Pages does not run the Node API, so hotel data, registration, sign-in, and sign-out require the separately deployed API to be healthy.
 

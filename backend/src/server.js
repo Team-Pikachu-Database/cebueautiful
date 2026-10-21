@@ -141,6 +141,35 @@ async function handleAuthRequest({ request, response, pathname, auth, requestId 
     return;
   }
 
+  if (pathname === "/api/auth/me" && request.method === "PATCH") {
+    try {
+      const currentUser = await auth.getSession(sessionTokenFromRequest(request));
+      if (!currentUser) {
+        sendJson(response, 401, { error: "Sign in to update your account.", requestId });
+        return;
+      }
+      const body = await readJsonBody(request);
+      const user = await auth.updateProfile(currentUser.id, body.displayName);
+      sendJson(response, 200, { user, requestId });
+    } catch (error) {
+      const status = error instanceof AuthError ? error.status : 500;
+      if (status >= 500) {
+        console.error(JSON.stringify({
+          event: "account_request_failed",
+          requestId,
+          errorCode: error?.code ?? "UNEXPECTED"
+        }));
+      }
+      sendJson(response, status, {
+        error: error instanceof AuthError
+          ? error.message
+          : "The account request could not be completed.",
+        requestId
+      });
+    }
+    return;
+  }
+
   if (request.method !== "POST") {
     response.setHeader("Allow", "GET, POST, OPTIONS");
     sendJson(response, 405, { error: "Method not allowed.", requestId });
@@ -161,10 +190,15 @@ async function handleAuthRequest({ request, response, pathname, auth, requestId 
     if (pathname === "/api/auth/login") {
       result = await auth.login(body.email, body.password);
     } else if (pathname === "/api/auth/register") {
-      result = await auth.registerStandard(body.email, body.password);
+      result = await auth.registerStandard(body.email, body.password, body.displayName);
       status = 201;
     } else if (pathname === "/api/auth/developer/register") {
-      result = await auth.registerDeveloper(body.email, body.password, body.inviteCode);
+      result = await auth.registerDeveloper(
+        body.email,
+        body.password,
+        body.inviteCode,
+        body.displayName
+      );
       status = 201;
     } else {
       sendJson(response, 404, { error: "Account route not found.", requestId });
@@ -285,7 +319,7 @@ export function createServer({
 
       response.setHeader("Access-Control-Allow-Origin", origin);
       response.setHeader("Vary", "Origin");
-      response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+      response.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS");
       response.setHeader("Access-Control-Allow-Headers", "Content-Type");
       response.setHeader("Access-Control-Allow-Credentials", "true");
     }
@@ -297,7 +331,7 @@ export function createServer({
     }
 
     if (pathname.startsWith("/api/auth/")) {
-      if (request.method === "POST" && !origin) {
+      if (["POST", "PATCH"].includes(request.method) && !origin) {
         sendJson(response, 403, {
           error: "An allowed browser origin is required.",
           requestId
@@ -309,7 +343,8 @@ export function createServer({
     }
 
     const availabilityMatch = pathname.match(/^\/api\/hotels\/([1-9]\d{0,18})\/availability$/);
-    if (availabilityMatch || pathname === "/api/bookings") {
+    const reservationHistory = pathname === "/api/bookings/mine";
+    if (availabilityMatch || pathname === "/api/bookings" || reservationHistory) {
       if (!bookings) {
         sendJson(response, 503, { error: "Booking service is not configured.", requestId });
         return;
@@ -324,6 +359,19 @@ export function createServer({
       }
 
       try {
+        if (reservationHistory && request.method === "GET") {
+          const user = auth
+            ? await auth.getSession(sessionTokenFromRequest(request))
+            : null;
+          if (!user) {
+            sendJson(response, 401, { error: "Sign in to view your reservations.", requestId });
+            return;
+          }
+          const reservations = await bookings.listForUser(user.id);
+          sendJson(response, 200, { reservations, requestId });
+          return;
+        }
+
         if (availabilityMatch && request.method === "GET") {
           const checkIn = new URL(request.url, "http://localhost").searchParams.get("checkIn");
           const checkOut = new URL(request.url, "http://localhost").searchParams.get("checkOut");
@@ -338,12 +386,18 @@ export function createServer({
 
         if (pathname === "/api/bookings" && request.method === "POST") {
           const body = await readJsonBody(request);
-          const booking = await bookings.createBooking(body);
+          const user = auth
+            ? await auth.getSession(sessionTokenFromRequest(request))
+            : null;
+          const booking = await bookings.createBooking({ ...body, userId: user?.id });
           sendJson(response, 201, { booking, requestId });
           return;
         }
 
-        response.setHeader("Allow", availabilityMatch ? "GET, OPTIONS" : "POST, OPTIONS");
+        response.setHeader(
+          "Allow",
+          availabilityMatch || reservationHistory ? "GET, OPTIONS" : "POST, OPTIONS"
+        );
         sendJson(response, 405, { error: "Method not allowed.", requestId });
       } catch (error) {
         const status = error instanceof BookingError || error instanceof AuthError

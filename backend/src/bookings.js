@@ -127,12 +127,47 @@ export function createBookingService({ pool }) {
     };
   }
 
+  async function listForUser(userId) {
+    const result = await pool.query(
+      `SELECT booking.booking_reference AS reference,
+              hotel.name AS hotel_name,
+              booking.check_in::text AS check_in,
+              booking.check_out::text AS check_out,
+              booking.rooms,
+              booking.total_price,
+              booking.created_at,
+              booking.cancelled_at
+       FROM public.room_bookings AS booking
+       JOIN public.sen AS hotel ON hotel.id = booking.hotel_id
+      WHERE booking.user_id = $1
+       ORDER BY booking.created_at DESC
+       LIMIT 100`,
+          [userId]
+    );
+
+    return result.rows.map(row => ({
+      reference: row.reference,
+      hotelName: row.hotel_name,
+      checkIn: row.check_in,
+      checkOut: row.check_out,
+      rooms: row.rooms,
+      totalPrice: Number(row.total_price),
+      createdAt: row.created_at instanceof Date
+        ? row.created_at.toISOString()
+        : row.created_at,
+      cancelledAt: row.cancelled_at instanceof Date
+        ? row.cancelled_at.toISOString()
+        : row.cancelled_at
+    }));
+  }
+
   async function createBooking(input) {
     const hotelId = parseHotelId(input.hotelId);
     const { checkIn, checkOut } = parseStay(input.checkIn, input.checkOut);
     const rooms = parseRooms(input.rooms);
     const guestName = parseGuestName(input.guestName);
     const guestEmail = parseGuestEmail(input.guestEmail);
+    const userId = typeof input.userId === "string" ? input.userId : null;
     const client = await pool.connect();
     const id = randomUUID();
     const reference = bookingReference();
@@ -191,10 +226,10 @@ export function createBookingService({ pool }) {
 
       await client.query(
         `INSERT INTO public.room_bookings
-          (id, booking_reference, hotel_id, guest_name, guest_email,
+          (id, booking_reference, hotel_id, user_id, guest_name, guest_email,
            check_in, check_out, rooms, total_price)
-         VALUES ($1, $2, $3, $4, $5, $6::date, $7::date, $8, $9)`,
-        [id, reference, hotelId, guestName, guestEmail, checkIn, checkOut, rooms, totalPrice]
+         VALUES ($1, $2, $3, $4, $5, $6, $7::date, $8::date, $9, $10)`,
+        [id, reference, hotelId, userId, guestName, guestEmail, checkIn, checkOut, rooms, totalPrice]
       );
       await client.query("COMMIT");
       transactionOpen = false;
@@ -215,5 +250,5 @@ export function createBookingService({ pool }) {
     }
   }
 
-  return { getAvailability, createBooking };
+  return { getAvailability, createBooking, listForUser };
 }
