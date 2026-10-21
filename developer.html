@@ -18,8 +18,34 @@
     <section class="developer-card" aria-labelledby="developer-title">
       <span class="account-kicker">CEBUSTAYS DEVELOPER</span>
       <h1 id="developer-title">Choose a project</h1>
-      <p class="developer-intro">Select where you want to continue.</p>
+      <p class="developer-intro">Review pending payments or open a project.</p>
       <p class="developer-status" id="developer-status" aria-live="polite">Checking your developer session…</p>
+
+      <section class="developer-bookings" id="developer-bookings" aria-labelledby="pending-bookings-title" hidden>
+        <div class="developer-bookings-heading">
+          <div>
+            <span class="destination-kicker">PAYMENT REVIEW</span>
+            <h2 id="pending-bookings-title">Pending reservations</h2>
+          </div>
+          <button class="btn btn-ghost developer-refresh" type="button" id="developer-bookings-refresh">Refresh</button>
+        </div>
+        <p class="developer-bookings-note">Confirm payment only after verifying that the property received it.</p>
+        <p class="developer-bookings-status" id="developer-bookings-status" aria-live="polite"></p>
+        <div class="developer-bookings-table-wrap">
+          <table class="developer-bookings-table">
+            <thead>
+              <tr>
+                <th scope="col">Guest</th>
+                <th scope="col">Reservation</th>
+                <th scope="col">Stay</th>
+                <th scope="col">Payment</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+            <tbody id="developer-bookings-list"></tbody>
+          </table>
+        </div>
+      </section>
 
       <div class="developer-destinations" id="developer-destinations" hidden>
         <a class="developer-destination destination-supabase" href="https://supabase.com/dashboard/project/jgsrgzrgiznknvtxhats" target="_blank" rel="noopener noreferrer">
@@ -53,6 +79,26 @@
       <button class="btn btn-primary developer-retry" type="button" id="developer-retry" hidden>Try again</button>
     </section>
   </main>
+
+  <dialog class="payment-review-dialog" id="payment-review-dialog" aria-labelledby="payment-review-title">
+    <section class="payment-review-panel">
+      <div class="developer-bookings-heading">
+        <div>
+          <span class="destination-kicker">VERIFY BEFORE CONFIRMING</span>
+          <h2 id="payment-review-title">Check reservation and payment</h2>
+        </div>
+        <button class="btn btn-ghost payment-review-close" type="button" id="payment-review-close">Close</button>
+      </div>
+      <p class="developer-bookings-note">Compare the guest and reservation details below with the actual receipt or transfer record. The website does not verify a payment automatically.</p>
+      <dl class="payment-review-details" id="payment-review-details"></dl>
+      <label class="payment-review-check">
+        <input type="checkbox" id="payment-review-checked">
+        I checked the payment record and verified the payer and amount match this reservation.
+      </label>
+      <p class="payment-review-message" id="payment-review-message" aria-live="polite"></p>
+      <button class="btn btn-primary" type="button" id="payment-review-confirm" disabled>Mark as paid</button>
+    </section>
+  </dialog>
 
   <script src="config.js"></script>
   <script src="developer.js"></script>
