@@ -595,17 +595,21 @@ img {
   display: grid;
   place-items: center;
   flex: 0 0 auto;
-  width: 38px;
-  min-width: 38px;
-  height: 38px;
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
   padding: 0;
   margin-top: 0;
   border-radius: 50%;
+  border: 1px solid #30363d;
+  color: #c9d1d9;
+  background: transparent;
+  cursor: pointer;
 }
 
 .developer-bookings-heading .developer-refresh svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
@@ -615,7 +619,8 @@ img {
 
 .developer-bookings-heading .developer-refresh:hover {
   color: #fff;
-  background: var(--blue-dark);
+  border-color: #8b949e;
+  background: #21262d;
 }
 
 .developer-bookings-note,
@@ -713,7 +718,27 @@ img {
 }
 
 .payment-review-close {
-  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  margin: 0;
+  border: 1px solid #30363d;
+  border-radius: 50%;
+  color: #c9d1d9;
+  background: transparent;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.payment-review-close:hover {
+  color: #fff;
+  border-color: #8b949e;
+  background: #21262d;
 }
 
 .payment-review-details {
