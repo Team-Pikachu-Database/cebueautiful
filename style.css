@@ -146,6 +146,95 @@ img {
   background: #ffd24d;
 }
 
+.btn-account[hidden],
+.account-menu[hidden],
+.account-menu-panel[hidden] {
+  display: none;
+}
+
+.account-menu {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.account-greeting {
+  max-width: 230px;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 0.86rem;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.account-greeting strong {
+  color: #fff;
+}
+
+.account-menu-trigger {
+  display: grid;
+  place-items: center;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  padding: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.account-menu-trigger:hover,
+.account-menu-trigger[aria-expanded="true"] {
+  color: var(--navy);
+  background: #fff;
+}
+
+.account-menu-trigger svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.account-menu-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  width: 260px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 16px 40px rgba(0, 20, 45, 0.22);
+}
+
+.account-menu-panel button {
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 0;
+  border-radius: 5px;
+  color: var(--text);
+  background: transparent;
+  text-align: left;
+}
+
+.account-menu-panel button:hover {
+  background: #edf2f6;
+}
+
+.account-menu-panel .account-menu-logout {
+  margin-top: 4px;
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 5px 5px;
+  color: #a32121;
+}
+
 /* =========================================
    SMOOTH LIQUID GLASS ACCOUNT DIALOG
 ========================================= */
@@ -335,6 +424,75 @@ img {
 
 .account-signed-in strong {
   overflow-wrap: anywhere;
+}
+
+.reservation-dialog {
+  width: min(620px, calc(100% - 24px));
+}
+
+.reservation-message {
+  min-height: 1.5em;
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.reservation-list {
+  display: grid;
+  gap: 10px;
+  max-height: min(54vh, 480px);
+  overflow-y: auto;
+}
+
+.reservation-item {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.reservation-item-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.reservation-item h3 {
+  min-width: 0;
+  margin: 0;
+  color: var(--navy);
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.reservation-item p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.reservation-item small {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  overflow-wrap: anywhere;
+}
+
+.reservation-status {
+  flex: 0 0 auto;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #145b48;
+  background: #e4f4ed;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.reservation-status.is-cancelled {
+  color: #8f2424;
+  background: #fae9e7;
 }
 
 /* =========================================
@@ -1424,6 +1582,22 @@ img {
   }
   .layout {
     grid-template-columns: 1fr;
+  }
+  .header-top {
+    gap: 8px;
+  }
+  .header-actions {
+    gap: 8px;
+  }
+  .account-menu {
+    gap: 7px;
+  }
+  .account-greeting {
+    max-width: 145px;
+    font-size: 0.74rem;
+  }
+  .account-menu-panel {
+    width: min(260px, calc(100vw - 24px));
   }
   .filters {
     position: static;
