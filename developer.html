@@ -27,7 +27,17 @@
             <span class="destination-kicker">PAYMENT REVIEW</span>
             <h2 id="pending-bookings-title">Pending reservations</h2>
           </div>
-          <button class="btn btn-ghost developer-refresh" type="button" id="developer-bookings-refresh">Refresh</button>
+          <button
+            class="btn btn-ghost developer-refresh"
+            type="button"
+            id="developer-bookings-refresh"
+            aria-label="Refresh pending reservations"
+            title="Refresh pending reservations">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M20 7v5h-5"></path>
+              <path d="M19 12a7 7 0 1 1-2-4.9L20 12"></path>
+            </svg>
+          </button>
         </div>
         <p class="developer-bookings-note">Confirm payment only after verifying that the property received it.</p>
         <p class="developer-bookings-status" id="developer-bookings-status" aria-live="polite"></p>
