@@ -26,6 +26,8 @@ test("the site serves the frontend and local hotel photos with a Supabase image 
   const html = await pageResponse.text();
   const pageScriptResponse = await fetch(`${baseUrl}/script.js`);
   const pageScript = await pageScriptResponse.text();
+  const mapScriptResponse = await fetch(`${baseUrl}/map.js`);
+  const mapScript = await mapScriptResponse.text();
   const developerPageResponse = await fetch(`${baseUrl}/developer.html`);
   const developerHtml = await developerPageResponse.text();
   const developerScriptResponse = await fetch(`${baseUrl}/developer.js`);
@@ -33,15 +35,31 @@ test("the site serves the frontend and local hotel photos with a Supabase image 
   const githubLogoResponse = await fetch(`${baseUrl}/logo_folder/github.png`);
   const supabaseLogoResponse = await fetch(`${baseUrl}/logo_folder/supabase.jpeg`);
   const configResponse = await fetch(`${baseUrl}/config.js`);
+  const configScript = await configResponse.text();
   const imageResponse = await fetch(`${baseUrl}/images2/1.1.jpg`);
 
   assert.equal(pageResponse.status, 200);
+  assert.match(html, /map\.js\?v=hotel-directions-api-v2/);
+  assert.match(html, /script\.js\?v=hotel-directions-api-v2/);
+  assert.match(html, /style\.css\?v=hotel-directions-api-v2/);
   assert.match(html, /account-dialog/);
   assert.match(html, /id="booking-form"/);
   assert.match(html, /pending until a developer confirms your payment/);
   assert.match(html, /Submit reservation/);
   assert.equal(pageScriptResponse.status, 200);
   assert.match(pageScript, /Pending payment/);
+  assert.equal(mapScriptResponse.status, 200);
+  assert.match(mapScript, /CebuStaysMap/);
+  assert.match(mapScript, /credentials:\s*options\.credentials\s*\?\?\s*"include"/);
+  assert.match(mapScript, /credentials:\s*"omit"/);
+  assert.match(mapScript, /Retry hotel lookup/);
+  assert.match(mapScript, /No drivable road connects your starting point/);
+  assert.match(mapScript, /hotel-map-marker-pin/);
+  assert.match(mapScript, /server\.arcgisonline\.com/);
+  assert.match(html, /data-location-choice="always"/);
+  assert.match(html, /data-location-choice="session"/);
+  assert.match(html, /data-location-choice="denied"/);
+  assert.match(html, /Map tiles © Esri and GIS User Community/);
   assert.equal(developerPageResponse.status, 200);
   assert.match(developerHtml, /developer-destinations/);
   assert.match(developerHtml, /id="developer-bookings"/);
@@ -67,8 +85,12 @@ test("the site serves the frontend and local hotel photos with a Supabase image 
     pageResponse.headers.get("content-security-policy"),
     /img-src 'self' https:\/\/\*\.supabase\.co/
   );
+  assert.match(pageResponse.headers.get("content-security-policy"), /img-src[^;]*https:\/\/unpkg\.com/);
+  assert.match(pageResponse.headers.get("content-security-policy"), /https:\/\/server\.arcgisonline\.com/);
+  assert.match(pageResponse.headers.get("content-security-policy"), /https:\/\/router\.project-osrm\.org/);
   assert.equal(configResponse.status, 200);
-  assert.match(await configResponse.text(), /CEBUSTAYS_CONFIG/);
+  assert.match(configScript, /CEBUSTAYS_CONFIG/);
+  assert.match(configScript, /apiBaseUrl: ""/);
   assert.equal(imageResponse.status, 200);
   assert.equal(imageResponse.headers.get("content-type"), "image/jpeg");
 });
@@ -107,6 +129,45 @@ test("the site proxies Codespaces API requests to the local API origin", async (
   assert.equal(body.host, `127.0.0.1:${apiPort}`);
   assert.equal(body.cookie, "cebu_stays_session=browser-session");
   assert.match(response.headers.get("set-cookie"), /HttpOnly/);
+});
+
+test("the site proxies location API requests from its paired Codespaces Live Server port", async () => {
+  const upstream = createHttpServer((request, response) => {
+    response.writeHead(200, {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "http://127.0.0.1:3101",
+      "Access-Control-Allow-Credentials": "true"
+    });
+    response.end(JSON.stringify({
+      path: request.url,
+      origin: request.headers.origin
+    }));
+  });
+  const upstreamUrl = await listen(upstream);
+  const apiPort = new URL(upstreamUrl).port;
+  const codespaceName = "ideal-acorn-jr5xjggj7xrx3qpwj";
+  const siteUrl = await listen(createSiteServer({
+    apiPort,
+    frontendPort: 5505,
+    codespaceName,
+    logger: () => {}
+  }));
+
+  const response = await fetch(`${siteUrl}/api/hotels/15151522/location`, {
+    headers: {
+      Origin: `https://${codespaceName}-5506.app.github.dev`
+    }
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.path, "/api/hotels/15151522/location");
+  assert.equal(body.origin, `http://127.0.0.1:${apiPort}`);
+  assert.equal(
+    response.headers.get("access-control-allow-origin"),
+    `https://${codespaceName}-5506.app.github.dev`
+  );
+  assert.equal(response.headers.get("access-control-allow-credentials"), "true");
 });
 
 test("the site accepts login requests from localhost Live Server on port 5506", async () => {

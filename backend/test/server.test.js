@@ -88,6 +88,41 @@ test("GET /api/hotels returns the database catalogue in the frontend shape", asy
   }]);
 });
 
+test("public hotel location and address routes return geocoder choices", async () => {
+  const origin = "https://team-pikachu-database.github.io";
+  const baseUrl = await startServer({
+    configuredOrigins: "",
+    logger: () => {},
+    hotelLocations: {
+      getHotelLocation: async hotelId => ({
+        status: "choose_location",
+        candidates: [{ id: "1", name: `Hotel ${hotelId}`, latitude: 10.3, longitude: 123.8 }]
+      }),
+      geocodeAddress: async query => ({
+        status: "choose_location",
+        candidates: [{ id: "2", address: `${query}, Cebu`, latitude: 10.3, longitude: 123.8 }]
+      })
+    }
+  });
+
+  const hotelResponse = await fetch(`${baseUrl}/api/hotels/42/location`, {
+    headers: { Origin: origin }
+  });
+  const hotelBody = await hotelResponse.json();
+  const addressResponse = await fetch(`${baseUrl}/api/geocode?q=Cebu%20City`, {
+    headers: { Origin: origin }
+  });
+  const addressBody = await addressResponse.json();
+
+  assert.equal(hotelResponse.status, 200);
+  assert.equal(hotelBody.status, "choose_location");
+  assert.equal(hotelBody.candidates[0].name, "Hotel 42");
+  assert.equal(addressResponse.status, 200);
+  assert.equal(addressBody.status, "choose_location");
+  assert.equal(addressBody.candidates[0].address, "Cebu City, Cebu");
+  assert.equal(addressResponse.headers.get("access-control-allow-origin"), origin);
+});
+
 test("GET /api/hotels returns Supabase Storage images for a hotel", async () => {
   const baseUrl = await startServer({
     configuredOrigins: "",

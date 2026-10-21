@@ -8,9 +8,9 @@ const staticFiles = new Map([
   ["/", ["index.html", "text/html; charset=utf-8"]],
   ["/index.html", ["index.html", "text/html; charset=utf-8"]],
   ["/developer.html", ["developer.html", "text/html; charset=utf-8"]],
-  ["/config.js", ["config.js", "text/javascript; charset=utf-8"]],
   ["/developer.js", ["developer.js", "text/javascript; charset=utf-8"]],
   ["/script.js", ["script.js", "text/javascript; charset=utf-8"]],
+  ["/map.js", ["map.js", "text/javascript; charset=utf-8"]],
   ["/style.css", ["style.css", "text/css; charset=utf-8"]],
   ["/logo_folder/github.png", ["logo_folder/github.png", "image/png"]],
   ["/logo_folder/supabase.jpeg", ["logo_folder/supabase.jpeg", "image/jpeg"]]
@@ -36,6 +36,7 @@ function allowedSiteOrigins(configuredOrigins = "", codespaceName = "") {
 
   if (/^[a-z0-9-]+$/i.test(codespaceName)) {
     origins.push(`https://${codespaceName}-5505.app.github.dev`);
+    origins.push(`https://${codespaceName}-5506.app.github.dev`);
   }
 
   return new Set(origins);
@@ -57,7 +58,19 @@ function forwardApiRequest(request, response, { apiPort }) {
     path: request.url,
     headers
   }, upstreamResponse => {
-    response.writeHead(upstreamResponse.statusCode ?? 502, upstreamResponse.headers);
+    const responseHeaders = { ...upstreamResponse.headers };
+    if (request.headers.origin) {
+      responseHeaders["access-control-allow-origin"] = request.headers.origin;
+      const varyHeaders = String(responseHeaders.vary ?? "")
+        .split(",")
+        .map(value => value.trim())
+        .filter(Boolean);
+      if (!varyHeaders.some(value => value.toLowerCase() === "origin")) {
+        varyHeaders.push("Origin");
+      }
+      responseHeaders.vary = varyHeaders.join(", ");
+    }
+    response.writeHead(upstreamResponse.statusCode ?? 502, responseHeaders);
     upstreamResponse.pipe(response);
   });
 
@@ -74,13 +87,19 @@ function forwardApiRequest(request, response, { apiPort }) {
 
 async function serveStatic(pathname, request, response) {
   let file = staticFiles.get(pathname);
-  if (!file) {
+  let content;
+  if (pathname === "/config.js") {
+    file = ["config.js", "text/javascript; charset=utf-8"];
+    content = Buffer.from(
+      'window.CEBUSTAYS_CONFIG = Object.freeze({ apiBaseUrl: "" });\n'
+    );
+  } else if (!file) {
     const imagePath = pathname.match(/^\/(images[2-8]?)\/([A-Za-z0-9._-]+\.jpg)$/);
     if (!imagePath) return false;
     file = [`${imagePath[1]}/${imagePath[2]}`, "image/jpeg"];
   }
 
-  const content = await readFile(path.join(projectRoot, file[0]));
+  if (!content) content = await readFile(path.join(projectRoot, file[0]));
   response.writeHead(200, {
     "Content-Type": file[1],
     "Content-Length": content.length,
@@ -88,7 +107,7 @@ async function serveStatic(pathname, request, response) {
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "X-Frame-Options": "DENY",
-    "Content-Security-Policy": "default-src 'self'; img-src 'self' https://*.supabase.co; style-src 'self'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    "Content-Security-Policy": "default-src 'self'; img-src 'self' https://*.supabase.co https://server.arcgisonline.com https://unpkg.com data: blob:; style-src 'self' 'unsafe-inline' https://unpkg.com; script-src 'self' https://unpkg.com; connect-src 'self' https://router.project-osrm.org; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
   });
   response.end(request.method === "HEAD" ? undefined : content);
   return true;

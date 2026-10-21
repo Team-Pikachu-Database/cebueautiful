@@ -264,8 +264,11 @@ function isCodespacesPreviewOriginAllowed(origin, requestHost, apiPort) {
   }
 }
 
-function isCodespacesCatalogueOriginAllowed(origin, pathname, method) {
-  if (pathname !== "/api/hotels" || !["GET", "OPTIONS"].includes(method)) {
+function isCodespacesPublicLocationOriginAllowed(origin, pathname, method) {
+  const isPublicLocationRoute = pathname === "/api/hotels" ||
+    /^\/api\/hotels\/[1-9]\d{0,18}\/location$/.test(pathname) ||
+    pathname === "/api/geocode";
+  if (!isPublicLocationRoute || !["GET", "OPTIONS"].includes(method)) {
     return false;
   }
 
@@ -286,6 +289,7 @@ export function createServer({
   supabaseUrl,
   auth,
   bookings,
+  hotelLocations,
   apiPort = 3000,
   logger = console.error
 }) {
@@ -311,7 +315,7 @@ export function createServer({
       if (
         !allowedOrigins.has(origin) &&
         !isCodespacesPreviewOriginAllowed(origin, request.headers.host ?? "", apiPort) &&
-        !isCodespacesCatalogueOriginAllowed(origin, pathname, request.method)
+        !isCodespacesPublicLocationOriginAllowed(origin, pathname, request.method)
       ) {
         sendJson(response, 403, { error: "Origin is not allowed.", requestId });
         return;
@@ -343,6 +347,53 @@ export function createServer({
     }
 
     const availabilityMatch = pathname.match(/^\/api\/hotels\/([1-9]\d{0,18})\/availability$/);
+    const hotelLocationMatch = pathname.match(/^\/api\/hotels\/([1-9]\d{0,18})\/location$/);
+    const addressGeocodeRequest = pathname === "/api/geocode";
+    if (hotelLocationMatch || addressGeocodeRequest) {
+      if (!hotelLocations) {
+        sendJson(response, 503, { error: "Hotel location service is not configured.", requestId });
+        return;
+      }
+      if (request.method !== "GET") {
+        response.setHeader("Allow", "GET, OPTIONS");
+        sendJson(response, 405, { error: "Method not allowed.", requestId });
+        return;
+      }
+
+      try {
+        if (hotelLocationMatch) {
+          const result = await hotelLocations.getHotelLocation(hotelLocationMatch[1]);
+          if (result.status === "invalid") {
+            sendJson(response, 400, { error: "Choose a valid property.", requestId });
+          } else if (result.status === "not_found") {
+            sendJson(response, 404, { error: "The selected property was not found.", requestId });
+          } else {
+            sendJson(response, 200, { ...result, requestId });
+          }
+          return;
+        }
+
+        const query = new URL(request.url, "http://localhost").searchParams.get("q");
+        const result = await hotelLocations.geocodeAddress(query);
+        if (result.status === "invalid") {
+          sendJson(response, 400, { error: "Enter a location with at least 3 characters.", requestId });
+        } else {
+          sendJson(response, 200, { ...result, requestId });
+        }
+      } catch (error) {
+        logger(JSON.stringify({
+          event: "hotel_location_lookup_failed",
+          requestId,
+          errorCode: error?.code ?? "UPSTREAM_UNAVAILABLE"
+        }));
+        sendJson(response, 503, {
+          error: "Location lookup is temporarily unavailable. Try again later.",
+          requestId
+        });
+      }
+      return;
+    }
+
     const reservationHistory = pathname === "/api/bookings/mine";
     const pendingPayments = pathname === "/api/bookings/pending";
     const paymentConfirmation = pathname.match(/^\/api\/bookings\/(CS-[A-Fa-f0-9]{12})\/confirm-payment$/);
