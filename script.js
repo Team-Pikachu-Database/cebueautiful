@@ -3,11 +3,13 @@
 const configuredApiBaseUrl = typeof window.CEBUSTAYS_CONFIG?.apiBaseUrl === "string"
   ? window.CEBUSTAYS_CONFIG.apiBaseUrl.trim().replace(/\/+$/, "")
   : "";
-const isLocalApiPreview = window.location.port === "5505" ||
-  window.location.port === "5506" ||
-  /^[a-z0-9-]+-550[56]\.app\.github\.dev$/i.test(window.location.hostname);
-const API_BASE_URL = isLocalApiPreview
-  ? ""
+const isCodespacesLiveServer = window.location.port === "5506" &&
+  /^[a-z0-9-]+-5506\.app\.github\.dev$/i.test(window.location.hostname);
+const codespacesApiHost = isCodespacesLiveServer
+  ? window.location.hostname.replace(/-5506\.app\.github\.dev$/i, "-5505.app.github.dev")
+  : "";
+const API_BASE_URL = isCodespacesLiveServer
+  ? `${window.location.protocol}//${codespacesApiHost}`
   : configuredApiBaseUrl;
 const API_URL = `${API_BASE_URL}/api/hotels`;
 
@@ -1048,6 +1050,17 @@ function buildCard(hotel) {
 
   bottom.appendChild(price);
 
+  const locate = el("button", "btn btn-ghost hotel-locate", "Locate");
+  locate.type = "button";
+  locate.setAttribute("aria-label", `Show ${hotel.name.trim()} on the map`);
+  locate.addEventListener("click", () => {
+    if (!window.CebuStaysMap?.open) {
+      window.alert("The map is not available right now. Please try again later.");
+      return;
+    }
+    window.CebuStaysMap.open(hotel, locate);
+  });
+
   const cta = el(
     "button",
     "btn btn-primary",
@@ -1060,7 +1073,7 @@ function buildCard(hotel) {
     openHotelDetails(hotel);
   });
 
-  side.append(score, bottom, cta);
+  side.append(score, bottom, locate, cta);
 
   card.append(gallery, info, side);
 
