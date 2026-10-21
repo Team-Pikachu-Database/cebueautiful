@@ -5,11 +5,15 @@ const configuredApiBaseUrl = typeof window.CEBUSTAYS_CONFIG?.apiBaseUrl === "str
   : "";
 const isCodespacesLiveServer = window.location.port === "5506" &&
   /^[a-z0-9-]+-5506\.app\.github\.dev$/i.test(window.location.hostname);
+const isLocalLiveServer = window.location.port === "5506" &&
+  ["localhost", "127.0.0.1"].includes(window.location.hostname);
 const codespacesApiHost = isCodespacesLiveServer
   ? window.location.hostname.replace(/-5506\.app\.github\.dev$/i, "-5505.app.github.dev")
   : "";
 const API_BASE_URL = isCodespacesLiveServer
   ? `${window.location.protocol}//${codespacesApiHost}`
+  : isLocalLiveServer
+    ? `${window.location.protocol}//${window.location.hostname}:5505`
   : configuredApiBaseUrl;
 const API_URL = `${API_BASE_URL}/api/hotels`;
 
@@ -59,6 +63,15 @@ function hotelImageAlt(hotel, index) {
 
 const feed = document.getElementById("results-feed");
 const title = document.getElementById("results-title");
+const publicHome = document.getElementById("public-home");
+const hotelApp = document.getElementById("hotel-app");
+const homeNavToggle = document.getElementById("home-nav-toggle");
+const homeNavigationLinks = document.getElementById("home-navigation-links");
+const sidebar = document.getElementById("site-sidebar");
+const sidebarToggle = document.getElementById("sidebar-toggle");
+const mobileSidebarToggle = document.getElementById("mobile-sidebar-toggle");
+const sidebarClose = document.getElementById("sidebar-close");
+const sidebarBackdrop = document.getElementById("sidebar-backdrop");
 
 const checkboxes = document.querySelectorAll(
   'input[name="town"]'
@@ -69,11 +82,43 @@ let signedInAccount = null;
 let reservationHistoryLoading = false;
 let appliedCheckIn = "";
 let appliedCheckOut = "";
+let hotelViewLoaded = false;
 
 const accountDialog = document.getElementById("account-dialog");
 const accountMessage = document.getElementById("account-message");
 const accountEntry = document.getElementById("account-entry");
 const signedInPanel = document.getElementById("account-signed-in");
+
+function getCurrentView() {
+  return new URLSearchParams(window.location.search).get("view") === "hotels" ? "hotels" : "home";
+}
+
+function syncPageLinks(activeView) {
+  document.querySelectorAll("[data-page-link]").forEach(link => {
+    const isActive = link.dataset.pageLink === activeView;
+    link.classList.toggle("is-active", isActive);
+    if (isActive) {
+      link.setAttribute("aria-current", "page");
+    } else {
+      link.removeAttribute("aria-current");
+    }
+  });
+}
+
+function applyCurrentView(view = getCurrentView()) {
+  const isHome = view === "home";
+  document.body.classList.toggle("home-view", isHome);
+  if (publicHome) publicHome.hidden = !isHome;
+  if (hotelApp) hotelApp.hidden = isHome;
+  syncPageLinks(view);
+
+  if (!isHome) {
+    if (!hotelViewLoaded) {
+      hotelViewLoaded = true;
+      loadHotels();
+    }
+  }
+}
 
 function setAccountView(view) {
   document.querySelectorAll("[data-account-view]").forEach(tab => {
@@ -92,24 +137,54 @@ function setAccountView(view) {
 function updateAccountDisplay(user) {
   signedInAccount = user;
   const isSignedIn = Boolean(user);
-  const accountButton = document.getElementById("account-open");
-  const developerProjectLink = document.getElementById("developer-project-link");
-  const accountMenu = document.getElementById("account-menu");
+  if (isSignedIn && getCurrentView() === "home") {
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.set("view", "hotels");
+    window.history.replaceState({}, "", nextUrl);
+    applyCurrentView("hotels");
+  }
 
-  accountEntry.hidden = isSignedIn;
-  signedInPanel.hidden = !isSignedIn;
-  accountButton.hidden = isSignedIn;
-  accountMenu.hidden = !isSignedIn;
-  developerProjectLink.hidden = user?.role !== "developer";
+  const developerProjectLink = document.getElementById("developer-project-link");
+  const sidebarGuestActions = document.getElementById("sidebar-guest-actions");
+  const sidebarUserActions = document.getElementById("sidebar-user-actions");
+  const sidebarUserName = document.getElementById("sidebar-user-name");
+  const sidebarUserRole = document.getElementById("sidebar-user-role");
+  const sidebarAvatar = document.getElementById("sidebar-avatar");
+
+  if (accountEntry) accountEntry.hidden = isSignedIn;
+  if (signedInPanel) signedInPanel.hidden = !isSignedIn;
+  if (sidebarGuestActions) sidebarGuestActions.hidden = isSignedIn;
+  if (sidebarUserActions) sidebarUserActions.hidden = !isSignedIn;
+  if (developerProjectLink) developerProjectLink.hidden = user?.role !== "developer";
+  const bookingForm = document.getElementById("booking-form");
+  const bookingSignIn = document.getElementById("booking-sign-in");
+  if (bookingSignIn) bookingSignIn.hidden = isSignedIn;
+  if (!isSignedIn && bookingForm) {
+    bookingForm.hidden = true;
+    bookingForm.elements.namedItem("guestName").value = "";
+    bookingForm.elements.namedItem("guestEmail").value = "";
+  }
 
   if (isSignedIn) {
     const displayName = user.displayName || user.email.split("@", 1)[0];
-    document.getElementById("account-greeting-name").textContent =
-      displayName.charAt(0).toLocaleUpperCase() + displayName.slice(1);
-    document.getElementById("account-email").textContent = user.email;
-    document.getElementById("account-role").textContent =
-      user.role === "developer" ? "Developer account" : "Standard account";
+    const safeName = displayName.charAt(0).toLocaleUpperCase() + displayName.slice(1);
+    const roleLabel = user.role === "developer" ? "Developer account" : "Standard account";
+
+    if (sidebarUserName) sidebarUserName.textContent = safeName;
+    if (sidebarUserRole) sidebarUserRole.textContent = roleLabel;
+    if (sidebarAvatar) sidebarAvatar.textContent = safeName.slice(0, 1).toLocaleUpperCase();
+
+    const accountGreetingName = document.getElementById("account-greeting-name");
+    const accountEmail = document.getElementById("account-email");
+    const accountRole = document.getElementById("account-role");
+
+    if (accountGreetingName) accountGreetingName.textContent = safeName;
+    if (accountEmail) accountEmail.textContent = user.email;
+    if (accountRole) accountRole.textContent = roleLabel;
   } else {
+    if (sidebarUserName) sidebarUserName.textContent = "Guest";
+    if (sidebarUserRole) sidebarUserRole.textContent = "Explore mode";
+    if (sidebarAvatar) sidebarAvatar.textContent = "G";
     setAccountView("login");
   }
 }
@@ -163,68 +238,129 @@ async function submitAccountForm(event, endpoint) {
 }
 
 function initializeAccount() {
-  document.getElementById("account-open").addEventListener("click", () => {
-    accountDialog.showModal();
+  document.querySelectorAll("[data-account-open]").forEach(button => {
+    button.addEventListener("click", () => {
+      const target = button.dataset.accountViewTarget || "login";
+      setAccountView(target);
+      accountDialog.showModal();
+    });
   });
 
-  document.getElementById("account-close").addEventListener("click", () => {
-    accountDialog.close();
-  });
+  const accountCloseButton = document.getElementById("account-close");
+  if (accountCloseButton) {
+    accountCloseButton.addEventListener("click", () => accountDialog.close());
+  }
 
   document.querySelectorAll("[data-dialog-close]").forEach(button => {
     button.addEventListener("click", () => button.closest("dialog").close());
   });
 
-  accountDialog.addEventListener("click", event => {
-    if (event.target === accountDialog) accountDialog.close();
-  });
+  if (accountDialog) {
+    accountDialog.addEventListener("click", event => {
+      if (event.target === accountDialog) accountDialog.close();
+    });
+  }
 
   document.querySelectorAll("[data-account-view]").forEach(tab => {
     tab.addEventListener("click", () => setAccountView(tab.dataset.accountView));
   });
 
-  document
-    .getElementById("account-form-login")
-    .addEventListener("submit", event => submitAccountForm(event, "/login"));
+  const loginForm = document.getElementById("account-form-login");
+  const registerForm = document.getElementById("account-form-register");
+  const developerForm = document.getElementById("account-form-developer");
 
-  document
-    .getElementById("account-form-register")
-    .addEventListener("submit", event => submitAccountForm(event, "/register"));
+  if (loginForm) {
+    loginForm.addEventListener("submit", event => submitAccountForm(event, "/login"));
+  }
 
-  document
-    .getElementById("account-form-developer")
-    .addEventListener("submit", event =>
+  if (registerForm) {
+    registerForm.addEventListener("submit", event => submitAccountForm(event, "/register"));
+  }
+
+  if (developerForm) {
+    developerForm.addEventListener("submit", event =>
       submitAccountForm(event, "/developer/register")
     );
+  }
 
-  document.getElementById("account-logout").addEventListener("click", async () => {
-    const button = document.getElementById("account-logout");
-    button.disabled = true;
-    try {
-      await requestAccountApi("/logout", { method: "POST" });
-      updateAccountDisplay(null);
-      accountMessage.textContent = "You have signed out. Sign in again to access your account.";
-      document.querySelector('#account-form-login input[name="email"]').focus();
-    } catch (error) {
-      accountMessage.textContent = error.message;
-    } finally {
-      button.disabled = false;
-    }
-  });
+  const logoutButton = document.getElementById("account-logout");
+  if (logoutButton) {
+    logoutButton.addEventListener("click", async () => {
+      const button = logoutButton;
+      button.disabled = true;
+      try {
+        await requestAccountApi("/logout", { method: "POST" });
+        updateAccountDisplay(null);
+        accountMessage.textContent = "You have signed out. Sign in again to access your account.";
+        const loginField = document.querySelector('#account-form-login input[name="email"]');
+        if (loginField) loginField.focus();
+      } catch (error) {
+        accountMessage.textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
+    });
+  }
+
+  const sidebarSettingsButton = document.getElementById("sidebar-settings");
+  const sidebarReservationsButton = document.getElementById("sidebar-reservations");
+  const sidebarLogoutButton = document.getElementById("sidebar-logout");
+
+  if (sidebarSettingsButton) {
+    sidebarSettingsButton.addEventListener("click", () => {
+      const settingsDialog = document.getElementById("account-settings-dialog");
+      if (!settingsDialog) return;
+      const nameField = document.getElementById("profile-display-name");
+      const emailField = document.getElementById("profile-email");
+      if (nameField) {
+        nameField.value = signedInAccount?.displayName || signedInAccount?.email.split("@", 1)[0] || "";
+      }
+      if (emailField) {
+        emailField.value = signedInAccount?.email || "";
+      }
+      const profileMessage = document.getElementById("profile-message");
+      if (profileMessage) profileMessage.textContent = "";
+      settingsDialog.showModal();
+    });
+  }
+
+  if (sidebarReservationsButton) {
+    sidebarReservationsButton.addEventListener("click", () => {
+      const reservationsDialog = document.getElementById("reservation-history-dialog");
+      if (!reservationsDialog) return;
+      reservationsDialog.showModal();
+      loadReservationHistory();
+    });
+  }
+
+  if (sidebarLogoutButton) {
+    sidebarLogoutButton.addEventListener("click", async () => {
+      sidebarLogoutButton.disabled = true;
+      try {
+        await requestAccountApi("/logout", { method: "POST" });
+        updateAccountDisplay(null);
+      } catch (error) {
+        if (accountMessage) accountMessage.textContent = error.message;
+      } finally {
+        sidebarLogoutButton.disabled = false;
+      }
+    });
+  }
 
   requestAccountApi("/me")
     .then(data => updateAccountDisplay(data.user))
     .catch(() => updateAccountDisplay(null));
-
-  initializeAccountMenu();
 }
 
 function initializeAccountMenu() {
   const menu = document.getElementById("account-menu");
+  if (!menu) return;
+
   const trigger = document.getElementById("account-menu-trigger");
   const menuPanel = document.getElementById("account-menu-panel");
   const settingsDialog = document.getElementById("account-settings-dialog");
   const reservationsDialog = document.getElementById("reservation-history-dialog");
+  if (!trigger || !menuPanel || !settingsDialog || !reservationsDialog) return;
 
   function closeMenu() {
     menuPanel.hidden = true;
@@ -260,15 +396,7 @@ function initializeAccountMenu() {
       closeMenu();
       reservationsDialog.showModal();
       loadReservationHistory();
-      window.clearInterval(reservationRefreshTimer);
-      reservationRefreshTimer = window.setInterval(() => {
-        if (reservationsDialog.open) loadReservationHistory();
-      }, 15000);
     });
-  let reservationRefreshTimer;
-  reservationsDialog.addEventListener("close", () => {
-    window.clearInterval(reservationRefreshTimer);
-  });
 
   document.getElementById("profile-form").addEventListener("submit", async event => {
     event.preventDefault();
@@ -432,6 +560,7 @@ function openHotelDetails(hotel, photoIndex = 1) {
   const bookingForm = document.getElementById("booking-form");
   bookingForm.reset();
   bookingForm.hidden = true;
+  document.getElementById("booking-sign-in").hidden = true;
   if (signedInAccount) {
     bookingForm.elements.namedItem("guestName").value =
       signedInAccount.displayName || signedInAccount.email.split("@", 1)[0];
@@ -703,16 +832,25 @@ async function refreshBookingAvailability() {
 
     if (availableRooms > 0) {
       roomsSelect.value = String(Math.min(previousRooms, availableRooms));
-      form.hidden = false;
-      status.textContent =
-        `${availableRooms} of ${data.availability.totalRooms} rooms available for these dates.`;
+      if (signedInAccount) {
+        form.hidden = false;
+        status.textContent =
+          `${availableRooms} of ${data.availability.totalRooms} rooms available for these dates.`;
+      } else {
+        form.hidden = true;
+        document.getElementById("booking-sign-in").hidden = false;
+        status.textContent =
+          `${availableRooms} of ${data.availability.totalRooms} rooms available. Sign in to reserve.`;
+      }
       updateBookingTotal();
     } else {
       form.hidden = true;
+      document.getElementById("booking-sign-in").hidden = true;
       status.textContent = "Sorry, no rooms are available for those dates.";
     }
   } catch (error) {
     form.hidden = true;
+    document.getElementById("booking-sign-in").hidden = true;
     status.textContent = error.message;
   } finally {
     checkButton.disabled = false;
@@ -723,6 +861,11 @@ async function refreshBookingAvailability() {
 document
   .getElementById("detail-availability")
   .addEventListener("click", refreshBookingAvailability);
+
+document.getElementById("booking-sign-in").addEventListener("click", () => {
+  setAccountView("login");
+  accountDialog.showModal();
+});
 
 document.getElementById("booking-checkin").addEventListener("change", () => {
   setBookingDateLimits();
@@ -740,6 +883,12 @@ document.getElementById("booking-rooms").addEventListener("change", updateBookin
 document.getElementById("booking-form").addEventListener("submit", async event => {
   event.preventDefault();
   if (!activeDetailHotel) return;
+  if (!signedInAccount) {
+    event.currentTarget.hidden = true;
+    document.getElementById("booking-sign-in").hidden = false;
+    document.getElementById("booking-status").textContent = "Sign in to submit a reservation.";
+    return;
+  }
 
   const form = event.currentTarget;
   const submit = form.querySelector('button[type="submit"]');
@@ -1082,57 +1231,118 @@ function buildCard(hotel) {
 
 /* ---------- RENDER HOTEL RESULTS ---------- */
 
-function render() {
-  const selectedFilters = [...checkboxes]
-    .filter(checkbox => checkbox.checked)
-    .map(checkbox => checkbox.value.toLowerCase().trim());
+function renderFeaturedHotels() {
+  const container = document.getElementById("featured-hotels");
+  const destinationList = document.getElementById("destination-list");
+  if (!container || !destinationList) return;
 
-  const filteredHotels = selectedFilters.length
-    ? hotels.filter(hotel => {
-        const town = String(hotel.town || "")
-          .toLowerCase()
-          .trim();
-
-        const location = String(hotel.location || "")
-          .toLowerCase()
-          .trim();
-
-        const amenities = (
-          Array.isArray(hotel.amenities)
-            ? hotel.amenities
-            : []
-        ).map(item => String(item).toLowerCase().trim());
-
-        return selectedFilters.some(filter =>
-          town === filter ||
-          location === filter ||
-          amenities.includes(filter)
-        );
-      })
-    : hotels;
-
-  title.textContent =
-    `${filteredHotels.length} propert${
-      filteredHotels.length === 1 ? "y" : "ies"
-    } found`;
-
-  feed.replaceChildren();
-
-  if (filteredHotels.length === 0) {
-    feed.appendChild(
-      el(
-        "div",
-        "empty",
-        "No properties match these filters. Clear a filter to see all stays."
-      )
-    );
-
+  if (!hotels.length) {
+    container.innerHTML = '<p class="home-loading">Loading stays…</p>';
+    destinationList.innerHTML = "";
     return;
   }
 
-  filteredHotels.forEach(hotel => {
-    feed.appendChild(buildCard(hotel));
+  const featured = hotels.slice(0, 3);
+  container.innerHTML = featured.map(hotel => `
+    <article class="home-featured-card">
+      <button type="button" class="home-featured-image" data-featured-hotel="${hotel.id}" aria-label="Open ${hotel.name}">
+        <img src="${hotelImagePath(hotel, 1)}" alt="${hotelImageAlt(hotel, 1)}" loading="lazy">
+      </button>
+      <div class="home-featured-copy">
+        <p class="home-card-location">${hotel.location}, ${hotel.town}</p>
+        <h3>${hotel.name}</h3>
+        <p>${hotel.desc ? hotel.desc.slice(0, 110).trim() + (hotel.desc.length > 110 ? "…" : "") : "Stay details coming soon."}</p>
+        <div class="home-featured-meta">
+          <span>${hotel.score ? hotel.score.toFixed(1) : "New"}</span>
+          <strong>${hotelPriceText(hotel, nights())}</strong>
+        </div>
+      </div>
+    </article>
+  `).join("");
+
+  destinationList.innerHTML = [...new Set(hotels.map(hotel => hotel.town).filter(Boolean))].slice(0, 6).map(town => `
+    <button type="button" class="destination-card" data-page-link="hotels">
+      ${town}
+    </button>
+  `).join("");
+
+  container.querySelectorAll("[data-featured-hotel]").forEach(button => {
+    const hotel = hotels.find(item => item.id === button.dataset.featuredHotel);
+    if (!hotel) return;
+    button.addEventListener("click", () => {
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.set("view", "hotels");
+      window.history.pushState({}, "", nextUrl);
+      applyCurrentView("hotels");
+      openHotelDetails(hotel);
+    });
   });
+
+  destinationList.querySelectorAll("[data-page-link]").forEach(button => {
+    button.addEventListener("click", () => {
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.set("view", "hotels");
+      window.history.pushState({}, "", nextUrl);
+      applyCurrentView("hotels");
+    });
+  });
+}
+
+function render() {
+  if (title) {
+    const selectedFilters = [...checkboxes]
+      .filter(checkbox => checkbox.checked)
+      .map(checkbox => checkbox.value.toLowerCase().trim());
+
+    const filteredHotels = selectedFilters.length
+      ? hotels.filter(hotel => {
+          const town = String(hotel.town || "")
+            .toLowerCase()
+            .trim();
+
+          const location = String(hotel.location || "")
+            .toLowerCase()
+            .trim();
+
+          const amenities = (
+            Array.isArray(hotel.amenities)
+              ? hotel.amenities
+              : []
+          ).map(item => String(item).toLowerCase().trim());
+
+          return selectedFilters.some(filter =>
+            town === filter ||
+            location === filter ||
+            amenities.includes(filter)
+          );
+        })
+      : hotels;
+
+    title.textContent =
+      `${filteredHotels.length} propert${
+        filteredHotels.length === 1 ? "y" : "ies"
+      } found`;
+
+    feed.replaceChildren();
+
+    if (filteredHotels.length === 0) {
+      feed.appendChild(
+        el(
+          "div",
+          "empty",
+          "No properties match these filters. Clear a filter to see all stays."
+        )
+      );
+
+      return;
+    }
+
+    filteredHotels.forEach(hotel => {
+      feed.appendChild(buildCard(hotel));
+    });
+  }
+
+  renderFeaturedHotels();
 }
 
 /* ---------- LOAD HOTEL CATALOGUE ---------- */
@@ -1281,9 +1491,148 @@ document
     render();
   });
 
+function initializeHomepageNavigation() {
+  if (!homeNavToggle || !homeNavigationLinks) return;
+
+  homeNavToggle.addEventListener("click", () => {
+    const isOpen = homeNavigationLinks.classList.toggle("is-open");
+    homeNavToggle.setAttribute("aria-expanded", String(isOpen));
+  });
+
+  document.addEventListener("click", event => {
+    if (!homeNavigationLinks.contains(event.target) && !homeNavToggle.contains(event.target)) {
+      homeNavigationLinks.classList.remove("is-open");
+      homeNavToggle.setAttribute("aria-expanded", "false");
+    }
+  });
+}
+
+function initializeSidebarNavigation() {
+  if (!sidebar) return;
+
+  const findStaysButton = document.getElementById("sidebar-find-stays");
+  const clearFiltersButton = document.getElementById("sidebar-clear-filters");
+
+  if (findStaysButton) {
+    findStaysButton.addEventListener("click", () => {
+      const checkin = document.getElementById("checkin");
+      checkin?.scrollIntoView({ behavior: "smooth", block: "center" });
+      checkin?.focus({ preventScroll: true });
+    });
+  }
+
+  if (clearFiltersButton) {
+    clearFiltersButton.addEventListener("click", () => {
+      document.getElementById("clear-filters")?.click();
+    });
+  }
+
+  const setSidebarExpanded = expanded => {
+    sidebar.classList.toggle("is-expanded", expanded);
+    if (hotelApp) {
+      hotelApp.classList.toggle("sidebar-expanded", expanded);
+    }
+    if (sidebarToggle) {
+      sidebarToggle.setAttribute("aria-expanded", String(expanded));
+    }
+  };
+
+  sidebar.addEventListener("mouseenter", () => {
+    if (window.innerWidth > 700) setSidebarExpanded(true);
+  });
+
+  sidebar.addEventListener("mouseleave", () => {
+    if (window.innerWidth > 700 && !sidebar.classList.contains("is-pinned")) setSidebarExpanded(false);
+  });
+
+  if (sidebarToggle) {
+    sidebarToggle.addEventListener("click", () => {
+      const shouldExpand = !sidebar.classList.contains("is-expanded");
+      sidebar.classList.toggle("is-pinned", shouldExpand);
+      setSidebarExpanded(shouldExpand);
+    });
+  }
+
+  if (mobileSidebarToggle) {
+    mobileSidebarToggle.addEventListener("click", () => {
+      const isOpen = sidebar.classList.toggle("is-open");
+      mobileSidebarToggle.setAttribute("aria-expanded", String(isOpen));
+      if (sidebarBackdrop) {
+        sidebarBackdrop.hidden = !isOpen;
+      }
+    });
+  }
+
+  if (sidebarClose) {
+    sidebarClose.addEventListener("click", () => {
+      sidebar.classList.remove("is-open");
+      if (mobileSidebarToggle) mobileSidebarToggle.setAttribute("aria-expanded", "false");
+      if (sidebarBackdrop) sidebarBackdrop.hidden = true;
+    });
+  }
+
+  if (sidebarBackdrop) {
+    sidebarBackdrop.addEventListener("click", () => {
+      sidebar.classList.remove("is-open");
+      if (mobileSidebarToggle) mobileSidebarToggle.setAttribute("aria-expanded", "false");
+      sidebarBackdrop.hidden = true;
+    });
+  }
+
+  window.addEventListener("resize", () => {
+    if (window.innerWidth <= 700) {
+      sidebar.classList.remove("is-expanded");
+      if (sidebarToggle) sidebarToggle.setAttribute("aria-expanded", "false");
+      return;
+    }
+    if (sidebar.classList.contains("is-pinned")) {
+      setSidebarExpanded(true);
+    } else {
+      setSidebarExpanded(false);
+    }
+  });
+}
+
+function initializePageLinks() {
+  document.querySelectorAll("[data-page-link]").forEach(link => {
+    link.addEventListener("click", event => {
+      const target = link.dataset.pageLink || "home";
+      if (signedInAccount && target === "home") {
+        event.preventDefault();
+        const nextUrl = new URL(window.location.href);
+        nextUrl.searchParams.set("view", "hotels");
+        window.history.pushState({}, "", nextUrl);
+        applyCurrentView("hotels");
+        return;
+      }
+      const nextUrl = new URL(window.location.href);
+      if (target === "home") {
+        nextUrl.searchParams.delete("view");
+      } else {
+        nextUrl.searchParams.set("view", "hotels");
+      }
+      event.preventDefault();
+      window.history.pushState({}, "", nextUrl);
+      applyCurrentView(target);
+    });
+  });
+
+  window.addEventListener("popstate", () => {
+    applyCurrentView();
+  });
+}
+
 /* ---------- INITIALIZE APP ---------- */
 
 setDefaultDates();
 initializeAccount();
+initializeAccountMenu();
+initializeHomepageNavigation();
+initializeSidebarNavigation();
+initializePageLinks();
+applyCurrentView();
 
-loadHotels();
+if (getCurrentView() === "hotels") {
+  hotelViewLoaded = true;
+  loadHotels();
+}

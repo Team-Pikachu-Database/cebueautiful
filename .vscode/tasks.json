@@ -1,0 +1,30 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start CebuStays database API",
+      "type": "npm",
+      "script": "start",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "custom",
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*",
+          "endsPattern": "^CebuStays server listening on http://.*:3000$"
+        }
+      },
+      "runOptions": {
+        "runOn": "folderOpen",
+        "instanceLimit": 1
+      },
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated"
+      }
+    }
+  ]
+}
