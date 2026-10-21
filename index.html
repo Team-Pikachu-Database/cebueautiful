@@ -4,7 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CebuStays – Hotels and staycations in Cebu</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=hotel-directions-api-v2">
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin="">
     <link rel="icon" type="image/x-icon" href="plane.png">
 </head>
 <body>
@@ -332,7 +337,71 @@
     </section>
   </div>
 
+  <dialog class="hotel-map-dialog" id="hotel-map-dialog" aria-labelledby="hotel-map-title">
+    <section class="hotel-map-panel">
+      <header class="hotel-map-header">
+        <div>
+          <span class="map-kicker">CEBUSTAYS DIRECTIONS</span>
+          <h2 id="hotel-map-title">Hotel location</h2>
+          <p id="hotel-map-address"></p>
+        </div>
+        <div class="hotel-map-header-actions">
+          <button class="map-icon-button" type="button" id="hotel-map-fullscreen" aria-label="View map fullscreen" title="Fullscreen map">⛶</button>
+          <button class="map-icon-button" type="button" id="hotel-map-close" aria-label="Close map" title="Close map">×</button>
+        </div>
+      </header>
+      <div class="hotel-map-layout">
+        <div class="hotel-map-canvas-wrap">
+          <div id="hotel-map-canvas" role="application" aria-label="Interactive map showing your location, hotel, and driving route"></div>
+          <p class="hotel-map-tile-error" id="hotel-map-tile-error" hidden>Map tiles are unavailable. You can still use the directions details.</p>
+        </div>
+        <aside class="hotel-map-details" aria-label="Location and route details">
+          <p class="hotel-map-privacy">Your location is requested only after you choose an access option. To calculate directions, your coordinates are sent to OSRM; the map provider also receives the visible map area. CebuStays does not store your coordinates. Entered starting places go to OpenStreetMap's geocoder. External providers process requests under their own privacy policies.</p>
+          <p class="hotel-map-status" id="hotel-map-status" aria-live="polite">Finding this hotel's location…</p>
+          <div class="hotel-map-candidates" id="hotel-map-candidates" hidden></div>
+          <div class="hotel-map-route-summary" id="hotel-map-route-summary" hidden></div>
+          <ol class="hotel-map-directions" id="hotel-map-directions" hidden></ol>
+          <div class="hotel-map-legend" aria-label="Map legend">
+            <span><i class="map-legend-user"></i>Your location</span>
+            <span><i class="map-legend-hotel"></i>Hotel</span>
+            <span><i class="map-legend-route"></i>Driving route</span>
+          </div>
+          <div class="hotel-map-actions">
+            <button class="btn btn-primary" type="button" id="hotel-map-retry-location">Choose location access</button>
+            <button class="btn btn-ghost" type="button" id="hotel-map-retry-route" hidden>Retry route</button>
+            <form id="hotel-map-start-form">
+              <label for="hotel-map-start-input">Or enter a starting place</label>
+              <input id="hotel-map-start-input" name="start" type="text" maxlength="200" autocomplete="street-address" placeholder="Address, town, or landmark">
+              <button class="btn btn-ghost" type="submit">Find starting place</button>
+            </form>
+          </div>
+          <a class="hotel-map-external" id="hotel-map-external" href="#" target="_blank" rel="noopener noreferrer" hidden>Open directions in Google Maps ↗</a>
+          <small class="hotel-map-attribution">Map tiles © Esri and GIS User Community · Routing by OSRM</small>
+        </aside>
+      </div>
+    </section>
+  </dialog>
+
+  <dialog class="location-consent-dialog" id="location-consent-dialog" aria-labelledby="location-consent-title">
+    <section class="location-consent-panel">
+      <h2 id="location-consent-title">Use your device location?</h2>
+      <p>Use your current location as the starting point and get driving directions to this hotel. Your browser or device may show a separate permission prompt.</p>
+      <div class="location-consent-actions">
+        <button class="btn btn-primary" type="button" data-location-choice="always">Always use</button>
+        <button class="btn btn-ghost" type="button" data-location-choice="session">Only during app</button>
+        <button class="location-consent-deny" type="button" data-location-choice="denied">Not allowed</button>
+      </div>
+      <small>“Always use” remembers your choice on this device and checks your location when you open directions. It does not track you in the background. “Only during app” forgets the choice when this browser session ends.</small>
+    </section>
+  </dialog>
+
   <script src="config.js"></script>
-  <script src="script.js"></script>
+  <script
+    defer
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+  <script defer src="map.js?v=hotel-directions-api-v2"></script>
+  <script defer src="script.js?v=hotel-directions-api-v2"></script>
 </body>
 </html>
