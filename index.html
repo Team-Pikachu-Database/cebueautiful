@@ -13,45 +13,147 @@
     <link rel="icon" type="image/x-icon" href="plane.png">
 </head>
 <body>
-  <header class="site-header">
-    <div class="header-top container">
-      <a href="#" class="logo" aria-label="CebuStays home">CebuStays</a>
-      <div class="header-actions">
-        <a class="btn btn-project" id="developer-project-link" href="developer.html" hidden>Go to project</a>
-        <button type="button" class="btn btn-account" id="account-open">Sign in</button>
-        <div class="account-menu" id="account-menu" hidden>
-          <span class="account-greeting">Hi, <strong id="account-greeting-name">guest</strong>, ready for your next stay?</span>
-          <button type="button" class="account-menu-trigger" id="account-menu-trigger" aria-label="Open account menu" aria-expanded="false" aria-controls="account-menu-panel">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <circle cx="12" cy="8" r="3.5"></circle>
-              <path d="M4.8 20c.5-3.4 3.3-5.5 7.2-5.5s6.7 2.1 7.2 5.5"></path>
-            </svg>
-          </button>
-          <div class="account-menu-panel" id="account-menu-panel" hidden>
-            <button type="button" data-account-action="settings">Account settings</button>
-            <button type="button" data-account-action="reservations">My reservation history</button>
-            <button type="button" class="account-menu-logout" id="account-menu-logout">Log out</button>
-          </div>
+  <main class="public-home" id="public-home" hidden>
+    <header class="home-navigation">
+      <a class="home-brand" href="./" aria-label="CebuStays home">Cebu<span>Stays</span></a>
+      <button class="home-nav-toggle" id="home-nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="home-navigation-links">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+      </button>
+      <nav class="home-navigation-links" id="home-navigation-links" aria-label="Main navigation">
+        <a href="./" data-page-link="home" aria-current="page">Home</a>
+        <a href="?view=hotels" data-page-link="hotels">Explore Hotels</a>
+        <a href="#why-cebustays">About</a>
+        <div class="home-account-actions">
+          <button class="home-sign-in" type="button" data-account-open data-account-view-target="login">Sign in</button>
+          <button class="home-sign-up" type="button" data-account-open data-account-view-target="register">Create account</button>
+        </div>
+      </nav>
+    </header>
+
+    <section class="home-hero" aria-labelledby="home-hero-title">
+      <div class="home-hero-content">
+        <p class="home-eyebrow">A better way to stay in Cebu</p>
+        <h1 id="home-hero-title">Discover your next stay in Cebu.</h1>
+        <p>Find a place that fits your trip. Explore local hotels, compare what matters, and plan your dates with CebuStays.</p>
+        <div class="home-hero-actions">
+          <a class="home-primary-action" href="?view=hotels" data-page-link="hotels">Explore hotels</a>
+          <a class="home-secondary-action" href="?view=hotels" data-page-link="hotels">Browse as guest <span aria-hidden="true">→</span></a>
         </div>
       </div>
-    </div>
+      <a class="hero-photo-credit" href="?view=hotels" data-page-link="hotels">Find a stay for your Cebu trip <span aria-hidden="true">↗</span></a>
+    </section>
 
-    <form class="search-bar container" id="search-form" role="search">
-      <label class="field">
-        <span class="field-label">Check-in</span>
-        <input type="date" id="checkin">
-      </label>
+    <section class="home-section featured-section" aria-labelledby="featured-title">
+      <div class="home-section-heading">
+        <div>
+          <p class="home-eyebrow">From the hotel catalogue</p>
+          <h2 id="featured-title">Stays to explore</h2>
+        </div>
+        <a href="?view=hotels" data-page-link="hotels">See all hotels <span aria-hidden="true">→</span></a>
+      </div>
+      <div class="featured-hotels" id="featured-hotels" aria-live="polite">
+        <p class="home-loading">Loading stays…</p>
+      </div>
+    </section>
 
-      <label class="field">
-        <span class="field-label">Check-out</span>
-        <input type="date" id="checkout">
-      </label>
+    <section class="destination-section" aria-labelledby="destination-title">
+      <div class="home-section destination-inner">
+        <p class="home-eyebrow">Make Cebu your own</p>
+        <h2 id="destination-title">Start with a destination.</h2>
+        <div class="destination-list" id="destination-list"></div>
+      </div>
+    </section>
 
-      <button type="submit" class="btn btn-search">Search</button>
-    </form>
-  </header>
+    <section class="home-section why-section" id="why-cebustays">
+      <div>
+        <p class="home-eyebrow">Your trip, your way</p>
+        <h2>Explore first. Decide when it feels right.</h2>
+      </div>
+      <p>Browse hotel details, photos, locations, and date-based availability before you book. Create an account only when you are ready to make a reservation.</p>
+    </section>
 
-  <main class="container layout">
+    <section class="home-final-cta">
+      <div>
+        <p class="home-eyebrow">Your Cebu stay starts here</p>
+        <h2>Find the right place for your next trip.</h2>
+      </div>
+      <a class="home-primary-action" href="?view=hotels" data-page-link="hotels">Explore hotels <span aria-hidden="true">→</span></a>
+    </section>
+
+    <footer class="home-footer">
+      <a class="home-brand" href="./">Cebu<span>Stays</span></a>
+      <p>CebuStays is a demo project. Not affiliated with Booking.com.</p>
+    </footer>
+  </main>
+
+  <div id="hotel-app" hidden>
+    <button class="mobile-sidebar-toggle" id="mobile-sidebar-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="site-sidebar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+    </button>
+    <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" aria-label="Close navigation" hidden></button>
+    <aside class="site-sidebar" id="site-sidebar" aria-label="CebuStays navigation">
+      <div class="sidebar-brand-row">
+        <a class="sidebar-brand" href="./" data-page-link="home" aria-label="CebuStays home">C<span class="sidebar-brand-label">ebuStays</span></a>
+        <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Pin navigation open" aria-expanded="false" aria-controls="site-sidebar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+        </button>
+      </div>
+      <button class="sidebar-close" id="sidebar-close" type="button" aria-label="Close navigation">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"></path></svg>
+      </button>
+      <nav class="sidebar-navigation" aria-label="Website navigation">
+        <p class="sidebar-section-label">Stay tools</p>
+        <button class="sidebar-link" type="button" id="sidebar-find-stays" title="Find a stay" aria-label="Find a stay">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m16 16 4 4M8 11h6m-3-3v6"></path></svg><span>Find a stay</span>
+        </button>
+        <button class="sidebar-link" type="button" id="sidebar-clear-filters" title="Clear filters" aria-label="Clear filters">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M7 12h10m-7 5h4"></path><path d="m18 4 2 3-2 3"></path></svg><span>Clear filters</span>
+        </button>
+        <p class="sidebar-section-label">Your account</p>
+        <div class="sidebar-guest-actions" id="sidebar-guest-actions">
+          <button class="sidebar-link" type="button" data-account-open data-account-view-target="login" title="Sign in" aria-label="Sign in">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5m5 5H3"></path></svg><span>Sign in</span>
+          </button>
+          <button class="sidebar-link" type="button" data-account-open data-account-view-target="register" title="Create account" aria-label="Create account">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"></circle><path d="M3 21v-2a6 6 0 0 1 12 0v2m4-11v6m-3-3h6"></path></svg><span>Create account</span>
+          </button>
+        </div>
+        <div class="sidebar-user-actions" id="sidebar-user-actions" hidden>
+          <div class="sidebar-account-summary">
+            <span class="sidebar-avatar" id="sidebar-avatar" aria-hidden="true">C</span>
+            <span class="sidebar-user-copy"><strong id="sidebar-user-name"></strong><small id="sidebar-user-role"></small></span>
+          </div>
+          <button class="sidebar-link" type="button" id="sidebar-settings" title="Account settings" aria-label="Account settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg><span>Account settings</span>
+          </button>
+          <button class="sidebar-link" type="button" id="sidebar-reservations" title="My reservations" aria-label="My reservations">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18m-13 4h3m-3 3h7"></path></svg><span>My reservations</span>
+          </button>
+          <a class="sidebar-link" id="developer-project-link" href="developer.html" title="Developer project" aria-label="Developer project" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8-4 4 4 4m8-8 4 4-4 4m-3-11-2 14"></path></svg><span>Developer project</span>
+          </a>
+          <button class="sidebar-link sidebar-sign-out" type="button" id="sidebar-logout" title="Sign out" aria-label="Sign out">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5m5 5H3m9-9h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"></path></svg><span>Sign out</span>
+          </button>
+        </div>
+      </nav>
+    </aside>
+
+    <header class="site-header">
+      <form class="search-bar container" id="search-form" role="search">
+        <label class="field">
+          <span class="field-label">Check-in</span>
+          <input type="date" id="checkin">
+        </label>
+        <label class="field">
+          <span class="field-label">Check-out</span>
+          <input type="date" id="checkout">
+        </label>
+        <button type="submit" class="btn btn-search">Search</button>
+      </form>
+    </header>
+
+    <main class="container layout">
     <aside class="filters" aria-label="Filters">
       <h2>Filter by Amenities</h2>
 
@@ -123,13 +225,12 @@
       <h1 id="results-title">Cebu, Philippines: loading properties…</h1>
       <div id="results-feed" class="feed"></div>
     </section>
-  </main>
+    </main>
 
-  <footer class="site-footer">
-    <div class="container">
-      CebuStays is a demo project. Not affiliated with Booking.com.
-    </div>
-  </footer>
+    <footer class="site-footer">
+      <div class="container">CebuStays is a demo project. Not affiliated with Booking.com.</div>
+    </footer>
+  </div>
 
   <dialog class="account-dialog" id="account-dialog" aria-labelledby="account-title">
     <section class="account-panel">
@@ -301,6 +402,7 @@
         </button>
 
         <p class="booking-status" id="booking-status" aria-live="polite"></p>
+        <button class="btn btn-primary" type="button" id="booking-sign-in" hidden>Sign in to reserve</button>
 
         <form class="booking-form" id="booking-form" hidden>
           <label>
