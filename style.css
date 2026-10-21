@@ -495,6 +495,16 @@ img {
   background: #fae9e7;
 }
 
+.reservation-status.is-pending {
+  color: #805400;
+  background: #fff1cc;
+}
+
+.reservation-status.is-paid {
+  color: #145b48;
+  background: #e4f4ed;
+}
+
 /* =========================================
    DEVELOPER PROJECT CHOOSER
 ========================================= */
@@ -549,6 +559,218 @@ img {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+}
+
+.developer-bookings {
+  margin: 24px 0;
+  padding: 20px;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  background: #0d1117;
+}
+
+.developer-bookings[hidden] {
+  display: none;
+}
+
+.developer-bookings-heading,
+.developer-booking-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.developer-bookings-heading h2,
+.developer-booking h3 {
+  margin: 2px 0 0;
+  color: #f0f6fc;
+}
+
+.developer-bookings-heading h2 {
+  font-size: 1.25rem;
+}
+
+.developer-refresh {
+  flex: 0 0 auto;
+  width: auto;
+  margin-top: 0;
+}
+
+.developer-bookings-note,
+.developer-bookings-status,
+.developer-booking p,
+.developer-booking small {
+  color: #8b949e;
+  font-size: 0.86rem;
+}
+
+.developer-bookings-list {
+  background: #161b22;
+}
+
+.developer-bookings-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+}
+
+.developer-bookings-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.developer-bookings-table th,
+.developer-bookings-table td {
+  min-width: 120px;
+  padding: 12px;
+  border-bottom: 1px solid #30363d;
+  vertical-align: top;
+}
+
+.developer-bookings-table th {
+  color: #8b949e;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.developer-bookings-table td {
+  color: #f0f6fc;
+  font-size: 0.86rem;
+}
+
+.developer-bookings-table td strong,
+.developer-bookings-table td small,
+.developer-bookings-table td .reservation-status {
+  display: block;
+}
+
+.developer-bookings-table td small {
+  margin-top: 5px;
+  color: #8b949e;
+  overflow-wrap: anywhere;
+}
+
+.developer-bookings-table td .reservation-status {
+  width: fit-content;
+  margin-top: 7px;
+}
+
+.developer-bookings-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.payment-review-dialog {
+  width: min(560px, calc(100% - 24px));
+  max-width: none;
+  max-height: min(720px, calc(100dvh - 32px));
+  padding: 0;
+  overflow: auto;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  color: #f0f6fc;
+  background: #161b22;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+}
+
+.payment-review-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.payment-review-panel {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+}
+
+.payment-review-panel h2 {
+  margin: 4px 0 0;
+  color: #f0f6fc;
+  font-size: 1.25rem;
+}
+
+.payment-review-close {
+  flex: 0 0 auto;
+}
+
+.payment-review-details {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.7fr) minmax(0, 1fr);
+  gap: 8px 14px;
+  margin: 0;
+}
+
+.payment-review-details dt {
+  color: #8b949e;
+  font-size: 0.84rem;
+}
+
+.payment-review-details dd {
+  min-width: 0;
+  margin: 0;
+  color: #f0f6fc;
+  font-size: 0.9rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.payment-review-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: #f0f6fc;
+  font-size: 0.86rem;
+}
+
+.payment-review-check input {
+  flex: 0 0 auto;
+  margin-top: 4px;
+}
+
+.payment-review-message {
+  min-height: 1.4em;
+  margin: 0;
+  color: #ffcf70;
+  font-size: 0.85rem;
+}
+
+.payment-review-confirm:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.payment-review-panel .developer-bookings-note {
+  margin: 0;
+}
+
+.developer-confirm-payment:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.developer-bookings-table td {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 560px) {
+  .developer-bookings {
+    padding: 14px;
+  }
+
+  .payment-review-panel {
+    padding: 18px;
+  }
+
+  .payment-review-details {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .payment-review-details dd {
+    margin-bottom: 8px;
+  }
 }
 
 .developer-destinations[hidden],

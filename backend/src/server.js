@@ -344,13 +344,25 @@ export function createServer({
 
     const availabilityMatch = pathname.match(/^\/api\/hotels\/([1-9]\d{0,18})\/availability$/);
     const reservationHistory = pathname === "/api/bookings/mine";
-    if (availabilityMatch || pathname === "/api/bookings" || reservationHistory) {
+    const pendingPayments = pathname === "/api/bookings/pending";
+    const paymentConfirmation = pathname.match(/^\/api\/bookings\/(CS-[A-Fa-f0-9]{12})\/confirm-payment$/);
+    if (
+      availabilityMatch ||
+      pathname === "/api/bookings" ||
+      reservationHistory ||
+      pendingPayments ||
+      paymentConfirmation
+    ) {
       if (!bookings) {
         sendJson(response, 503, { error: "Booking service is not configured.", requestId });
         return;
       }
 
-      if (pathname === "/api/bookings" && request.method === "POST" && !origin) {
+      if (
+        ((pathname === "/api/bookings" && request.method === "POST") ||
+          (paymentConfirmation && request.method === "PATCH")) &&
+        !origin
+      ) {
         sendJson(response, 403, {
           error: "An allowed browser origin is required.",
           requestId
@@ -369,6 +381,32 @@ export function createServer({
           }
           const reservations = await bookings.listForUser(user.id);
           sendJson(response, 200, { reservations, requestId });
+          return;
+        }
+
+        if (
+          (pendingPayments && request.method === "GET") ||
+          (paymentConfirmation && request.method === "PATCH")
+        ) {
+          const user = auth
+            ? await auth.getSession(sessionTokenFromRequest(request))
+            : null;
+          if (!user) {
+            sendJson(response, 401, { error: "Sign in as a developer to manage payments.", requestId });
+            return;
+          }
+          if (user.role !== "developer") {
+            sendJson(response, 403, { error: "Developer access is required.", requestId });
+            return;
+          }
+
+          if (pendingPayments) {
+            const reservations = await bookings.listPendingPayments();
+            sendJson(response, 200, { reservations, requestId });
+          } else {
+            const booking = await bookings.confirmPayment(paymentConfirmation[1]);
+            sendJson(response, 200, { booking, requestId });
+          }
           return;
         }
 
@@ -396,7 +434,9 @@ export function createServer({
 
         response.setHeader(
           "Allow",
-          availabilityMatch || reservationHistory ? "GET, OPTIONS" : "POST, OPTIONS"
+          availabilityMatch || reservationHistory || pendingPayments
+            ? "GET, OPTIONS"
+            : paymentConfirmation ? "PATCH, OPTIONS" : "POST, OPTIONS"
         );
         sendJson(response, 405, { error: "Method not allowed.", requestId });
       } catch (error) {

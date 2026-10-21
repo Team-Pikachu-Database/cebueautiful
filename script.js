@@ -64,6 +64,7 @@ const checkboxes = document.querySelectorAll(
 
 let hotels = [];
 let signedInAccount = null;
+let reservationHistoryLoading = false;
 let appliedCheckIn = "";
 let appliedCheckOut = "";
 
@@ -257,7 +258,15 @@ function initializeAccountMenu() {
       closeMenu();
       reservationsDialog.showModal();
       loadReservationHistory();
+      window.clearInterval(reservationRefreshTimer);
+      reservationRefreshTimer = window.setInterval(() => {
+        if (reservationsDialog.open) loadReservationHistory();
+      }, 15000);
     });
+  let reservationRefreshTimer;
+  reservationsDialog.addEventListener("close", () => {
+    window.clearInterval(reservationRefreshTimer);
+  });
 
   document.getElementById("profile-form").addEventListener("submit", async event => {
     event.preventDefault();
@@ -312,6 +321,8 @@ function formatReservationDate(value) {
 }
 
 async function loadReservationHistory() {
+  if (reservationHistoryLoading) return;
+  reservationHistoryLoading = true;
   const message = document.getElementById("reservation-message");
   const list = document.getElementById("reservation-list");
   list.replaceChildren();
@@ -325,7 +336,6 @@ async function loadReservationHistory() {
     }
 
     message.textContent = `${data.reservations.length} reservation${data.reservations.length === 1 ? "" : "s"}`;
-    const today = new Date().toISOString().slice(0, 10);
     data.reservations.forEach(reservation => {
       const item = document.createElement("article");
       item.className = "reservation-item";
@@ -335,10 +345,13 @@ async function loadReservationHistory() {
       const hotelName = document.createElement("h3");
       hotelName.textContent = reservation.hotelName;
       const status = document.createElement("span");
-      status.className = reservation.cancelledAt ? "reservation-status is-cancelled" : "reservation-status";
+      const isPaid = reservation.paymentStatus === "paid";
+      status.className = reservation.cancelledAt
+        ? "reservation-status is-cancelled"
+        : `reservation-status ${isPaid ? "is-paid" : "is-pending"}`;
       status.textContent = reservation.cancelledAt
         ? "Cancelled"
-        : reservation.checkOut < today ? "Completed" : "Confirmed";
+        : isPaid ? "Paid" : "Pending payment";
       heading.append(hotelName, status);
 
       const dates = document.createElement("p");
@@ -353,6 +366,8 @@ async function loadReservationHistory() {
     });
   } catch (error) {
     message.textContent = error.message;
+  } finally {
+    reservationHistoryLoading = false;
   }
 }
 
@@ -750,10 +765,9 @@ document.getElementById("booking-form").addEventListener("submit", async event =
     const booking = data.booking;
     form.hidden = true;
     status.textContent =
-      `Reservation confirmed for ${booking.hotelName}. ` +
+      `Reservation submitted for ${booking.hotelName} and is pending payment confirmation. ` +
       `Reference: ${booking.reference}. ${booking.rooms} room${booking.rooms === 1 ? "" : "s"}, ` +
-      `${booking.checkIn} to ${booking.checkOut}. Estimated total: ` +
-      `${peso.format(booking.totalPrice)}. No payment was collected.`;
+      `${booking.checkIn} to ${booking.checkOut}. Total due: ${peso.format(booking.totalPrice)}.`;
   } catch (error) {
     status.textContent = error.message;
     if (error.message.includes("remain")) await refreshBookingAvailability();

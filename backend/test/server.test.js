@@ -525,6 +525,92 @@ test("reservation history requires a session and uses that account ID", async ()
   assert.deepEqual((await response.json()).reservations, [{ reference: "CS-ABC123DEF456" }]);
 });
 
+test("only developers can list pending reservations and confirm payment", async () => {
+  const tokenFor = role => role === "developer" ? "d".repeat(43) : "s".repeat(43);
+  let listed = false;
+  let confirmed = "";
+  const baseUrl = await startServer({
+    configuredOrigins: "",
+    logger: () => {},
+    auth: {
+      getSession: async token => token === tokenFor("developer")
+        ? { id: "developer-1", role: "developer" }
+        : token === tokenFor("standard")
+          ? { id: "user-1", role: "standard" }
+          : null
+    },
+    bookings: {
+      listPendingPayments: async () => {
+        listed = true;
+        return [{ reference: "CS-ABC123DEF456", paymentStatus: "pending" }];
+      },
+      confirmPayment: async reference => {
+        confirmed = reference;
+        return { reference, paymentStatus: "paid" };
+      }
+    },
+    prisma: { sen: { findMany: async () => [] } }
+  });
+
+  const unauthorized = await fetch(`${baseUrl}/api/bookings/pending`);
+  assert.equal(unauthorized.status, 401);
+
+  const standardUser = await fetch(`${baseUrl}/api/bookings/pending`, {
+    headers: { Cookie: `cebu_stays_session=${tokenFor("standard")}` }
+  });
+  assert.equal(standardUser.status, 403);
+  assert.equal(listed, false);
+
+  const developer = await fetch(`${baseUrl}/api/bookings/pending`, {
+    headers: { Cookie: `cebu_stays_session=${tokenFor("developer")}` }
+  });
+  assert.equal(developer.status, 200);
+  assert.deepEqual((await developer.json()).reservations, [
+    { reference: "CS-ABC123DEF456", paymentStatus: "pending" }
+  ]);
+  assert.equal(listed, true);
+
+  const originlessConfirmation = await fetch(
+    `${baseUrl}/api/bookings/CS-ABC123DEF456/confirm-payment`,
+    {
+      method: "PATCH",
+      headers: { Cookie: `cebu_stays_session=${tokenFor("developer")}` }
+    }
+  );
+  assert.equal(originlessConfirmation.status, 403);
+  assert.equal(confirmed, "");
+
+  const customerConfirmation = await fetch(
+    `${baseUrl}/api/bookings/CS-ABC123DEF456/confirm-payment`,
+    {
+      method: "PATCH",
+      headers: {
+        Origin: "http://127.0.0.1:5505",
+        Cookie: `cebu_stays_session=${tokenFor("standard")}`
+      }
+    }
+  );
+  assert.equal(customerConfirmation.status, 403);
+  assert.equal(confirmed, "");
+
+  const confirmation = await fetch(
+    `${baseUrl}/api/bookings/CS-ABC123DEF456/confirm-payment`,
+    {
+      method: "PATCH",
+      headers: {
+        Origin: "http://127.0.0.1:5505",
+        Cookie: `cebu_stays_session=${tokenFor("developer")}`
+      }
+    }
+  );
+  assert.equal(confirmation.status, 200);
+  assert.deepEqual((await confirmation.json()).booking, {
+    reference: "CS-ABC123DEF456",
+    paymentStatus: "paid"
+  });
+  assert.equal(confirmed, "CS-ABC123DEF456");
+});
+
 test("booking ownership is assigned from the session, not the request body", async () => {
   const user = {
     id: "d7df71f3-8fca-498a-b91d-93370d05ec6a",

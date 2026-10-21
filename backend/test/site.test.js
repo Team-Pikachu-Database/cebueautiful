@@ -24,9 +24,12 @@ test("the site serves the frontend and local hotel photos with a Supabase image 
   const baseUrl = await listen(createSiteServer({ logger: () => {} }));
   const pageResponse = await fetch(baseUrl);
   const html = await pageResponse.text();
+  const pageScriptResponse = await fetch(`${baseUrl}/script.js`);
+  const pageScript = await pageScriptResponse.text();
   const developerPageResponse = await fetch(`${baseUrl}/developer.html`);
   const developerHtml = await developerPageResponse.text();
   const developerScriptResponse = await fetch(`${baseUrl}/developer.js`);
+  const developerScript = await developerScriptResponse.text();
   const githubLogoResponse = await fetch(`${baseUrl}/logo_folder/github.png`);
   const supabaseLogoResponse = await fetch(`${baseUrl}/logo_folder/supabase.jpeg`);
   const configResponse = await fetch(`${baseUrl}/config.js`);
@@ -35,9 +38,17 @@ test("the site serves the frontend and local hotel photos with a Supabase image 
   assert.equal(pageResponse.status, 200);
   assert.match(html, /account-dialog/);
   assert.match(html, /id="booking-form"/);
-  assert.match(html, /Confirm reservation/);
+  assert.match(html, /pending until a developer confirms your payment/);
+  assert.match(html, /Submit reservation/);
+  assert.equal(pageScriptResponse.status, 200);
+  assert.match(pageScript, /Pending payment/);
   assert.equal(developerPageResponse.status, 200);
   assert.match(developerHtml, /developer-destinations/);
+  assert.match(developerHtml, /id="developer-bookings"/);
+  assert.match(developerHtml, /class="developer-bookings-table"/);
+  assert.match(developerHtml, /id="payment-review-dialog"/);
+  assert.match(developerHtml, /id="payment-review-checked"/);
+  assert.match(developerHtml, /Mark as paid/);
   assert.match(
     developerHtml,
     /href="https:\/\/supabase\.com\/dashboard\/project\/jgsrgzrgiznknvtxhats"/
@@ -46,6 +57,8 @@ test("the site serves the frontend and local hotel photos with a Supabase image 
   assert.match(developerHtml, /src="logo_folder\/github\.png"/);
   assert.match(developerHtml, /src="logo_folder\/supabase\.jpeg"/);
   assert.equal(developerScriptResponse.status, 200);
+  assert.match(developerScript, /\/api\/bookings\/pending/);
+  assert.match(developerScript, /Check details/);
   assert.equal(githubLogoResponse.status, 200);
   assert.equal(githubLogoResponse.headers.get("content-type"), "image/png");
   assert.equal(supabaseLogoResponse.status, 200);

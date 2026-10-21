@@ -135,6 +135,7 @@ export function createBookingService({ pool }) {
               booking.check_out::text AS check_out,
               booking.rooms,
               booking.total_price,
+              booking.payment_status,
               booking.created_at,
               booking.cancelled_at
        FROM public.room_bookings AS booking
@@ -152,6 +153,7 @@ export function createBookingService({ pool }) {
       checkOut: row.check_out,
       rooms: row.rooms,
       totalPrice: Number(row.total_price),
+      paymentStatus: row.payment_status,
       createdAt: row.created_at instanceof Date
         ? row.created_at.toISOString()
         : row.created_at,
@@ -159,6 +161,78 @@ export function createBookingService({ pool }) {
         ? row.cancelled_at.toISOString()
         : row.cancelled_at
     }));
+  }
+
+  async function listPendingPayments() {
+    const result = await pool.query(
+      `SELECT booking.booking_reference AS reference,
+              hotel.name AS hotel_name,
+              booking.guest_name,
+              booking.guest_email,
+              booking.check_in::text AS check_in,
+              booking.check_out::text AS check_out,
+              booking.rooms,
+              booking.total_price,
+              booking.created_at
+       FROM public.room_bookings AS booking
+       JOIN public.sen AS hotel ON hotel.id = booking.hotel_id
+       WHERE booking.payment_status = 'pending'
+         AND booking.cancelled_at IS NULL
+       ORDER BY booking.created_at ASC
+       LIMIT 100`
+    );
+
+    return result.rows.map(row => ({
+      reference: row.reference,
+      hotelName: row.hotel_name,
+      guestName: row.guest_name,
+      guestEmail: row.guest_email,
+      checkIn: row.check_in,
+      checkOut: row.check_out,
+      rooms: row.rooms,
+      totalPrice: Number(row.total_price),
+      createdAt: row.created_at instanceof Date
+        ? row.created_at.toISOString()
+        : row.created_at
+    }));
+  }
+
+  async function confirmPayment(reference) {
+    if (typeof reference !== "string" || !/^CS-[A-F0-9]{12}$/i.test(reference)) {
+      throw new BookingError(400, "Choose a valid reservation.", "INVALID_REFERENCE");
+    }
+    const normalizedReference = reference.toUpperCase();
+
+    const result = await pool.query(
+      `UPDATE public.room_bookings
+       SET payment_status = 'paid', paid_at = now()
+       WHERE booking_reference = $1
+         AND payment_status = 'pending'
+         AND cancelled_at IS NULL
+       RETURNING booking_reference AS reference, payment_status, paid_at`,
+      [normalizedReference]
+    );
+
+    if (!result.rows[0]) {
+      const existing = await pool.query(
+        `SELECT payment_status, cancelled_at
+         FROM public.room_bookings
+         WHERE booking_reference = $1`,
+        [normalizedReference]
+      );
+      if (!existing.rows[0] || existing.rows[0].cancelled_at) {
+        throw new BookingError(404, "Pending reservation not found.", "RESERVATION_NOT_FOUND");
+      }
+      throw new BookingError(409, "This reservation is no longer pending payment.", "PAYMENT_ALREADY_CONFIRMED");
+    }
+
+    return {
+      reference: result.rows[0].reference,
+      paymentStatus: result.rows[0].payment_status,
+      paidAt: result.rows[0].paid_at instanceof Date
+        ? result.rows[0].paid_at.toISOString()
+        : result.rows[0].paid_at
+    };
   }
 
   async function createBooking(input) {
@@ -240,7 +314,8 @@ export function createBookingService({ pool }) {
         checkIn,
         checkOut,
         rooms,
-        totalPrice
+        totalPrice,
+        paymentStatus: "pending"
       };
     } catch (error) {
       if (transactionOpen) await client.query("ROLLBACK");
@@ -250,5 +325,11 @@ export function createBookingService({ pool }) {
     }
   }
 
-  return { getAvailability, createBooking, listForUser };
+  return {
+    getAvailability,
+    createBooking,
+    listForUser,
+    listPendingPayments,
+    confirmPayment
+  };
 }

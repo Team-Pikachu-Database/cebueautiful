@@ -81,6 +81,7 @@ test("reservation history filters by the authenticated account ID", async () => 
           check_out: "2027-05-12",
           rooms: 1,
           total_price: "2000.00",
+          payment_status: "pending",
           created_at: new Date("2026-10-20T12:00:00.000Z"),
           cancelled_at: null
         }] };
@@ -99,6 +100,7 @@ test("reservation history filters by the authenticated account ID", async () => 
     checkOut: "2027-05-12",
     rooms: 1,
     totalPrice: 2000,
+    paymentStatus: "pending",
     createdAt: "2026-10-20T12:00:00.000Z",
     cancelledAt: null
   }]);
@@ -121,6 +123,7 @@ test("reservation calculates its server-side total and commits within a transact
   assert.equal(result.hotelName, "Test Hotel");
   assert.equal(result.rooms, 2);
   assert.equal(result.totalPrice, 4000);
+  assert.equal(result.paymentStatus, "pending");
   assert.match(result.reference, /^CS-[A-F0-9]{12}$/);
   assert.equal(mock.committed, true);
   assert.equal(mock.rolledBack, false);
@@ -129,6 +132,100 @@ test("reservation calculates its server-side total and commits within a transact
   assert.equal(mock.bookingInsert[4], "Cebu Guest");
   assert.equal(mock.bookingInsert[5], "guest@example.com");
   assert.equal(mock.bookingInsert[9], 4000);
+});
+
+test("pending payment queue returns only unpaid reservations for developer review", async () => {
+  let query;
+  const bookings = createBookingService({
+    pool: {
+      query: async sql => {
+        query = sql;
+        return { rows: [{
+          reference: "CS-ABC123DEF456",
+          hotel_name: "Test Hotel",
+          guest_name: "Cebu Guest",
+          guest_email: "guest@example.com",
+          check_in: "2027-05-10",
+          check_out: "2027-05-12",
+          rooms: 1,
+          total_price: "2000.00",
+          created_at: new Date("2026-10-20T12:00:00.000Z")
+        }] };
+      }
+    }
+  });
+
+  const result = await bookings.listPendingPayments();
+
+  assert.match(query, /payment_status = 'pending'/);
+  assert.match(query, /cancelled_at IS NULL/);
+  assert.deepEqual(result, [{
+    reference: "CS-ABC123DEF456",
+    hotelName: "Test Hotel",
+    guestName: "Cebu Guest",
+    guestEmail: "guest@example.com",
+    checkIn: "2027-05-10",
+    checkOut: "2027-05-12",
+    rooms: 1,
+    totalPrice: 2000,
+    createdAt: "2026-10-20T12:00:00.000Z"
+  }]);
+});
+
+test("payment confirmation atomically changes only pending reservations to paid", async () => {
+  let query;
+  let values;
+  const paidAt = new Date("2026-10-21T12:00:00.000Z");
+  const bookings = createBookingService({
+    pool: {
+      query: async (sql, params = []) => {
+        query = sql;
+        values = params;
+        return {
+          rows: [{
+            reference: "CS-ABC123DEF456",
+            payment_status: "paid",
+            paid_at: paidAt
+          }]
+        };
+      }
+    }
+  });
+
+  const result = await bookings.confirmPayment("CS-ABC123DEF456");
+
+  assert.match(query, /payment_status = 'paid', paid_at = now\(\)/);
+  assert.match(query, /payment_status = 'pending'/);
+  assert.deepEqual(values, ["CS-ABC123DEF456"]);
+  assert.deepEqual(result, {
+    reference: "CS-ABC123DEF456",
+    paymentStatus: "paid",
+    paidAt: paidAt.toISOString()
+  });
+});
+
+test("payment confirmation rejects malformed references and already paid reservations", async () => {
+  let queryCount = 0;
+  const bookings = createBookingService({
+    pool: {
+      query: async () => {
+        queryCount += 1;
+        return { rows: queryCount === 1 ? [] : [{ payment_status: "paid", cancelled_at: null }] };
+      }
+    }
+  });
+
+  await assert.rejects(
+    bookings.confirmPayment("not-a-reference"),
+    { code: "INVALID_REFERENCE", status: 400 }
+  );
+  assert.equal(queryCount, 0);
+
+  await assert.rejects(
+    bookings.confirmPayment("CS-ABC123DEF456"),
+    { code: "PAYMENT_ALREADY_CONFIRMED", status: 409 }
+  );
+  assert.equal(queryCount, 2);
 });
 
 test("reservation rolls back if requested rooms exceed remaining inventory", async () => {
