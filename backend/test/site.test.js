@@ -96,6 +96,28 @@ test("the site proxies Codespaces API requests to the local API origin", async (
   assert.match(response.headers.get("set-cookie"), /HttpOnly/);
 });
 
+test("the site accepts login requests from localhost Live Server on port 5506", async () => {
+  const upstream = createHttpServer((request, response) => {
+    response.writeHead(200, { "Content-Type": "application/json" });
+    response.end(JSON.stringify({ origin: request.headers.origin }));
+  });
+  const upstreamUrl = await listen(upstream);
+  const apiPort = new URL(upstreamUrl).port;
+  const siteUrl = await listen(createSiteServer({ apiPort, logger: () => {} }));
+
+  const response = await fetch(`${siteUrl}/api/auth/login`, {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5506",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ email: "guest@example.com", password: "test" })
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).origin, `http://127.0.0.1:${apiPort}`);
+});
+
 test("the site rejects cross-origin and originless account writes", async () => {
   const upstream = createHttpServer((request, response) => response.end("unexpected"));
   const upstreamUrl = await listen(upstream);

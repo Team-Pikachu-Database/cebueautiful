@@ -29,6 +29,8 @@ function allowedSiteOrigins(configuredOrigins = "", codespaceName = "") {
   const origins = [
     "http://localhost:5505",
     "http://127.0.0.1:5505",
+    "http://localhost:5506",
+    "http://127.0.0.1:5506",
     ...configuredOrigins.split(",").map(origin => origin.trim()).filter(Boolean)
   ];
 

@@ -3,7 +3,10 @@
 const configuredApiBaseUrl = typeof window.CEBUSTAYS_CONFIG?.apiBaseUrl === "string"
   ? window.CEBUSTAYS_CONFIG.apiBaseUrl.trim().replace(/\/+$/, "")
   : "";
-const API_BASE_URL = window.location.port === "5505"
+const isLocalApiPreview = window.location.port === "5505" ||
+  window.location.port === "5506" ||
+  /^[a-z0-9-]+-550[56]\.app\.github\.dev$/i.test(window.location.hostname);
+const API_BASE_URL = isLocalApiPreview
   ? ""
   : configuredApiBaseUrl;
 const status = document.getElementById("developer-status");
