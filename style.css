@@ -600,6 +600,7 @@ img {
 
 .sidebar-link {
   display: flex;
+  position: relative;
   align-items: center;
   gap: 12px;
   min-height: 42px;
@@ -2535,6 +2536,7 @@ img {
 }
 
 .booking-total,
+.booking-price-note,
 .booking-submit,
 .booking-payment-note {
   grid-column: 1 / -1;
@@ -2545,6 +2547,12 @@ img {
   color: var(--navy);
   font-size: 0.9rem !important;
   font-weight: 700;
+}
+
+.booking-price-note {
+  margin-top: -8px;
+  color: var(--muted);
+  font-size: 0.74rem;
 }
 
 .booking-submit {
@@ -3054,7 +3062,399 @@ img {
   line-height: 1.5;
 }
 
+.promotion-section {
+  margin-top: 48px;
+}
+
+.promotion-carousel {
+  overflow: hidden;
+  border: 1px solid rgba(10, 25, 47, 0.08);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 18px 36px rgba(10, 25, 47, 0.08);
+}
+
+.promotion-track {
+  display: flex;
+  transition: transform 0.55s cubic-bezier(0.2, 0.7, 0.2, 1);
+  touch-action: pan-y;
+}
+
+.promotion-slide {
+  position: relative;
+  display: flex;
+  flex: 0 0 100%;
+  align-items: center;
+  min-height: 300px;
+  padding: clamp(24px, 5vw, 54px);
+  overflow: hidden;
+  isolation: isolate;
+  color: #fff;
+  background: linear-gradient(115deg, #102b46, #146a75);
+}
+
+.promotion-slide::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(9, 23, 38, 0.94), rgba(9, 23, 38, 0.48));
+  content: "";
+}
+
+.promotion-slide-image {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.promotion-slide-copy {
+  display: grid;
+  justify-items: start;
+  gap: 9px;
+  max-width: 640px;
+}
+
+.promotion-slide-copy .promotion-state {
+  margin: 0;
+  color: #a5eee0;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.promotion-slide-copy h3 {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  line-height: 1.08;
+}
+
+.promotion-description,
+.promotion-dates,
+.promotion-restriction {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.promotion-value {
+  color: #ffe19a;
+  font-size: 1.15rem;
+}
+
+.promotion-slide .home-primary-action {
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 11px 17px;
+  border: 0;
+  border-radius: 9px;
+}
+
+.promotion-fallback {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+}
+
+.promotion-fallback h3,
+.promotion-fallback p {
+  margin: 0;
+}
+
+.promotion-fallback .home-eyebrow {
+  color: #a5eee0;
+}
+
+.promotion-controls {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 8px 14px;
+  background: #fff;
+}
+
+.promotion-controls > button {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--navy);
+  background: #fff;
+}
+
+.promotion-indicators {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.promotion-indicator {
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #bdc7d2;
+}
+
+.promotion-indicator[aria-current="true"] {
+  width: 24px;
+  border-radius: 99px;
+  background: var(--blue);
+}
+
+.promotion-events-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.promotion-event-card {
+  min-width: 0;
+  border: 1px solid rgba(10, 25, 47, 0.1);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(10, 25, 47, 0.04);
+}
+
+.promotion-event-button {
+  display: grid;
+  width: 100%;
+  min-height: 100px;
+  grid-template-columns: 90px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 0;
+  border-radius: inherit;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+}
+
+.promotion-event-button:hover {
+  background: #f6fafc;
+}
+
+.promotion-event-date {
+  display: grid;
+  min-height: 58px;
+  place-items: center;
+  padding: 7px;
+  border-radius: 10px;
+  color: #105f52;
+  background: #e9f7f3;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.promotion-event-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.promotion-event-copy strong {
+  color: var(--navy);
+}
+
+.promotion-event-copy span,
+.promotion-event-copy small,
+.events-disclaimer {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.events-disclaimer {
+  margin: 0;
+}
+
+.promotion-load-error {
+  margin: 0;
+  padding: 18px;
+  color: #8b2b21;
+  background: #fff6f4;
+  border-radius: 10px;
+}
+
+.coupon-wallet-dialog {
+  width: min(720px, calc(100% - 24px));
+}
+
+.coupon-wallet-panel {
+  max-height: min(80dvh, 760px);
+  overflow-y: auto;
+}
+
+.coupon-wallet-section {
+  margin-top: 22px;
+}
+
+.coupon-wallet-section h3 {
+  margin: 0 0 10px;
+  color: var(--navy);
+  font-size: 1rem;
+}
+
+.coupon-wallet-section > div {
+  display: grid;
+  gap: 10px;
+}
+
+.coupon-card {
+  display: grid;
+  gap: 7px;
+  padding: 15px;
+  border: 1px solid #c8e5dc;
+  border-left: 4px solid #16836f;
+  border-radius: 10px;
+  background: #fbfefd;
+}
+
+.coupon-card.is-used {
+  border-color: var(--line);
+  border-left-color: #6c7885;
+  background: #f7f8fa;
+}
+
+.coupon-card h4,
+.coupon-card p {
+  margin: 0;
+}
+
+.coupon-card h4 {
+  color: var(--navy);
+}
+
+.coupon-discount {
+  color: #105f52;
+  font-weight: 800;
+}
+
+.coupon-rule,
+.coupon-expiry,
+.coupon-redemption,
+.coupon-empty {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.coupon-code-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.coupon-code {
+  padding: 6px 9px;
+  border: 1px dashed #80988f;
+  border-radius: 6px;
+  color: var(--navy);
+  background: #fff;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+
+.coupon-copy,
+.coupon-use {
+  min-height: 36px;
+  margin: 0;
+  padding: 7px 12px;
+  font-size: 0.8rem;
+}
+
+.coupon-use {
+  justify-self: start;
+  margin-top: 4px;
+}
+
+.coupon-count {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  display: grid;
+  min-width: 18px;
+  height: 18px;
+  place-items: center;
+  padding: 0 4px;
+  border: 1px solid #fff;
+  border-radius: 999px;
+  color: #fff;
+  background: #c75e19;
+  font-size: 0.67rem;
+}
+
+.coupon-count[hidden] {
+  display: none;
+}
+
+.site-sidebar.is-expanded .coupon-count {
+  position: static;
+  display: inline-grid;
+  margin-left: 5px;
+}
+
+.site-sidebar.is-expanded .coupon-count[hidden] {
+  display: none;
+}
+
+.booking-coupon-field,
+.booking-coupon-status {
+  grid-column: 1 / -1;
+}
+
+.booking-coupon-field {
+  display: grid;
+  gap: 5px;
+  color: var(--navy);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.booking-coupon-status {
+  margin: -6px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.event-detail-dialog {
+  width: min(540px, calc(100% - 24px));
+}
+
+.event-detail-dialog .account-panel > p {
+  color: #435266;
+  line-height: 1.6;
+}
+
+.event-hotels-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  margin-top: 8px;
+  padding: 10px 15px;
+  border-radius: 8px;
+  text-decoration: none;
+}
+
 @media (max-width: 760px) {
+  .promotion-events-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .promotion-slide {
+    min-height: 270px;
+  }
+
   .hotel-map-dialog {
     width: calc(100% - 16px);
     max-height: calc(100dvh - 16px);
@@ -3097,6 +3497,28 @@ img {
   }
 }
 
+@media (max-width: 560px) {
+  .promotion-section {
+    margin-top: 30px;
+  }
+
+  .promotion-slide {
+    min-height: 300px;
+    padding: 24px 20px;
+  }
+
+  .promotion-event-button {
+    grid-template-columns: 78px minmax(0, 1fr);
+    gap: 10px;
+    padding: 11px;
+  }
+
+  .coupon-wallet-panel,
+  .event-detail-dialog .account-panel {
+    padding: 18px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto !important;
@@ -3106,5 +3528,271 @@ img {
   *::after {
     transition: none !important;
     animation: none !important;
+  }
+}
+
+.help-dialog {
+  width: min(920px, calc(100% - 28px));
+  height: min(850px, calc(100dvh - 28px));
+  max-height: none;
+  overflow: hidden;
+  border-radius: 22px;
+}
+
+.help-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.help-panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: 22px;
+}
+
+.help-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.help-heading-copy h2 {
+  margin: 2px 0 4px;
+  color: var(--navy);
+  font-size: clamp(1.2rem, 3vw, 1.55rem);
+}
+
+.help-heading-copy p,
+.help-privacy-note,
+.help-composer-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.help-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.help-new-chat {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--navy);
+  background: #fff;
+  font-weight: 700;
+}
+
+.help-privacy-note {
+  margin-top: 12px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: #eef5f8;
+}
+
+.help-suggestions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  max-height: 190px;
+  margin-top: 14px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.help-suggestions details {
+  align-self: start;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.help-suggestions summary {
+  color: var(--navy);
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+.help-suggestion-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 8px;
+}
+
+.help-suggestion-list button {
+  padding: 6px 9px;
+  border: 1px solid #d7e8f1;
+  border-radius: 999px;
+  color: #17435f;
+  background: #f1f8fb;
+  font-size: 0.78rem;
+  text-align: left;
+}
+
+.help-conversation {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 120px;
+  margin-top: 12px;
+  padding: 14px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #e0e8ee;
+  border-radius: 16px;
+  background: rgba(247, 250, 252, 0.9);
+  scroll-behavior: smooth;
+}
+
+.help-message {
+  max-width: min(82%, 680px);
+  padding: 10px 13px;
+  border-radius: 15px;
+  color: #25394b;
+  background: #fff;
+  box-shadow: 0 2px 9px rgba(10, 25, 47, 0.06);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.help-message-speaker {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  opacity: 0.75;
+}
+
+.help-message.is-user {
+  align-self: flex-end;
+  color: #fff;
+  background: var(--blue-dark);
+  border-bottom-right-radius: 4px;
+}
+
+.help-message.is-assistant {
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+
+.help-message.is-error {
+  color: #8d2b25;
+  border: 1px solid #f0cac6;
+  background: #fff7f6;
+}
+
+.help-message-action {
+  display: block;
+  margin-top: 9px;
+}
+
+.help-typing {
+  color: var(--muted);
+  font-size: 0.84rem;
+  animation: help-pulse 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes help-pulse {
+  to { opacity: 0.45; }
+}
+
+.help-mode-status {
+  min-height: 1.3em;
+  margin: 8px 2px;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.help-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.help-composer textarea {
+  flex: 1;
+  min-height: 48px;
+  max-height: 130px;
+  resize: vertical;
+  padding: 11px 13px;
+  border: 1px solid #c8d4de;
+  border-radius: 14px;
+  color: var(--text);
+  background: #fff;
+}
+
+.help-composer textarea:focus-visible,
+.help-suggestion-list button:focus-visible,
+.help-new-chat:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.help-composer button {
+  min-height: 46px;
+}
+
+.help-composer-hint {
+  margin-top: 5px;
+  font-size: 0.72rem;
+  text-align: right;
+}
+
+.help-suggestion-list button:disabled,
+.help-composer button:disabled,
+.help-composer textarea:disabled,
+.help-new-chat:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.detail-help-button {
+  margin-top: 12px;
+}
+
+@media (max-width: 600px) {
+  .help-dialog {
+    width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .help-panel {
+    padding: 15px;
+  }
+
+  .help-suggestions {
+    grid-template-columns: 1fr;
+    max-height: 175px;
+  }
+
+  .help-message {
+    max-width: 94%;
+  }
+
+  .help-header-actions {
+    gap: 4px;
+  }
+
+  .help-new-chat {
+    padding: 7px 9px;
+    font-size: 0.82rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .help-typing {
+    animation: none;
   }
 }
