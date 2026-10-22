@@ -1983,16 +1983,12 @@ function updateStayPriceNote() {
     : 0;
 
   if (!stayNights) {
-    note.textContent = "Select check-in and check-out dates to calculate your stay price by night.";
+    note.textContent = "Choose check-in and check-out dates to see prices based on your stay length.";
     return;
   }
 
   const nightLabel = `${stayNights} ${stayNights === 1 ? "night" : "nights"}`;
-  if (checkin === appliedCheckIn && checkout === appliedCheckOut) {
-    note.textContent = `Prices shown below are calculated per night for your ${nightLabel} stay.`;
-  } else {
-    note.textContent = `${nightLabel} selected. Prices are calculated per night; press Search to update hotel totals.`;
-  }
+  note.textContent = `Prices below update automatically based on your ${nightLabel} stay.`;
 }
 
 function setDefaultDates() {
@@ -2055,10 +2051,23 @@ function setDefaultDates() {
     ) {
       checkout.value = minimumCheckout;
     }
+    appliedCheckIn = checkin.value;
+    appliedCheckOut = checkout.value;
     updateStayPriceNote();
+    render();
   });
 
-  checkout.addEventListener("change", updateStayPriceNote);
+  checkout.addEventListener("change", () => {
+    if (!checkin.value || !checkout.value || checkout.value <= checkin.value) {
+      updateStayPriceNote();
+      return;
+    }
+
+    appliedCheckIn = checkin.value;
+    appliedCheckOut = checkout.value;
+    updateStayPriceNote();
+    render();
+  });
 }
 
 /* ---------- SEARCH FORM ---------- */
