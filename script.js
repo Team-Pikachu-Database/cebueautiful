@@ -1974,6 +1974,27 @@ async function loadHotels() {
 
 /* ---------- DEFAULT CHECK-IN/CHECK-OUT DATES ---------- */
 
+function updateStayPriceNote() {
+  const checkin = document.getElementById("checkin").value;
+  const checkout = document.getElementById("checkout").value;
+  const note = document.getElementById("stay-price-note");
+  const stayNights = checkin && checkout > checkin
+    ? Math.round((Date.parse(`${checkout}T00:00:00`) - Date.parse(`${checkin}T00:00:00`)) / 86400000)
+    : 0;
+
+  if (!stayNights) {
+    note.textContent = "Select check-in and check-out dates to calculate your stay price by night.";
+    return;
+  }
+
+  const nightLabel = `${stayNights} ${stayNights === 1 ? "night" : "nights"}`;
+  if (checkin === appliedCheckIn && checkout === appliedCheckOut) {
+    note.textContent = `Prices shown below are calculated per night for your ${nightLabel} stay.`;
+  } else {
+    note.textContent = `${nightLabel} selected. Prices are calculated per night; press Search to update hotel totals.`;
+  }
+}
+
 function setDefaultDates() {
   const formatDate = date => {
     const year = date.getFullYear();
@@ -2010,9 +2031,13 @@ function setDefaultDates() {
   checkout.required = true;
   appliedCheckIn = checkin.value;
   appliedCheckOut = checkout.value;
+  updateStayPriceNote();
 
   checkin.addEventListener("change", () => {
-    if (!checkin.value) return;
+    if (!checkin.value) {
+      updateStayPriceNote();
+      return;
+    }
 
     const nextDay = new Date(
       checkin.value + "T00:00:00"
@@ -2030,9 +2055,10 @@ function setDefaultDates() {
     ) {
       checkout.value = minimumCheckout;
     }
-
+    updateStayPriceNote();
   });
 
+  checkout.addEventListener("change", updateStayPriceNote);
 }
 
 /* ---------- SEARCH FORM ---------- */
@@ -2048,6 +2074,7 @@ document
 
     appliedCheckIn = checkin.value;
     appliedCheckOut = checkout.value;
+    updateStayPriceNote();
     render();
   });
 
