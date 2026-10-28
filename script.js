@@ -264,26 +264,6 @@ function mergeRewardWalletIntoCouponWallet(apiCoupons) {
   return [...(Array.isArray(apiCoupons) ? apiCoupons : []), ...mappedRewards];
 }
 
-async function refreshCouponWallet() {
-  if (!signedInAccount) return [];
-
-  try {
-    const data = await requestApi("/api/coupons/mine");
-    if (!Array.isArray(data.coupons)) {
-      throw new Error("The coupon wallet returned an invalid response.");
-    }
-    couponWallet = mergeRewardWalletIntoCouponWallet(data.coupons);
-    renderCouponWallet();
-    updateCouponCount();
-    return couponWallet;
-  } catch (error) {
-    couponWallet = mergeRewardWalletIntoCouponWallet([]);
-    renderCouponWallet();
-    updateCouponCount();
-    throw error;
-  }
-}
-
 function recordPointEntry(label, points, reference) {
   const entries = getCebuPointsEntries();
   entries.push({
@@ -298,21 +278,74 @@ function recordPointEntry(label, points, reference) {
 
 function recordPaidBookingPoints(booking) {
   if (!signedInAccount || !booking || String(booking.paymentStatus || "").toLowerCase() !== "paid") {
-    return;
+    return false;
   }
 
-  const reference = booking.reference || `booking-${Date.now()}`;
+  const reference = String(booking.reference || `booking-${Date.now()}`).trim();
   const amount = Number(booking.totalPrice || booking.total || booking.amount || 0);
   const points = calculateCebuPointsFromAmount(amount);
-  if (!points) return;
+  if (!points) return false;
 
   const entries = getCebuPointsEntries();
-  if (entries.some(entry => entry.reference === reference)) {
-    return;
+  const normalizedReference = reference.toLowerCase();
+  if (entries.some(entry => String(entry.reference || "").toLowerCase() === normalizedReference)) {
+    return false;
   }
 
-  recordPointEntry(`${booking.hotelName || "Hotel booking"} payment`, points, reference);
+  entries.push({
+    id: `booking-${reference || Date.now()}`,
+    label: `${booking.hotelName || "Hotel booking"} payment`,
+    points,
+    reference,
+    date: booking.paidAt || booking.createdAt || new Date().toISOString()
+  });
+  setCebuPointsEntries(entries);
   renderCebuPointsSummary();
+  return true;
+}
+
+async function syncCebuPointsFromPaidBookings(bookings = []) {
+  if (!signedInAccount || !Array.isArray(bookings)) {
+    return false;
+  }
+
+  const entries = getCebuPointsEntries();
+  const existingReferences = new Set(
+    entries
+      .filter(entry => entry.reference)
+      .map(entry => String(entry.reference).trim().toLowerCase())
+  );
+
+  let changed = false;
+  bookings.forEach(booking => {
+    const paymentStatus = String(booking.paymentStatus || "").toLowerCase();
+    if (paymentStatus !== "paid") return;
+
+    const reference = String(booking.reference || "").trim();
+    if (!reference || existingReferences.has(reference.toLowerCase())) return;
+
+    const amount = Number(booking.totalPrice || booking.total || booking.amount || 0);
+    const points = calculateCebuPointsFromAmount(amount);
+    if (!points) return;
+
+    entries.push({
+      id: `booking-${reference || Date.now()}`,
+      label: `${booking.hotelName || "Hotel booking"} payment`,
+      points,
+      reference,
+      date: booking.paidAt || booking.createdAt || new Date().toISOString()
+    });
+    existingReferences.add(reference.toLowerCase());
+    changed = true;
+  });
+
+  if (!changed) {
+    return false;
+  }
+
+  setCebuPointsEntries(entries);
+  renderCebuPointsSummary();
+  return true;
 }
 
 function renderRewardCatalog() {
@@ -702,6 +735,9 @@ function updateAccountDisplay(user) {
       }
       console.warn("Unable to refresh the coupon wallet.", error);
     });
+    requestApi("/api/bookings/mine")
+      .then(data => syncCebuPointsFromPaidBookings(Array.isArray(data.reservations) ? data.reservations : []))
+      .catch(() => {});
   } else {
     couponWallet = [];
     renderCouponWallet();
@@ -1205,6 +1241,7 @@ async function loadReservationHistory() {
     }
 
     message.textContent = `${data.reservations.length} reservation${data.reservations.length === 1 ? "" : "s"}`;
+    await syncCebuPointsFromPaidBookings(data.reservations);
     data.reservations.forEach(reservation => {
       const item = document.createElement("article");
       item.className = "reservation-item";
@@ -1822,6 +1859,7 @@ document.getElementById("booking-form").addEventListener("submit", async event =
           : "") +
         `Total due: ${peso.format(booking.totalPrice)}.`;
     }
+    recordPaidBookingPoints(booking);
     if (booking.couponDiscount) {
       refreshCouponWallet().catch(error => {
         console.warn("The reservation succeeded, but the coupon wallet could not refresh.", error);
