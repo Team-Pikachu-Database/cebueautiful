@@ -169,15 +169,6 @@
           <button class="sidebar-link" type="button" id="sidebar-coupons" title="My coupons" aria-label="My coupons">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-4V7a2 2 0 0 1 2-2Z"></path><path d="M13 5v2m0 4v2m0 4v2"></path></svg><span>My coupons</span><small class="coupon-count" id="sidebar-coupon-count" hidden></small>
           </button>
-          <button class="sidebar-link" type="button" id="sidebar-points" title="My Cebu Points" aria-label="My Cebu Points">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v7m0 13v0m-5-5 7 0m-7 0 5-5m2 5 5-5m-5 5 5 5"></path><circle cx="12" cy="12" r="8"></circle></svg><span>My Cebu Points</span><small class="coupon-count points-count" id="sidebar-points-count" hidden></small>
-          </button>
-          <button class="sidebar-link" type="button" id="sidebar-rewards" title="Earn rewards" aria-label="Earn rewards">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3m0 15v3m9-9h-3M6 12H3m15.5 6.5-2.1-2.1M8.6 8.6 6.5 6.5m11 0-2.1 2.1M8.6 15.4l-2.1 2.1"></path><circle cx="12" cy="12" r="4"></circle></svg><span>Earn rewards</span>
-          </button>
-          <button class="sidebar-link" type="button" id="sidebar-spin" title="Spin the wheel" aria-label="Spin the wheel">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v4m0 10v4M4.93 4.93l2.83 2.83m8.49 8.49 2.83 2.83M3 12h4m10 0h4M4.93 19.07l2.83-2.83m8.49-8.49 2.83-2.83"></path><circle cx="12" cy="12" r="3"></circle></svg><span>Spin the wheel</span>
-          </button>
           <button class="sidebar-link" type="button" id="sidebar-events" title="Promotional events" aria-label="Promotional events">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18m3 4h4m-2-2v4"></path></svg><span>Promotional events</span>
           </button>
@@ -350,76 +341,6 @@
         <h3 id="expired-coupons-title">Expired coupons</h3>
         <div id="expired-coupons"></div>
       </section>
-    </section>
-  </dialog>
-
-  <dialog class="account-dialog points-dialog" id="points-dialog" aria-labelledby="points-dialog-title">
-    <section class="account-panel points-panel">
-      <div class="account-heading">
-        <div>
-          <span class="account-kicker">YOUR REWARDS</span>
-          <h2 id="points-dialog-title">My Cebu Points</h2>
-        </div>
-        <button type="button" class="account-close" data-dialog-close aria-label="Close Cebu Points">×</button>
-      </div>
-      <div class="points-summary-card">
-        <div>
-          <p class="points-balance-label">Available points</p>
-          <strong class="points-balance" id="points-balance">0</strong>
-        </div>
-        <p class="points-summary-text" id="points-summary-text">Earn points on paid CebuStays bookings.</p>
-      </div>
-      <div class="points-rules">
-        <strong>How points work</strong>
-        <p>Every paid booking of PHP 5,000 gives 5 Cebu Points right away. After that, you earn 1 more point for every extra PHP 1,000 spent above PHP 5,000.</p>
-      </div>
-      <div class="points-activity-section">
-        <h3>Recent activity</h3>
-        <ul class="points-activity-list" id="points-activity-list"></ul>
-      </div>
-    </section>
-  </dialog>
-
-  <dialog class="account-dialog reward-catalog-dialog" id="reward-catalog-dialog" aria-labelledby="reward-catalog-title">
-    <section class="account-panel reward-panel">
-      <div class="account-heading">
-        <div>
-          <span class="account-kicker">CEBUSTAYS REWARDS</span>
-          <h2 id="reward-catalog-title">Earn rewards</h2>
-        </div>
-        <button type="button" class="account-close" data-dialog-close aria-label="Close reward catalog">×</button>
-      </div>
-      <p class="reward-intro">Use your Cebu Points on rewards designed for everyday value, comfort, and memorable experiences.</p>
-      <div class="reward-category-tabs" id="reward-category-tabs" aria-label="Reward categories"></div>
-      <p class="reward-message" id="reward-message" aria-live="polite"></p>
-      <div class="reward-catalog-grid" id="reward-catalog-grid"></div>
-    </section>
-  </dialog>
-
-  <dialog class="account-dialog spin-wheel-dialog" id="spin-wheel-dialog" aria-labelledby="spin-wheel-title">
-    <section class="account-panel spin-wheel-panel">
-      <div class="account-heading">
-        <div>
-          <span class="account-kicker">CEBUSTAYS LUCK</span>
-          <h2 id="spin-wheel-title">Spin the wheel</h2>
-        </div>
-        <button type="button" class="account-close" data-dialog-close aria-label="Close spin the wheel">×</button>
-      </div>
-      <p class="spin-wheel-copy">Spend 1 Cebu Point for a spin. Lower rewards appear more often, while bigger rewards are reserved for the lucky few.</p>
-      <div class="spin-wheel-panel-layout">
-        <div class="spin-wheel-visual-wrap">
-          <div class="spin-wheel-pointer" aria-hidden="true"></div>
-          <div class="spin-wheel" id="spin-wheel" aria-live="polite"></div>
-        </div>
-        <div class="spin-wheel-side">
-          <div class="spin-wheel-prize-card">
-            <span class="spin-wheel-label">Reward</span>
-            <strong id="spin-wheel-result">Ready to spin</strong>
-          </div>
-          <button type="button" class="btn btn-primary spin-wheel-button" id="spin-wheel-button">Spin for 1 point</button>
-          <p class="spin-wheel-message" id="spin-wheel-message" aria-live="polite"></p>
-        </div>
-      </div>
     </section>
   </dialog>
 
