@@ -166,6 +166,15 @@
           <button class="sidebar-link" type="button" id="sidebar-reservations" title="My reservations" aria-label="My reservations">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18m-13 4h3m-3 3h7"></path></svg><span>My reservations</span>
           </button>
+          <button class="sidebar-link" type="button" id="sidebar-points" title="My Cebu Points" aria-label="My Cebu Points">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 7.5v3.2l2.4 2.4M7 5.5h10"></path></svg><span>My Cebu Points</span>
+          </button>
+          <button class="sidebar-link" type="button" id="sidebar-rewards" title="Earn rewards" aria-label="Earn rewards">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8.5A2.5 2.5 0 0 1 7.5 6h9A2.5 2.5 0 0 1 19 8.5v2.1A2.5 2.5 0 0 1 16.5 13H15l-1 5-4-5h-2.5A2.5 2.5 0 0 1 5 10.6z"></path></svg><span>Earn rewards</span>
+          </button>
+          <button class="sidebar-link" type="button" id="sidebar-spin-wheel" title="Spin the wheel" aria-label="Spin the wheel">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3m9 9h-3M6 18l2.5-2.5M18 6l-2.5 2.5M12 21v-3M3 12h3"></path><circle cx="12" cy="12" r="4"></circle></svg><span>Spin the wheel</span>
+          </button>
           <button class="sidebar-link" type="button" id="sidebar-coupons" title="My coupons" aria-label="My coupons">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-4V7a2 2 0 0 1 2-2Z"></path><path d="M13 5v2m0 4v2m0 4v2"></path></svg><span>My coupons</span><small class="coupon-count" id="sidebar-coupon-count" hidden></small>
           </button>
@@ -341,6 +350,70 @@
         <h3 id="expired-coupons-title">Expired coupons</h3>
         <div id="expired-coupons"></div>
       </section>
+    </section>
+  </dialog>
+
+  <dialog class="account-dialog points-dialog" id="cebu-points-dialog" aria-labelledby="cebu-points-title">
+    <section class="account-panel points-panel">
+      <div class="account-heading">
+        <div>
+          <span class="account-kicker">CEBU LOYALTY</span>
+          <h2 id="cebu-points-title">My Cebu Points</h2>
+        </div>
+        <button type="button" class="account-close" data-dialog-close aria-label="Close Cebu Points">×</button>
+      </div>
+      <div class="points-summary-card">
+        <div>
+          <p class="points-label">Available balance</p>
+          <h3 id="cebu-points-balance">0 pts</h3>
+        </div>
+        <button type="button" class="btn btn-primary" id="cebu-points-reward-button">Earn rewards</button>
+      </div>
+      <div class="points-rules">
+        <p>Rule: every ₱5,000 spent = 5 points. Each additional full ₱1,000 beyond that adds +1 point.</p>
+      </div>
+      <section class="points-history-section">
+        <h3>Point activity</h3>
+        <div id="cebu-points-history" class="points-history-list"></div>
+      </section>
+    </section>
+  </dialog>
+
+  <dialog class="account-dialog rewards-dialog" id="reward-catalog-dialog" aria-labelledby="reward-catalog-title">
+    <section class="account-panel rewards-panel">
+      <div class="account-heading">
+        <div>
+          <span class="account-kicker">REWARD CATALOG</span>
+          <h2 id="reward-catalog-title">Earn rewards</h2>
+        </div>
+        <button type="button" class="account-close" data-dialog-close aria-label="Close rewards">×</button>
+      </div>
+      <div id="reward-catalog-tabs" class="reward-catalog-tabs" aria-label="Reward categories"></div>
+      <div id="reward-catalog-list" class="reward-catalog-list"></div>
+    </section>
+  </dialog>
+
+  <dialog class="account-dialog spin-dialog" id="spin-wheel-dialog" aria-labelledby="spin-wheel-title">
+    <section class="account-panel spin-panel">
+      <div class="account-heading">
+        <div>
+          <span class="account-kicker">LUCKY DRAW</span>
+          <h2 id="spin-wheel-title">Spin the wheel</h2>
+        </div>
+        <button type="button" class="account-close" data-dialog-close aria-label="Close spin wheel">×</button>
+      </div>
+      <div class="spin-wheel-layout">
+        <div class="spin-wheel-wrap">
+          <div class="spin-pointer" aria-hidden="true"></div>
+          <div class="spin-wheel" id="spin-wheel" aria-label="Spin wheel"></div>
+        </div>
+        <div class="spin-details">
+          <p class="spin-cost">Spend 1 point per spin</p>
+          <div id="spin-result" class="spin-result">Ready to spin</div>
+          <button type="button" class="btn btn-primary" id="spin-button">Spin now</button>
+          <button type="button" class="btn btn-ghost" id="spin-claim-button" hidden>Claim it</button>
+        </div>
+      </div>
     </section>
   </dialog>
 
