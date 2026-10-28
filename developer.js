@@ -3,12 +3,28 @@
 const configuredApiBaseUrl = typeof window.CEBUSTAYS_CONFIG?.apiBaseUrl === "string"
   ? window.CEBUSTAYS_CONFIG.apiBaseUrl.trim().replace(/\/+$/, "")
   : "";
-const isLocalApiPreview = window.location.port === "5505" ||
-  window.location.port === "5506" ||
-  /^[a-z0-9-]+-550[56]\.app\.github\.dev$/i.test(window.location.hostname);
-const API_BASE_URL = isLocalApiPreview
-  ? ""
-  : configuredApiBaseUrl;
+
+function resolveApiBaseUrl() {
+  const hostname = window.location.hostname;
+  const port = window.location.port;
+  const protocol = window.location.protocol;
+  const codespaceMatch = hostname.match(/^([a-z0-9-]+)-(\d+)\.app\.github\.dev$/i);
+
+  if (codespaceMatch) {
+    const [, codespaceName, codespacePort] = codespaceMatch;
+    if (["5505", "5506"].includes(codespacePort)) {
+      return `${protocol}//${codespaceName}-5505.app.github.dev`;
+    }
+  }
+
+  if (["localhost", "127.0.0.1"].includes(hostname) && ["5505", "5506"].includes(port)) {
+    return `${protocol}//${hostname}:5505`;
+  }
+
+  return configuredApiBaseUrl || "";
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 const status = document.getElementById("developer-status");
 const destinations = document.getElementById("developer-destinations");
 const actions = document.getElementById("developer-actions");
@@ -22,6 +38,7 @@ const paymentReviewConfirm = document.getElementById("payment-review-confirm");
 const paymentReviewMessage = document.getElementById("payment-review-message");
 const retryButton = document.getElementById("developer-retry");
 let selectedReservation = null;
+let pendingBookingsRefreshTimer = null;
 
 async function requestApi(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -49,6 +66,15 @@ function formatReservationDate(value) {
   });
 }
 
+function startPendingBookingsRefresh() {
+  if (pendingBookingsRefreshTimer) {
+    window.clearInterval(pendingBookingsRefreshTimer);
+  }
+  pendingBookingsRefreshTimer = window.setInterval(() => {
+    loadPendingBookings();
+  }, 15000);
+}
+
 async function loadPendingBookings() {
   bookingsList.replaceChildren();
   bookingsStatus.textContent = "Loading pending reservations…";
@@ -62,6 +88,7 @@ async function loadPendingBookings() {
 
     bookingsStatus.textContent = `${data.reservations.length} pending reservation${data.reservations.length === 1 ? "" : "s"}`;
     for (const reservation of data.reservations) {
+      const isCancellation = reservation.cancellationStatus === "requested";
       const row = document.createElement("tr");
       const guest = document.createElement("td");
       const guestName = document.createElement("strong");
@@ -92,16 +119,24 @@ async function loadPendingBookings() {
         currency: "PHP"
       }).format(reservation.totalPrice);
       const paymentStatus = document.createElement("span");
-      paymentStatus.className = "reservation-status is-pending";
-      paymentStatus.textContent = "Pending";
+      paymentStatus.className = isCancellation
+        ? "reservation-status is-cancelled"
+        : "reservation-status is-pending";
+      paymentStatus.textContent = isCancellation ? "Cancellation" : "Pending";
       payment.append(amount, paymentStatus);
 
       const action = document.createElement("td");
       const checkButton = document.createElement("button");
       checkButton.className = "btn btn-primary developer-check-payment";
       checkButton.type = "button";
-      checkButton.textContent = "Check details";
-      checkButton.addEventListener("click", () => openPaymentReview(reservation));
+      checkButton.textContent = isCancellation ? "Approve cancel" : "Check details";
+      checkButton.addEventListener("click", () => {
+        if (isCancellation) {
+          approveCancellation(reservation);
+          return;
+        }
+        openPaymentReview(reservation);
+      });
       action.append(checkButton);
 
       row.append(guest, booking, stay, payment, action);
@@ -128,6 +163,9 @@ function openPaymentReview(reservation) {
     }).format(reservation.totalPrice)],
     ["Reservation reference", reservation.reference]
   ];
+  if (reservation.cancellationStatus === "requested") {
+    details.push(["Cancellation reason", reservation.cancellationReason || "No reason supplied."]);
+  }
 
   for (const [label, value] of details) {
     const term = document.createElement("dt");
@@ -164,6 +202,24 @@ async function confirmPayment() {
   }
 }
 
+async function approveCancellation(reservation) {
+  if (!reservation || !reservation.reference) return;
+  const shouldApprove = window.confirm(
+    `Approve cancellation for ${reservation.reference}? This will cancel the pending reservation and release any held coupon.`
+  );
+  if (!shouldApprove) return;
+
+  try {
+    await requestApi(
+      `/api/bookings/${encodeURIComponent(reservation.reference)}/approve-cancellation`,
+      { method: "PATCH" }
+    );
+    await loadPendingBookings();
+  } catch (error) {
+    bookingsStatus.textContent = `${error.message} Try refreshing the list.`;
+  }
+}
+
 async function checkDeveloperSession() {
   status.textContent = "Checking your developer session…";
   retryButton.hidden = true;
@@ -184,6 +240,7 @@ async function checkDeveloperSession() {
     actions.hidden = false;
     bookingsSection.hidden = false;
     await loadPendingBookings();
+    startPendingBookingsRefresh();
   } catch (error) {
     status.textContent = `${error.message} Check your connection and try again.`;
     retryButton.hidden = false;

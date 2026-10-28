@@ -87,7 +87,10 @@ img {
 .public-home {
   min-height: 100vh;
   color: var(--text);
-  background: #f5f7fa;
+  background:
+    radial-gradient(ellipse at 8% 12%, rgba(0, 113, 194, 0.1), transparent 38%),
+    radial-gradient(ellipse at 92% 42%, rgba(0, 168, 150, 0.1), transparent 36%),
+    linear-gradient(135deg, #f2f7fc 0%, #eaf4f8 52%, #eef7f4 100%);
 }
 
 .home-navigation {
@@ -1720,7 +1723,6 @@ img {
 
 .search-bar {
   display: flex;
-  flex-wrap: wrap;
   gap: 6px;
   padding: 6px;
   background: rgba(255, 255, 255, 0.15);
@@ -1728,18 +1730,6 @@ img {
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 12px;
-}
-
-.stay-price-note {
-  flex: 0 0 100%;
-  margin: 0;
-  padding: 8px 12px;
-  border-left: 3px solid var(--blue);
-  border-radius: 6px;
-  background: #fff;
-  color: var(--text);
-  font-size: 0.8rem;
-  line-height: 1.45;
 }
 
 .field {
@@ -2626,10 +2616,6 @@ img {
   }
   .search-bar {
     flex-direction: column;
-  }
-  .stay-price-note {
-    flex-basis: auto;
-    width: 100%;
   }
   .layout {
     grid-template-columns: 1fr;

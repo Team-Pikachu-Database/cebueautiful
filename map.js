@@ -4,14 +4,28 @@
   const configuredApiBaseUrl = typeof window.CEBUSTAYS_CONFIG?.apiBaseUrl === "string"
     ? window.CEBUSTAYS_CONFIG.apiBaseUrl.trim().replace(/\/+$/, "")
     : "";
-  const isCodespacesLiveServer = window.location.port === "5506" &&
-    /^[a-z0-9-]+-5506\.app\.github\.dev$/i.test(window.location.hostname);
-  const codespacesApiHost = isCodespacesLiveServer
-    ? window.location.hostname.replace(/-5506\.app\.github\.dev$/i, "-5505.app.github.dev")
-    : "";
-  const apiBaseUrl = isCodespacesLiveServer
-    ? `${window.location.protocol}//${codespacesApiHost}`
-    : configuredApiBaseUrl;
+
+  function resolveApiBaseUrl() {
+    const hostname = window.location.hostname;
+    const port = window.location.port;
+    const protocol = window.location.protocol;
+    const codespaceMatch = hostname.match(/^([a-z0-9-]+)-(\d+)\.app\.github\.dev$/i);
+
+    if (codespaceMatch) {
+      const [, codespaceName, codespacePort] = codespaceMatch;
+      if (["5505", "5506"].includes(codespacePort)) {
+        return `${protocol}//${codespaceName}-5505.app.github.dev`;
+      }
+    }
+
+    if (["localhost", "127.0.0.1"].includes(hostname) && ["5505", "5506"].includes(port)) {
+      return `${protocol}//${hostname}:3000`;
+    }
+
+    return configuredApiBaseUrl || "";
+  }
+
+  const apiBaseUrl = resolveApiBaseUrl();
   const dialog = document.getElementById("hotel-map-dialog");
   const mapElement = document.getElementById("hotel-map-canvas");
   const title = document.getElementById("hotel-map-title");

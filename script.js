@@ -3,18 +3,28 @@
 const configuredApiBaseUrl = typeof window.CEBUSTAYS_CONFIG?.apiBaseUrl === "string"
   ? window.CEBUSTAYS_CONFIG.apiBaseUrl.trim().replace(/\/+$/, "")
   : "";
-const isCodespacesLiveServer = window.location.port === "5506" &&
-  /^[a-z0-9-]+-5506\.app\.github\.dev$/i.test(window.location.hostname);
-const isLocalLiveServer = window.location.port === "5506" &&
-  ["localhost", "127.0.0.1"].includes(window.location.hostname);
-const codespacesApiHost = isCodespacesLiveServer
-  ? window.location.hostname.replace(/-5506\.app\.github\.dev$/i, "-5505.app.github.dev")
-  : "";
-const API_BASE_URL = isCodespacesLiveServer
-  ? `${window.location.protocol}//${codespacesApiHost}`
-  : isLocalLiveServer
-    ? `${window.location.protocol}//${window.location.hostname}:5505`
-  : configuredApiBaseUrl;
+
+function resolveApiBaseUrl() {
+  const hostname = window.location.hostname;
+  const port = window.location.port;
+  const protocol = window.location.protocol;
+  const codespaceMatch = hostname.match(/^([a-z0-9-]+)-(\d+)\.app\.github\.dev$/i);
+
+  if (codespaceMatch) {
+    const [, codespaceName, codespacePort] = codespaceMatch;
+    if (["5505", "5506"].includes(codespacePort)) {
+      return `${protocol}//${codespaceName}-5505.app.github.dev`;
+    }
+  }
+
+  if (["localhost", "127.0.0.1"].includes(hostname) && ["5505", "5506"].includes(port)) {
+    return `${protocol}//${hostname}:5505`;
+  }
+
+  return configuredApiBaseUrl || "";
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 const API_URL = `${API_BASE_URL}/api/hotels`;
 
 const peso = new Intl.NumberFormat("en-PH", {
@@ -80,6 +90,7 @@ const checkboxes = document.querySelectorAll(
 let hotels = [];
 let signedInAccount = null;
 let reservationHistoryLoading = false;
+let reservationHistoryRefreshTimer = null;
 let appliedCheckIn = "";
 let appliedCheckOut = "";
 let hotelViewLoaded = false;
@@ -532,6 +543,7 @@ function initializeAccount() {
       const reservationsDialog = document.getElementById("reservation-history-dialog");
       if (!reservationsDialog) return;
       reservationsDialog.showModal();
+      startReservationHistoryRefresh();
       loadReservationHistory();
     });
   }
@@ -603,6 +615,7 @@ function initializeAccountMenu() {
     .addEventListener("click", () => {
       closeMenu();
       reservationsDialog.showModal();
+      startReservationHistoryRefresh();
       loadReservationHistory();
     });
 
@@ -648,6 +661,10 @@ function initializeAccountMenu() {
       if (event.target === dialog) dialog.close();
     });
   });
+
+  reservationsDialog.addEventListener("close", () => {
+    stopReservationHistoryRefresh();
+  });
 }
 
 function formatReservationDate(value) {
@@ -656,6 +673,25 @@ function formatReservationDate(value) {
     day: "numeric",
     year: "numeric"
   });
+}
+
+function startReservationHistoryRefresh() {
+  if (reservationHistoryRefreshTimer) {
+    window.clearInterval(reservationHistoryRefreshTimer);
+  }
+  reservationHistoryRefreshTimer = window.setInterval(() => {
+    const dialog = document.getElementById("reservation-history-dialog");
+    if (dialog?.open) {
+      loadReservationHistory();
+    }
+  }, 15000);
+}
+
+function stopReservationHistoryRefresh() {
+  if (reservationHistoryRefreshTimer) {
+    window.clearInterval(reservationHistoryRefreshTimer);
+    reservationHistoryRefreshTimer = null;
+  }
 }
 
 async function loadReservationHistory() {
@@ -684,12 +720,17 @@ async function loadReservationHistory() {
       hotelName.textContent = reservation.hotelName;
       const status = document.createElement("span");
       const isPaid = reservation.paymentStatus === "paid";
+      const isCancellationRequested = reservation.cancellationStatus === "requested";
       status.className = reservation.cancelledAt
         ? "reservation-status is-cancelled"
-        : `reservation-status ${isPaid ? "is-paid" : "is-pending"}`;
+        : isCancellationRequested
+          ? "reservation-status is-cancelled"
+          : `reservation-status ${isPaid ? "is-paid" : "is-pending"}`;
       status.textContent = reservation.cancelledAt
         ? "Cancelled"
-        : isPaid ? "Paid" : "Pending payment";
+        : isCancellationRequested
+          ? "Cancellation requested"
+          : isPaid ? "Paid" : "Pending payment";
       heading.append(hotelName, status);
 
       const dates = document.createElement("p");
@@ -700,7 +741,47 @@ async function loadReservationHistory() {
       const reference = document.createElement("small");
       reference.textContent = `Confirmation ${reservation.reference}`;
 
-      item.append(heading, dates, details, reference);
+      const actionRow = document.createElement("div");
+      actionRow.className = "reservation-item-actions";
+      if (!reservation.cancelledAt && reservation.paymentStatus === "pending" && !isCancellationRequested) {
+        const cancelButton = document.createElement("button");
+        cancelButton.type = "button";
+        cancelButton.className = "btn btn-ghost reservation-cancel";
+        cancelButton.textContent = "Request cancellation";
+        cancelButton.addEventListener("click", async () => {
+          const reason = window.prompt("Please tell us why you want to cancel this reservation.");
+          if (!reason || !reason.trim()) {
+            window.alert("Please enter a reason before submitting your cancellation request.");
+            return;
+          }
+          try {
+            cancelButton.disabled = true;
+            cancelButton.textContent = "Submitting…";
+            await requestApi(`/api/bookings/${encodeURIComponent(reservation.reference)}/cancel`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ reason: reason.trim() })
+            });
+            window.alert("Your cancellation request has been submitted and awaits staff approval.");
+            await loadReservationHistory();
+          } catch (error) {
+            window.alert(error.message);
+          } finally {
+            cancelButton.disabled = false;
+            cancelButton.textContent = "Request cancellation";
+          }
+        });
+        actionRow.append(cancelButton);
+      }
+
+      if (reservation.cancellationReason && (reservation.cancelledAt || isCancellationRequested)) {
+        const reason = document.createElement("small");
+        reason.textContent = `Reason: ${reservation.cancellationReason}`;
+        reason.className = "reservation-cancel-reason";
+        actionRow.append(reason);
+      }
+
+      item.append(heading, dates, details, reference, actionRow);
       list.append(item);
     });
   } catch (error) {
@@ -1251,6 +1332,10 @@ document.getElementById("booking-form").addEventListener("submit", async event =
         console.warn("The reservation succeeded, but the coupon wallet could not refresh.", error);
       });
     }
+    if (document.getElementById("reservation-history-dialog")?.open) {
+      await loadReservationHistory();
+    }
+    await loadReservationHistory();
   } catch (error) {
     status.textContent = error.message;
     if (error.message.includes("remain")) await refreshBookingAvailability();
@@ -1974,23 +2059,6 @@ async function loadHotels() {
 
 /* ---------- DEFAULT CHECK-IN/CHECK-OUT DATES ---------- */
 
-function updateStayPriceNote() {
-  const checkin = document.getElementById("checkin").value;
-  const checkout = document.getElementById("checkout").value;
-  const note = document.getElementById("stay-price-note");
-  const stayNights = checkin && checkout > checkin
-    ? Math.round((Date.parse(`${checkout}T00:00:00`) - Date.parse(`${checkin}T00:00:00`)) / 86400000)
-    : 0;
-
-  if (!stayNights) {
-    note.textContent = "Choose check-in and check-out dates to see prices based on your stay length.";
-    return;
-  }
-
-  const nightLabel = `${stayNights} ${stayNights === 1 ? "night" : "nights"}`;
-  note.textContent = `Prices below update automatically based on your ${nightLabel} stay.`;
-}
-
 function setDefaultDates() {
   const formatDate = date => {
     const year = date.getFullYear();
@@ -2027,13 +2095,9 @@ function setDefaultDates() {
   checkout.required = true;
   appliedCheckIn = checkin.value;
   appliedCheckOut = checkout.value;
-  updateStayPriceNote();
 
   checkin.addEventListener("change", () => {
-    if (!checkin.value) {
-      updateStayPriceNote();
-      return;
-    }
+    if (!checkin.value) return;
 
     const nextDay = new Date(
       checkin.value + "T00:00:00"
@@ -2051,23 +2115,9 @@ function setDefaultDates() {
     ) {
       checkout.value = minimumCheckout;
     }
-    appliedCheckIn = checkin.value;
-    appliedCheckOut = checkout.value;
-    updateStayPriceNote();
-    render();
+
   });
 
-  checkout.addEventListener("change", () => {
-    if (!checkin.value || !checkout.value || checkout.value <= checkin.value) {
-      updateStayPriceNote();
-      return;
-    }
-
-    appliedCheckIn = checkin.value;
-    appliedCheckOut = checkout.value;
-    updateStayPriceNote();
-    render();
-  });
 }
 
 /* ---------- SEARCH FORM ---------- */
@@ -2083,7 +2133,6 @@ document
 
     appliedCheckIn = checkin.value;
     appliedCheckOut = checkout.value;
-    updateStayPriceNote();
     render();
   });
 
