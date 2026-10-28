@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CebuStays – Hotels and staycations in Cebu</title>
+  <link rel="stylesheet" href="style.css?v=20261022-help-assistant">
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin="">
+    <link rel="icon" type="image/x-icon" href="plane.png">
+</head>
+<body>
+  <main class="public-home" id="public-home">
+    <header class="home-navigation">
+      <a class="home-brand" href="./" aria-label="CebuStays home">Cebu<span>Stays</span></a>
+      <button class="home-nav-toggle" id="home-nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="home-navigation-links">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+      </button>
+      <nav class="home-navigation-links" id="home-navigation-links" aria-label="Main navigation">
+        <a href="./" data-page-link="home" aria-current="page">Home</a>
+        <a href="?view=hotels" data-page-link="hotels">Explore Hotels</a>
+        <a href="#why-cebustays">About</a>
+        <button class="home-sign-in" type="button" data-help-open>Need Help?</button>
+        <div class="home-account-actions">
+          <button class="home-sign-in" type="button" data-account-open data-account-view-target="login">Sign in</button>
+          <button class="home-sign-up" type="button" data-account-open data-account-view-target="register">Create account</button>
+        </div>
+      </nav>
+    </header>
+
+    <section class="home-hero" aria-labelledby="home-hero-title">
+      <div class="home-hero-content">
+        <p class="home-eyebrow">A better way to stay in Cebu</p>
+        <h1 id="home-hero-title">Discover your next stay in Cebu.</h1>
+        <p>Find a place that fits your trip. Explore local hotels, compare what matters, and plan your dates with CebuStays.</p>
+        <div class="home-hero-actions">
+          <a class="home-primary-action" href="?view=hotels" data-page-link="hotels">Explore hotels</a>
+          <a class="home-secondary-action" href="?view=hotels" data-page-link="hotels">Browse as guest <span aria-hidden="true">→</span></a>
+        </div>
+      </div>
+      <a class="hero-photo-credit" href="?view=hotels" data-page-link="hotels">Find a stay for your Cebu trip <span aria-hidden="true">↗</span></a>
+    </section>
+
+    <section class="home-section promotion-section" aria-labelledby="promotions-title">
+      <div class="home-section-heading">
+        <div>
+          <p class="home-eyebrow">CebuStays offers</p>
+          <h2 id="promotions-title">Offers for your next stay</h2>
+        </div>
+        <a href="?view=hotels" data-page-link="hotels">Explore hotels <span aria-hidden="true">→</span></a>
+      </div>
+      <div class="promotion-carousel" id="promotion-carousel" role="region" aria-roledescription="carousel" aria-label="CebuStays promotions">
+        <div class="promotion-track" id="promotion-track" aria-live="polite">
+          <p class="home-loading">Loading current and upcoming offers…</p>
+        </div>
+        <div class="promotion-controls">
+          <button type="button" id="promotion-previous" aria-label="Previous promotion">←</button>
+          <div class="promotion-indicators" id="promotion-indicators" aria-label="Choose a promotion"></div>
+          <button type="button" id="promotion-next" aria-label="Next promotion">→</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="home-section featured-section" aria-labelledby="featured-title">
+      <div class="home-section-heading">
+        <div>
+          <p class="home-eyebrow">From the hotel catalogue</p>
+          <h2 id="featured-title">Stays to explore</h2>
+        </div>
+        <a href="?view=hotels" data-page-link="hotels">See all hotels <span aria-hidden="true">→</span></a>
+      </div>
+      <div class="featured-hotels" id="featured-hotels" aria-live="polite">
+        <p class="home-loading">Loading stays…</p>
+      </div>
+    </section>
+
+    <section class="destination-section" aria-labelledby="destination-title">
+      <div class="home-section destination-inner">
+        <p class="home-eyebrow">Make Cebu your own</p>
+        <h2 id="destination-title">Start with a destination.</h2>
+        <div class="destination-list" id="destination-list"></div>
+      </div>
+    </section>
+
+    <section class="home-section events-section" id="promotion-events" aria-labelledby="events-title">
+      <div class="home-section-heading">
+        <div>
+          <p class="home-eyebrow">Plan ahead</p>
+          <h2 id="events-title">Upcoming promotions &amp; events</h2>
+        </div>
+        <span class="events-disclaimer">CebuStays promotional schedule</span>
+      </div>
+      <div class="promotion-events-list" id="promotion-events-list" aria-live="polite">
+        <p class="home-loading">Loading scheduled promotions…</p>
+      </div>
+    </section>
+
+    <section class="home-section why-section" id="why-cebustays">
+      <div>
+        <p class="home-eyebrow">Your trip, your way</p>
+        <h2>Explore first. Decide when it feels right.</h2>
+      </div>
+      <p>Browse hotel details, photos, locations, and date-based availability before you book. Create an account only when you are ready to make a reservation.</p>
+    </section>
+
+    <section class="home-final-cta">
+      <div>
+        <p class="home-eyebrow">Your Cebu stay starts here</p>
+        <h2>Find the right place for your next trip.</h2>
+      </div>
+      <a class="home-primary-action" href="?view=hotels" data-page-link="hotels">Explore hotels <span aria-hidden="true">→</span></a>
+    </section>
+
+    <footer class="home-footer">
+      <a class="home-brand" href="./">Cebu<span>Stays</span></a>
+      <p>CebuStays is a demo project. Not affiliated with Booking.com.</p>
+    </footer>
+  </main>
+
+  <div id="hotel-app" hidden>
+    <button class="mobile-sidebar-toggle" id="mobile-sidebar-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="site-sidebar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+    </button>
+    <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" aria-label="Close navigation" hidden></button>
+    <aside class="site-sidebar" id="site-sidebar" aria-label="CebuStays navigation">
+      <div class="sidebar-brand-row">
+        <a class="sidebar-brand" href="./" data-page-link="home" aria-label="CebuStays home">C<span class="sidebar-brand-label">ebuStays</span></a>
+        <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Pin navigation open" aria-expanded="false" aria-controls="site-sidebar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+        </button>
+      </div>
+      <button class="sidebar-close" id="sidebar-close" type="button" aria-label="Close navigation">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"></path></svg>
+      </button>
+      <nav class="sidebar-navigation" aria-label="Website navigation">
+        <p class="sidebar-section-label">Stay tools</p>
+        <button class="sidebar-link" type="button" id="sidebar-find-stays" title="Find a stay" aria-label="Find a stay">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m16 16 4 4M8 11h6m-3-3v6"></path></svg><span>Find a stay</span>
+        </button>
+        <button class="sidebar-link" type="button" id="sidebar-clear-filters" title="Clear filters" aria-label="Clear filters">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M7 12h10m-7 5h4"></path><path d="m18 4 2 3-2 3"></path></svg><span>Clear filters</span>
+        </button>
+        <button class="sidebar-link" type="button" id="sidebar-help" title="Need Help?" aria-label="Need Help?" data-help-open>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-7.5A7.5 7.5 0 1 1 20 11.5Z"></path><path d="M9.5 9a2.5 2.5 0 1 1 4.3 1.8c-1.1 1-1.8 1.2-1.8 2.7m0 3h.01"></path></svg><span>Need Help?</span>
+        </button>
+        <p class="sidebar-section-label">Your account</p>
+        <div class="sidebar-guest-actions" id="sidebar-guest-actions">
+          <button class="sidebar-link" type="button" data-account-open data-account-view-target="login" title="Sign in" aria-label="Sign in">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5m5 5H3"></path></svg><span>Sign in</span>
+          </button>
+          <button class="sidebar-link" type="button" data-account-open data-account-view-target="register" title="Create account" aria-label="Create account">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"></circle><path d="M3 21v-2a6 6 0 0 1 12 0v2m4-11v6m-3-3h6"></path></svg><span>Create account</span>
+          </button>
+        </div>
+        <div class="sidebar-user-actions" id="sidebar-user-actions" hidden>
+          <div class="sidebar-account-summary">
+            <span class="sidebar-avatar" id="sidebar-avatar" aria-hidden="true">C</span>
+            <span class="sidebar-user-copy"><strong id="sidebar-user-name"></strong><small id="sidebar-user-role"></small></span>
+          </div>
+          <button class="sidebar-link" type="button" id="sidebar-settings" title="Account settings" aria-label="Account settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg><span>Account settings</span>
+          </button>
+          <button class="sidebar-link" type="button" id="sidebar-reservations" title="My reservations" aria-label="My reservations">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18m-13 4h3m-3 3h7"></path></svg><span>My reservations</span>
+          </button>
+          <button class="sidebar-link" type="button" id="sidebar-coupons" title="My coupons" aria-label="My coupons">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-4V7a2 2 0 0 1 2-2Z"></path><path d="M13 5v2m0 4v2m0 4v2"></path></svg><span>My coupons</span><small class="coupon-count" id="sidebar-coupon-count" hidden></small>
+          </button>
+          <button class="sidebar-link" type="button" id="sidebar-points" title="My Cebu Points" aria-label="My Cebu Points">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v7m0 13v0m-5-5 7 0m-7 0 5-5m2 5 5-5m-5 5 5 5"></path><circle cx="12" cy="12" r="8"></circle></svg><span>My Cebu Points</span><small class="coupon-count points-count" id="sidebar-points-count" hidden></small>
+          </button>
+          <button class="sidebar-link" type="button" id="sidebar-rewards" title="Earn rewards" aria-label="Earn rewards">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3m0 15v3m9-9h-3M6 12H3m15.5 6.5-2.1-2.1M8.6 8.6 6.5 6.5m11 0-2.1 2.1M8.6 15.4l-2.1 2.1"></path><circle cx="12" cy="12" r="4"></circle></svg><span>Earn rewards</span>
+          </button>
+          <button class="sidebar-link" type="button" id="sidebar-spin" title="Spin the wheel" aria-label="Spin the wheel">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v4m0 10v4M4.93 4.93l2.83 2.83m8.49 8.49 2.83 2.83M3 12h4m10 0h4M4.93 19.07l2.83-2.83m8.49-8.49 2.83-2.83"></path><circle cx="12" cy="12" r="3"></circle></svg><span>Spin the wheel</span>
+          </button>
+          <button class="sidebar-link" type="button" id="sidebar-events" title="Promotional events" aria-label="Promotional events">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18m3 4h4m-2-2v4"></path></svg><span>Promotional events</span>
+          </button>
+          <a class="sidebar-link" id="developer-project-link" href="developer.html" title="Developer project" aria-label="Developer project" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8-4 4 4 4m8-8 4 4-4 4m-3-11-2 14"></path></svg><span>Developer project</span>
+          </a>
+          <button class="sidebar-link sidebar-sign-out" type="button" id="sidebar-logout" title="Sign out" aria-label="Sign out">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5m5 5H3m9-9h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"></path></svg><span>Sign out</span>
+          </button>
+        </div>
+      </nav>
+    </aside>
+
+    <header class="site-header">
+      <form class="search-bar container" id="search-form" role="search">
+        <label class="field">
+          <span class="field-label">Check-in</span>
+          <input type="date" id="checkin">
+        </label>
+        <label class="field">
+          <span class="field-label">Check-out</span>
+          <input type="date" id="checkout">
+        </label>
+        <button type="submit" class="btn btn-search">Search</button>
+      </form>
+    </header>
+
+    <main class="container layout">
+    <aside class="filters" aria-label="Filters">
+      <h2>Filter by Amenities</h2>
+
+      <fieldset>
+        <legend class="visually-hidden">Hotel amenities</legend>
+
+        <label class="check">
+          <input type="checkbox" name="town" value="Infinity pool">
+          Infinity pool
+        </label>
+
+        <label class="check">
+          <input type="checkbox" name="town" value="Swimming pool">
+          Swimming pool
+        </label>
+
+        <label class="check">
+          <input type="checkbox" name="town" value="Lake view">
+          Lake view
+        </label>
+
+        <label class="check">
+          <input type="checkbox" name="town" value="Fitness center">
+          Fitness center
+        </label>
+
+        <label class="check">
+          <input type="checkbox" name="town" value="Restaurants">
+          Restaurants
+        </label>
+
+        <label class="check">
+          <input type="checkbox" name="town" value="Pool bar">
+          Pool bar
+        </label>
+
+        <label class="check">
+          <input type="checkbox" name="town" value="Free parking">
+          Free parking
+        </label>
+
+        <label class="check">
+          <input type="checkbox" name="town" value="Car rental">
+          Car rental
+        </label>
+
+        <label class="check">
+          <input type="checkbox" name="town" value="Air conditioning">
+          Air conditioning
+        </label>
+      </fieldset>
+
+      <button type="button" class="btn btn-ghost" id="clear-filters">
+        Clear filters
+      </button>
+    </aside>
+
+    <section class="results" aria-live="polite">
+      <h1 id="results-title">Cebu, Philippines: loading properties…</h1>
+      <div id="results-feed" class="feed"></div>
+    </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">CebuStays is a demo project. Not affiliated with Booking.com.</div>
+    </footer>
+  </div>
+
+  <dialog class="account-dialog" id="account-dialog" aria-labelledby="account-title">
+    <section class="account-panel">
+      <div class="account-heading">
+        <div>
+          <span class="account-kicker">CEBUSTAYS</span>
+          <h2 id="account-title">Your account</h2>
+        </div>
+        <button type="button" class="account-close" id="account-close" aria-label="Close account dialog">×</button>
+      </div>
+
+      <p class="account-message" id="account-message" aria-live="polite"></p>
+
+      <div class="account-signed-in" id="account-signed-in" hidden>
+        <span class="account-role" id="account-role"></span>
+        <strong id="account-email"></strong>
+        <button type="button" class="btn btn-ghost" id="account-logout">Sign out</button>
+      </div>
+
+      <div id="account-entry">
+        <div class="account-tabs" role="tablist" aria-label="Account access">
+          <button type="button" role="tab" id="account-tab-login" aria-selected="true" aria-controls="account-form-login" data-account-view="login">Sign in</button>
+          <button type="button" role="tab" id="account-tab-register" aria-selected="false" aria-controls="account-form-register" data-account-view="register">Create account</button>
+          <button type="button" role="tab" id="account-tab-developer" aria-selected="false" aria-controls="account-form-developer" data-account-view="developer">Developer</button>
+        </div>
+
+        <form class="account-form" id="account-form-login" data-account-form="login" role="tabpanel" aria-labelledby="account-tab-login">
+          <label>Email<input name="email" type="email" autocomplete="username" maxlength="254" required></label>
+          <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
+          <button class="btn btn-primary account-submit" type="submit">Sign in</button>
+        </form>
+
+        <form class="account-form" id="account-form-register" data-account-form="register" role="tabpanel" aria-labelledby="account-tab-register" hidden>
+          <label>Display name<input name="displayName" type="text" autocomplete="name" maxlength="80"></label>
+          <label>Email<input name="email" type="email" autocomplete="email" maxlength="254" required></label>
+          <label>Password<input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
+          <span class="account-hint">Use at least 12 characters.</span>
+          <button class="btn btn-primary account-submit" type="submit">Create standard account</button>
+        </form>
+
+        <form class="account-form" id="account-form-developer" data-account-form="developer" role="tabpanel" aria-labelledby="account-tab-developer" hidden>
+          <label>Display name<input name="displayName" type="text" autocomplete="name" maxlength="80"></label>
+          <label>Email<input name="email" type="email" autocomplete="email" maxlength="254" required></label>
+          <label>Password<input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
+          <label>Developer invite code<input name="inviteCode" type="password" autocomplete="off" required></label>
+          <button class="btn btn-primary account-submit" type="submit">Create developer account</button>
+        </form>
+      </div>
+    </section>
+  </dialog>
+
+  <dialog class="account-dialog coupon-wallet-dialog" id="coupon-wallet-dialog" aria-labelledby="coupon-wallet-title">
+    <section class="account-panel coupon-wallet-panel">
+      <div class="account-heading">
+        <div>
+          <span class="account-kicker">YOUR REWARDS</span>
+          <h2 id="coupon-wallet-title">My coupons</h2>
+        </div>
+        <button type="button" class="account-close" data-dialog-close aria-label="Close coupons">×</button>
+      </div>
+      <p class="account-message" id="coupon-wallet-message" aria-live="polite"></p>
+      <section class="coupon-wallet-section" aria-labelledby="available-coupons-title">
+        <h3 id="available-coupons-title">Available coupons</h3>
+        <div id="available-coupons"></div>
+      </section>
+      <section class="coupon-wallet-section" aria-labelledby="held-coupons-title">
+        <h3 id="held-coupons-title">Pending reservation</h3>
+        <div id="held-coupons"></div>
+      </section>
+      <section class="coupon-wallet-section" aria-labelledby="used-coupons-title">
+        <h3 id="used-coupons-title">Used coupons</h3>
+        <div id="used-coupons"></div>
+      </section>
+      <section class="coupon-wallet-section" aria-labelledby="expired-coupons-title">
+        <h3 id="expired-coupons-title">Expired coupons</h3>
+        <div id="expired-coupons"></div>
+      </section>
+    </section>
+  </dialog>
+
+  <dialog class="account-dialog points-dialog" id="points-dialog" aria-labelledby="points-dialog-title">
+    <section class="account-panel points-panel">
+      <div class="account-heading">
+        <div>
+          <span class="account-kicker">YOUR REWARDS</span>
+          <h2 id="points-dialog-title">My Cebu Points</h2>
+        </div>
+        <button type="button" class="account-close" data-dialog-close aria-label="Close Cebu Points">×</button>
+      </div>
+      <div class="points-summary-card">
+        <div>
+          <p class="points-balance-label">Available points</p>
+          <strong class="points-balance" id="points-balance">0</strong>
+        </div>
+        <p class="points-summary-text" id="points-summary-text">Earn points on paid CebuStays bookings.</p>
+      </div>
+      <div class="points-rules">
+        <strong>How points work</strong>
+        <p>Every paid booking of PHP 5,000 gives 5 Cebu Points right away. After that, you earn 1 more point for every extra PHP 1,000 spent above PHP 5,000.</p>
+      </div>
+      <div class="points-activity-section">
+        <h3>Recent activity</h3>
+        <ul class="points-activity-list" id="points-activity-list"></ul>
+      </div>
+    </section>
+  </dialog>
+
+  <dialog class="account-dialog reward-catalog-dialog" id="reward-catalog-dialog" aria-labelledby="reward-catalog-title">
+    <section class="account-panel reward-panel">
+      <div class="account-heading">
+        <div>
+          <span class="account-kicker">CEBUSTAYS REWARDS</span>
+          <h2 id="reward-catalog-title">Earn rewards</h2>
+        </div>
+        <button type="button" class="account-close" data-dialog-close aria-label="Close reward catalog">×</button>
+      </div>
+      <p class="reward-intro">Use your Cebu Points on rewards designed for everyday value, comfort, and memorable experiences.</p>
+      <div class="reward-category-tabs" id="reward-category-tabs" aria-label="Reward categories"></div>
+      <p class="reward-message" id="reward-message" aria-live="polite"></p>
+      <div class="reward-catalog-grid" id="reward-catalog-grid"></div>
+    </section>
+  </dialog>
+
+  <dialog class="account-dialog spin-wheel-dialog" id="spin-wheel-dialog" aria-labelledby="spin-wheel-title">
+    <section class="account-panel spin-wheel-panel">
+      <div class="account-heading">
+        <div>
+          <span class="account-kicker">CEBUSTAYS LUCK</span>
+          <h2 id="spin-wheel-title">Spin the wheel</h2>
+        </div>
+        <button type="button" class="account-close" data-dialog-close aria-label="Close spin the wheel">×</button>
+      </div>
+      <p class="spin-wheel-copy">Spend 1 Cebu Point for a spin. Lower rewards appear more often, while bigger rewards are reserved for the lucky few.</p>
+      <div class="spin-wheel-panel-layout">
+        <div class="spin-wheel-visual-wrap">
+          <div class="spin-wheel-pointer" aria-hidden="true"></div>
+          <div class="spin-wheel" id="spin-wheel" aria-live="polite"></div>
+        </div>
+        <div class="spin-wheel-side">
+          <div class="spin-wheel-prize-card">
+            <span class="spin-wheel-label">Reward</span>
+            <strong id="spin-wheel-result">Ready to spin</strong>
+          </div>
+          <button type="button" class="btn btn-primary spin-wheel-button" id="spin-wheel-button">Spin for 1 point</button>
+          <p class="spin-wheel-message" id="spin-wheel-message" aria-live="polite"></p>
+        </div>
+      </div>
+    </section>
+  </dialog>
+
+  <dialog class="account-dialog events-dialog" id="events-dialog" aria-labelledby="events-dialog-title">
+    <section class="account-panel">
+      <div class="account-heading">
+        <div>
+          <span class="account-kicker">CEBUSTAYS SCHEDULE</span>
+          <h2 id="events-dialog-title">Promotional events</h2>
+        </div>
+        <button type="button" class="account-close" data-dialog-close aria-label="Close promotional events">×</button>
+      </div>
+      <p class="events-disclaimer">These are CebuStays promotional campaigns, not confirmed third-party hotel events.</p>
+      <div class="promotion-events-list" id="dialog-promotion-events-list"></div>
+    </section>
+  </dialog>
+
+  <dialog class="account-dialog event-detail-dialog" id="event-detail-dialog" aria-labelledby="event-detail-title">
+    <section class="account-panel">
+      <div class="account-heading">
+        <div>
+          <span class="account-kicker">PROMOTION DETAILS</span>
+          <h2 id="event-detail-title"></h2>
+        </div>
+        <button type="button" class="account-close" data-dialog-close aria-label="Close event details">×</button>
+      </div>
+      <p id="event-detail-dates"></p>
+      <p id="event-detail-description"></p>
+      <p id="event-detail-offer"></p>
+      <p id="event-detail-eligibility"></p>
+      <a class="home-primary-action event-hotels-link" href="?view=hotels" data-page-link="hotels">View eligible hotels</a>
+    </section>
+  </dialog>
+
+  <dialog class="account-dialog" id="account-settings-dialog" aria-labelledby="account-settings-title">
+    <section class="account-panel">
+      <div class="account-heading">
+        <div>
+          <span class="account-kicker">YOUR PROFILE</span>
+          <h2 id="account-settings-title">Account settings</h2>
+        </div>
+        <button type="button" class="account-close" data-dialog-close aria-label="Close account settings">×</button>
+      </div>
+      <p class="account-message" id="profile-message" aria-live="polite"></p>
+      <form class="account-form" id="profile-form">
+        <label>Display name<input id="profile-display-name" name="displayName" type="text" autocomplete="name" maxlength="80" required></label>
+        <label>Email address<input id="profile-email" type="email" readonly></label>
+        <button class="btn btn-primary account-submit" id="profile-save" type="submit">Save changes</button>
+      </form>
+    </section>
+  </dialog>
+
+  <dialog class="account-dialog reservation-dialog" id="reservation-history-dialog" aria-labelledby="reservation-title">
+    <section class="account-panel">
+      <div class="account-heading">
+        <div>
+          <span class="account-kicker">YOUR TRIPS</span>
+          <h2 id="reservation-title">Reservation history</h2>
+        </div>
+        <button type="button" class="account-close" data-dialog-close aria-label="Close reservation history">×</button>
+      </div>
+      <p class="reservation-message" id="reservation-message" aria-live="polite">Loading reservations…</p>
+      <div class="reservation-list" id="reservation-list"></div>
+    </section>
+  </dialog>
+
+  <!-- HOTEL DETAILS MODAL -->
+  <div class="hotel-modal" id="hotel-modal" aria-hidden="true">
+    <button
+      class="modal-backdrop"
+      id="modal-backdrop"
+      aria-label="Close hotel details">
+    </button>
+
+    <section
+      class="hotel-detail-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="detail-name">
+
+      <button
+        type="button"
+        class="modal-close"
+        id="modal-close"
+        aria-label="Close details">
+        ×
+      </button>
+
+      <!-- HOTEL PHOTOS -->
+      <div class="detail-gallery">
+        <div class="detail-main-photo">
+          <img
+            id="detail-main-image"
+            src=""
+            alt="Selected hotel photo">
+
+          <button
+            type="button"
+            class="gallery-arrow prev"
+            id="photo-prev"
+            aria-label="Previous photo">
+            ‹
+          </button>
+
+          <button
+            type="button"
+            class="gallery-arrow next"
+            id="photo-next"
+            aria-label="Next photo">
+            ›
+          </button>
+        </div>
+
+        <div
+          class="detail-thumbnails"
+          id="detail-thumbnails"
+          aria-label="More hotel photos">
+        </div>
+      </div>
+
+      <!-- HOTEL SUMMARY -->
+      <div class="detail-information">
+        <span class="detail-location" id="detail-location"></span>
+
+        <h2 id="detail-name"></h2>
+
+        <div class="detail-rating">
+          <span id="detail-score"></span>
+          <span id="detail-score-label"></span>
+          <span id="detail-reviews"></span>
+        </div>
+
+        <!-- FULL DESCRIPTION -->
+        <p id="detail-description"></p>
+
+        <h3>Hotel amenities</h3>
+        <ul class="detail-amenities" id="detail-amenities"></ul>
+      </div>
+
+      <section class="booking-panel" aria-label="Room booking">
+        <div class="detail-price">
+          <span>Estimated total</span>
+          <strong id="detail-price"></strong>
+          <small id="detail-nights"></small>
+        </div>
+
+        <button
+          type="button"
+          class="btn btn-primary detail-availability"
+          id="detail-availability">
+          Check availability
+        </button>
+
+        <p class="booking-status" id="booking-status" aria-live="polite"></p>
+        <button class="btn btn-primary" type="button" id="booking-sign-in" hidden>Sign in to reserve</button>
+
+        <form class="booking-form" id="booking-form" hidden>
+          <label>
+            Check-in
+            <input type="date" id="booking-checkin" name="checkIn" required>
+          </label>
+          <label>
+            Check-out
+            <input type="date" id="booking-checkout" name="checkOut" required>
+          </label>
+          <label>
+            Rooms
+            <select id="booking-rooms" name="rooms" required>
+              <option value="1">1 room</option>
+            </select>
+          </label>
+          <label>
+            Guest name
+            <input name="guestName" type="text" autocomplete="name" minlength="2" maxlength="120" required>
+          </label>
+          <label>
+            Guest email address
+            <input name="guestEmail" type="email" autocomplete="email" maxlength="254" required>
+          </label>
+          <p class="booking-total" id="booking-total"></p>
+          <small class="booking-price-note">Coupon discounts apply to the room subtotal only; taxes and fees are not discounted.</small>
+          <label class="booking-coupon-field" for="booking-coupon">
+            Coupon
+            <select id="booking-coupon" name="couponAssignmentId">
+              <option value="">No coupon</option>
+            </select>
+          </label>
+          <p class="booking-coupon-status" id="booking-coupon-status" aria-live="polite"></p>
+          <button class="btn btn-primary booking-submit" type="submit">Submit reservation</button>
+          <small class="booking-payment-note">Pay the property directly. Your reservation stays pending until a developer confirms your payment.</small>
+        </form>
+
+        <p class="detail-note">
+          Room availability is limited. Your dates and rooms are reserved when your booking is confirmed.
+        </p>
+        <button class="btn btn-ghost detail-help-button" type="button" data-help-open>Need help with this hotel?</button>
+      </section>
+    </section>
+  </div>
+
+  <dialog class="account-dialog help-dialog" id="help-dialog" aria-labelledby="help-title">
+    <section class="help-panel">
+      <header class="help-header">
+        <div class="help-heading-copy">
+          <span class="account-kicker">CEBUSTAYS SUPPORT</span>
+          <h2 id="help-title">CebuStays Help Assistant</h2>
+          <p>Ask about hotels, reservations, coupons, promotions, or using the website.</p>
+        </div>
+        <div class="help-header-actions">
+          <button class="help-new-chat" type="button" id="help-new-chat">New chat</button>
+          <button class="account-close" type="button" id="help-close" aria-label="Close help assistant">×</button>
+        </div>
+      </header>
+      <p class="help-privacy-note">CebuStays does not save this chat. When AI is enabled, your question, short chat context, and selected public hotel details may be sent to OpenAI after common sensitive patterns are redacted. Never include passwords, payment credentials, or session tokens.</p>
+      <div class="help-suggestions" id="help-suggestions" aria-label="Suggested questions">
+        <details open>
+          <summary>Hotel booking</summary>
+          <div class="help-suggestion-list">
+            <button type="button" data-help-question>How do I book a hotel on CebuStays?</button>
+            <button type="button" data-help-question>How do I check hotel availability?</button>
+            <button type="button" data-help-question>Can I browse hotels without an account?</button>
+          </div>
+        </details>
+        <details>
+          <summary>Reservations</summary>
+          <div class="help-suggestion-list">
+            <button type="button" data-help-question>Where can I view my reservations?</button>
+            <button type="button" data-help-question>Why is my reservation still pending?</button>
+            <button type="button" data-help-question>Can I cancel or change my reservation?</button>
+          </div>
+        </details>
+        <details>
+          <summary>Coupons and promotions</summary>
+          <div class="help-suggestion-list">
+            <button type="button" data-help-question>How do I get my welcome coupon?</button>
+            <button type="button" data-help-question>How do I apply a coupon?</button>
+            <button type="button" data-help-question>Where can I find upcoming promotions?</button>
+          </div>
+        </details>
+        <details>
+          <summary>Account and login</summary>
+          <div class="help-suggestion-list">
+            <button type="button" data-help-question>How do I create an account?</button>
+            <button type="button" data-help-question>How do I sign in?</button>
+            <button type="button" data-help-question>What if I forget my password?</button>
+          </div>
+        </details>
+        <details>
+          <summary>Hotel information and maps</summary>
+          <div class="help-suggestion-list">
+            <button type="button" data-help-question>How do I view hotel amenities and prices?</button>
+            <button type="button" data-help-question>How do I find directions to a hotel?</button>
+            <button type="button" data-help-question>How do I use hotel filters?</button>
+          </div>
+        </details>
+        <details>
+          <summary>Payments and website help</summary>
+          <div class="help-suggestion-list">
+            <button type="button" data-help-question>Does CebuStays accept online payments?</button>
+            <button type="button" data-help-question>What should I do if the website shows an error?</button>
+          </div>
+        </details>
+      </div>
+      <div class="help-conversation" id="help-conversation" role="log" aria-label="Conversation" aria-live="polite" aria-relevant="additions"></div>
+      <p class="help-mode-status" id="help-mode-status" aria-live="polite">Responses use CebuStays guidance. AI availability is shown after your first question.</p>
+      <form class="help-composer" id="help-form">
+        <label class="visually-hidden" for="help-input">Your question</label>
+        <textarea id="help-input" name="message" rows="2" maxlength="1200" placeholder="Type your question…" required></textarea>
+        <button class="btn btn-primary" id="help-send" type="submit">Send</button>
+      </form>
+      <p class="help-composer-hint">Enter to send · Shift+Enter for a new line</p>
+    </section>
+  </dialog>
+
+  <dialog class="hotel-map-dialog" id="hotel-map-dialog" aria-labelledby="hotel-map-title">
+    <section class="hotel-map-panel">
+      <header class="hotel-map-header">
+        <div>
+          <span class="map-kicker">CEBUSTAYS DIRECTIONS</span>
+          <h2 id="hotel-map-title">Hotel location</h2>
+          <p id="hotel-map-address"></p>
+        </div>
+        <div class="hotel-map-header-actions">
+          <button class="map-icon-button" type="button" id="hotel-map-fullscreen" aria-label="View map fullscreen" title="Fullscreen map">⛶</button>
+          <button class="map-icon-button" type="button" id="hotel-map-close" aria-label="Close map" title="Close map">×</button>
+        </div>
+      </header>
+      <div class="hotel-map-layout">
+        <div class="hotel-map-canvas-wrap">
+          <div id="hotel-map-canvas" role="application" aria-label="Interactive map showing your location, hotel, and driving route"></div>
+          <p class="hotel-map-tile-error" id="hotel-map-tile-error" hidden>Map tiles are unavailable. You can still use the directions details.</p>
+        </div>
+        <aside class="hotel-map-details" aria-label="Location and route details">
+          <p class="hotel-map-privacy">Your location is requested only after you choose an access option. To calculate directions, your coordinates are sent to OSRM; the map provider also receives the visible map area. CebuStays does not store your coordinates. Entered starting places go to OpenStreetMap's geocoder. External providers process requests under their own privacy policies.</p>
+          <p class="hotel-map-status" id="hotel-map-status" aria-live="polite">Finding this hotel's location…</p>
+          <div class="hotel-map-candidates" id="hotel-map-candidates" hidden></div>
+          <div class="hotel-map-route-summary" id="hotel-map-route-summary" hidden></div>
+          <ol class="hotel-map-directions" id="hotel-map-directions" hidden></ol>
+          <div class="hotel-map-legend" aria-label="Map legend">
+            <span><i class="map-legend-user"></i>Your location</span>
+            <span><i class="map-legend-hotel"></i>Hotel</span>
+            <span><i class="map-legend-route"></i>Driving route</span>
+          </div>
+          <div class="hotel-map-actions">
+            <button class="btn btn-primary" type="button" id="hotel-map-retry-location">Choose location access</button>
+            <button class="btn btn-ghost" type="button" id="hotel-map-retry-route" hidden>Retry route</button>
+            <form id="hotel-map-start-form">
+              <label for="hotel-map-start-input">Or enter a starting place</label>
+              <input id="hotel-map-start-input" name="start" type="text" maxlength="200" autocomplete="street-address" placeholder="Address, town, or landmark">
+              <button class="btn btn-ghost" type="submit">Find starting place</button>
+            </form>
+          </div>
+          <a class="hotel-map-external" id="hotel-map-external" href="#" target="_blank" rel="noopener noreferrer" hidden>Open directions in Google Maps ↗</a>
+          <small class="hotel-map-attribution">Map tiles © Esri and GIS User Community · Routing by OSRM</small>
+        </aside>
+      </div>
+    </section>
+  </dialog>
+
+  <dialog class="location-consent-dialog" id="location-consent-dialog" aria-labelledby="location-consent-title">
+    <section class="location-consent-panel">
+      <h2 id="location-consent-title">Use your device location?</h2>
+      <p>Use your current location as the starting point and get driving directions to this hotel. Your browser or device may show a separate permission prompt.</p>
+      <div class="location-consent-actions">
+        <button class="btn btn-primary" type="button" data-location-choice="always">Always use</button>
+        <button class="btn btn-ghost" type="button" data-location-choice="session">Only during app</button>
+        <button class="location-consent-deny" type="button" data-location-choice="denied">Not allowed</button>
+      </div>
+      <small>“Always use” remembers your choice on this device and checks your location when you open directions. It does not track you in the background. “Only during app” forgets the choice when this browser session ends.</small>
+    </section>
+  </dialog>
+
+  <script src="config.js"></script>
+  <script
+    defer
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+  <script defer src="map.js?v=hotel-directions-api-v2"></script>
+  <script defer src="script.js?v=20261022-help-assistant"></script>
+</body>
+</html>

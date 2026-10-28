@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Developer workspace – CebuStays</title>
+  <link rel="stylesheet" href="style.css?v=compact-payment-controls">
+</head>
+<body class="developer-page">
+  <header class="site-header">
+    <div class="header-top container">
+      <a href="./" class="logo" aria-label="CebuStays home">CebuStays</a>
+      <span class="developer-badge">Developer workspace</span>
+    </div>
+  </header>
+
+  <main class="container developer-main">
+    <section class="developer-card" aria-labelledby="developer-title">
+      <span class="account-kicker">CEBUSTAYS DEVELOPER</span>
+      <h1 id="developer-title">Choose a project</h1>
+      <p class="developer-intro">Review pending payments or open a project.</p>
+      <p class="developer-status" id="developer-status" aria-live="polite">Checking your developer session…</p>
+
+      <section class="developer-bookings" id="developer-bookings" aria-labelledby="pending-bookings-title" hidden>
+        <div class="developer-bookings-heading">
+          <div>
+            <span class="destination-kicker">PAYMENT REVIEW</span>
+            <h2 id="pending-bookings-title">Pending reservations</h2>
+          </div>
+          <button
+            class="btn developer-refresh"
+            type="button"
+            id="developer-bookings-refresh"
+            aria-label="Refresh pending reservations"
+            title="Refresh pending reservations">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M20 7v5h-5"></path>
+              <path d="M19 12a7 7 0 1 1-2-4.9L20 12"></path>
+            </svg>
+          </button>
+        </div>
+        <p class="developer-bookings-note">Confirm payment only after verifying that the property received it.</p>
+        <p class="developer-bookings-status" id="developer-bookings-status" aria-live="polite"></p>
+        <div class="developer-bookings-table-wrap">
+          <table class="developer-bookings-table">
+            <thead>
+              <tr>
+                <th scope="col">Guest</th>
+                <th scope="col">Reservation</th>
+                <th scope="col">Stay</th>
+                <th scope="col">Payment</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+            <tbody id="developer-bookings-list"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <div class="developer-destinations" id="developer-destinations" hidden>
+        <a class="developer-destination destination-supabase" href="https://supabase.com/dashboard/project/jgsrgzrgiznknvtxhats" target="_blank" rel="noopener noreferrer">
+          <span class="destination-brand">
+            <img class="destination-logo supabase-logo" src="logo_folder/supabase.jpeg" alt="">
+            <span class="destination-brand-name">supabase</span>
+          </span>
+          <span class="destination-kicker">DATABASE &amp; BACKEND</span>
+          <strong>Supabase project</strong>
+          <span class="destination-description">Open the CebuStays project dashboard</span>
+          <span class="destination-action">Open project <span aria-hidden="true">↗</span></span>
+        </a>
+        <a class="developer-destination destination-github" href="https://github.com/Team-Pikachu-Database" target="_blank" rel="noopener noreferrer">
+          <span class="destination-brand">
+            <img class="destination-logo github-logo" src="logo_folder/github.png" alt="">
+            <span class="destination-brand-name">GitHub</span>
+          </span>
+          <span class="destination-kicker">SOURCE CODE</span>
+          <strong>Team-Pikachu-Database</strong>
+          <span class="destination-description">Open the GitHub organization and its repositories</span>
+          <span class="destination-action">Open organization <span aria-hidden="true">↗</span></span>
+        </a>
+      </div>
+
+      <div class="developer-actions" id="developer-actions" hidden>
+        <strong id="developer-email"></strong>
+        <button class="btn btn-ghost" type="button" id="developer-logout">Sign out</button>
+        <a class="developer-home" href="./?view=hotels">Return to CebuStays</a>
+      </div>
+
+      <button class="btn btn-primary developer-retry" type="button" id="developer-retry" hidden>Try again</button>
+    </section>
+  </main>
+
+  <dialog class="payment-review-dialog" id="payment-review-dialog" aria-labelledby="payment-review-title">
+    <section class="payment-review-panel">
+      <div class="developer-bookings-heading">
+        <div>
+          <span class="destination-kicker">VERIFY BEFORE CONFIRMING</span>
+          <h2 id="payment-review-title">Check reservation and payment</h2>
+        </div>
+        <button
+          class="btn payment-review-close"
+          type="button"
+          id="payment-review-close"
+          aria-label="Close payment review"
+          title="Close">
+          ×
+        </button>
+      </div>
+      <p class="developer-bookings-note">Compare the guest and reservation details below with the actual receipt or transfer record. The website does not verify a payment automatically.</p>
+      <dl class="payment-review-details" id="payment-review-details"></dl>
+      <label class="payment-review-check">
+        <input type="checkbox" id="payment-review-checked">
+        I checked the payment record and verified the payer and amount match this reservation.
+      </label>
+      <p class="payment-review-message" id="payment-review-message" aria-live="polite"></p>
+      <button class="btn btn-primary" type="button" id="payment-review-confirm" disabled>Mark as paid</button>
+    </section>
+  </dialog>
+
+  <script src="config.js"></script>
+  <script src="developer.js"></script>
+</body>
+</html>
