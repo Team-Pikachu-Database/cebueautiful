@@ -167,6 +167,7 @@ let appliedCheckOut = "";
 let hotelViewLoaded = false;
 let promotionSchedule = { campaigns: [], events: [] };
 let couponWallet = [];
+let cebuPointsEntries = [];
 let activePromotionIndex = 0;
 let promotionTimer = null;
 let preferredCouponId = "";
@@ -202,24 +203,31 @@ function getCurrentAccountStorageKey(prefix) {
   return `${prefix}:${email}`;
 }
 
-function calculateCebuPointsFromAmount(amount) {
-  const value = Number(amount || 0);
-  if (!Number.isFinite(value) || value <= 0) return 0;
-  if (value < 5000) return 0;
-  return 5 + Math.max(0, Math.floor((value - 5000) / 1000));
-}
-
 function getCebuPointsEntries() {
-  const entries = readStorageJson(getCurrentAccountStorageKey("cebu-points-ledger"), []);
-  return Array.isArray(entries) ? entries : [];
+  return cebuPointsEntries;
 }
 
 function setCebuPointsEntries(entries) {
-  writeStorageJson(getCurrentAccountStorageKey("cebu-points-ledger"), entries);
+  cebuPointsEntries = Array.isArray(entries) ? entries : [];
 }
 
 function getCebuPointsBalance() {
   return getCebuPointsEntries().reduce((total, entry) => total + Number(entry.points || 0), 0);
+}
+
+async function refreshCebuPoints() {
+  if (!signedInAccount) {
+    setCebuPointsEntries([]);
+    renderCebuPointsSummary();
+    return [];
+  }
+  const accountId = signedInAccount.id;
+  const data = await requestApi("/api/points/mine");
+  if (signedInAccount?.id !== accountId) return cebuPointsEntries;
+  setCebuPointsEntries(data.entries);
+  renderCebuPointsSummary();
+  renderRewardCatalog();
+  return cebuPointsEntries;
 }
 
 function getLocalRewardWallet() {
@@ -265,12 +273,16 @@ function renderCebuPointsSummary() {
   balanceEl.textContent = `${balance} pts`;
 
   const items = entries.length ? [...entries].slice(-8).reverse() : [];
+  historyEl.replaceChildren();
   if (!items.length) {
-    historyEl.innerHTML = '<p class="coupon-empty">You have not earned any points yet.</p>';
+    const emptyMessage = document.createElement("p");
+    emptyMessage.className = "coupon-empty";
+    emptyMessage.textContent = "You have not earned any points yet.";
+    historyEl.append(emptyMessage);
     return;
   }
 
-  historyEl.innerHTML = items.map(entry => {
+  items.forEach(entry => {
     const positive = Number(entry.points || 0) >= 0;
     const label = entry.label || entry.reference || "Reward activity";
     const date = new Date(entry.date || Date.now()).toLocaleDateString("en-PH", {
@@ -278,16 +290,20 @@ function renderCebuPointsSummary() {
       day: "numeric",
       year: "numeric"
     });
-    return `
-      <article class="points-entry">
-        <div>
-          <strong>${label}</strong>
-          <small>${date}</small>
-        </div>
-        <span class="points-value ${positive ? "positive" : "negative"}">${positive ? "+" : "-"}${Math.abs(Number(entry.points || 0))} pts</span>
-      </article>
-    `;
-  }).join("");
+    const item = document.createElement("article");
+    item.className = "points-entry";
+    const details = document.createElement("div");
+    const title = document.createElement("strong");
+    title.textContent = label;
+    const dateLabel = document.createElement("small");
+    dateLabel.textContent = date;
+    details.append(title, dateLabel);
+    const value = document.createElement("span");
+    value.className = `points-value ${positive ? "positive" : "negative"}`;
+    value.textContent = `${positive ? "+" : "-"}${Math.abs(Number(entry.points || 0))} pts`;
+    item.append(details, value);
+    historyEl.append(item);
+  });
 }
 
 function openCebuPointsDialog() {
@@ -318,87 +334,36 @@ function mergeRewardWalletIntoCouponWallet(apiCoupons) {
   return [...(Array.isArray(apiCoupons) ? apiCoupons : []), ...mappedRewards];
 }
 
-function recordPointEntry(label, points, reference) {
-  const entries = getCebuPointsEntries();
-  entries.push({
-    id: reference || `entry-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    label,
-    points,
-    reference: reference || label,
-    date: new Date().toISOString()
+async function recordPointEntry(label, points, reference, entryType) {
+  const data = await requestApi("/api/points/spend", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      label,
+      points: Math.abs(Number(points)),
+      reference,
+      entryType
+    })
   });
-  setCebuPointsEntries(entries);
+  setCebuPointsEntries(data.entries);
+  renderCebuPointsSummary();
+  renderRewardCatalog();
+  return data.entry;
 }
 
-function recordPaidBookingPoints(booking) {
+async function recordPaidBookingPoints(booking) {
   if (!signedInAccount || !booking || String(booking.paymentStatus || "").toLowerCase() !== "paid") {
     return false;
   }
-
-  const reference = String(booking.reference || `booking-${Date.now()}`).trim();
-  const amount = Number(booking.totalPrice || booking.total || booking.amount || 0);
-  const points = calculateCebuPointsFromAmount(amount);
-  if (!points) return false;
-
-  const entries = getCebuPointsEntries();
-  const normalizedReference = reference.toLowerCase();
-  if (entries.some(entry => String(entry.reference || "").toLowerCase() === normalizedReference)) {
-    return false;
-  }
-
-  entries.push({
-    id: `booking-${reference || Date.now()}`,
-    label: `${booking.hotelName || "Hotel booking"} payment`,
-    points,
-    reference,
-    date: booking.paidAt || booking.createdAt || new Date().toISOString()
-  });
-  setCebuPointsEntries(entries);
-  renderCebuPointsSummary();
+  await refreshCebuPoints();
   return true;
 }
 
-async function syncCebuPointsFromPaidBookings(bookings = []) {
-  if (!signedInAccount || !Array.isArray(bookings)) {
+async function syncCebuPointsFromPaidBookings() {
+  if (!signedInAccount) {
     return false;
   }
-
-  const entries = getCebuPointsEntries();
-  const existingReferences = new Set(
-    entries
-      .filter(entry => entry.reference)
-      .map(entry => String(entry.reference).trim().toLowerCase())
-  );
-
-  let changed = false;
-  bookings.forEach(booking => {
-    const paymentStatus = String(booking.paymentStatus || "").toLowerCase();
-    if (paymentStatus !== "paid") return;
-
-    const reference = String(booking.reference || "").trim();
-    if (!reference || existingReferences.has(reference.toLowerCase())) return;
-
-    const amount = Number(booking.totalPrice || booking.total || booking.amount || 0);
-    const points = calculateCebuPointsFromAmount(amount);
-    if (!points) return;
-
-    entries.push({
-      id: `booking-${reference || Date.now()}`,
-      label: `${booking.hotelName || "Hotel booking"} payment`,
-      points,
-      reference,
-      date: booking.paidAt || booking.createdAt || new Date().toISOString()
-    });
-    existingReferences.add(reference.toLowerCase());
-    changed = true;
-  });
-
-  if (!changed) {
-    return false;
-  }
-
-  setCebuPointsEntries(entries);
-  renderCebuPointsSummary();
+  await refreshCebuPoints();
   return true;
 }
 
@@ -452,7 +417,7 @@ function renderRewardCatalog() {
     );
     action.type = "button";
     action.disabled = !enough;
-    action.addEventListener("click", () => redeemRewardCatalogReward(reward));
+    action.addEventListener("click", () => redeemRewardCatalogReward(reward, action));
     header.append(title, type);
     card.append(header, description, points, value, action);
     return card;
@@ -471,7 +436,7 @@ function openRewardCatalog() {
   document.getElementById("reward-catalog-dialog")?.showModal();
 }
 
-function redeemRewardCatalogReward(reward) {
+async function redeemRewardCatalogReward(reward, actionButton) {
   if (!signedInAccount) {
     setAccountView("login");
     accountDialog.showModal();
@@ -488,37 +453,44 @@ function redeemRewardCatalogReward(reward) {
     return;
   }
 
-  const wallet = getLocalRewardWallet();
-  const rewardCode = `${reward.code || reward.title.toUpperCase().replace(/\s+/g, "-")}-${Date.now().toString().slice(-6)}`;
-  wallet.push({
-    id: `${reward.id}-${Date.now()}`,
-    title: reward.title,
-    code: rewardCode,
-    status: "available",
-    points: reward.points,
-    rewardType: reward.rewardType,
-    category: reward.category,
-    description: reward.description,
-    expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 45).toISOString(),
-    monetaryValue: Number(reward.monetaryValue || 0),
-    createdAt: new Date().toISOString()
-  });
-  setLocalRewardWallet(wallet);
+  if (actionButton) {
+    actionButton.disabled = true;
+    actionButton.textContent = "Redeeming…";
+  }
+  try {
+    const redemptionId = `reward-${reward.id}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    await recordPointEntry(`Redeemed ${reward.title}`, pointCost, redemptionId, "reward");
 
-  const entries = getCebuPointsEntries();
-  entries.push({
-    id: `reward-${Date.now()}`,
-    label: `Redeemed ${reward.title}`,
-    points: -Number(reward.points || 0),
-    reference: `reward-${reward.id}`,
-    date: new Date().toISOString()
-  });
-  setCebuPointsEntries(entries);
-
-  renderCebuPointsSummary();
-  renderRewardCatalog();
-  refreshCouponWallet().catch(() => {});
-  document.getElementById("coupon-wallet-dialog")?.showModal();
+    const wallet = getLocalRewardWallet();
+    const rewardCode = `${reward.code || reward.title.toUpperCase().replace(/\s+/g, "-")}-${Date.now().toString().slice(-6)}`;
+    wallet.push({
+      id: redemptionId,
+      title: reward.title,
+      code: rewardCode,
+      status: "available",
+      points: reward.points,
+      rewardType: reward.rewardType,
+      category: reward.category,
+      description: reward.description,
+      expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 45).toISOString(),
+      monetaryValue: Number(reward.monetaryValue || 0),
+      createdAt: new Date().toISOString()
+    });
+    setLocalRewardWallet(wallet);
+    refreshCouponWallet().catch(error => {
+      console.warn("The reward was redeemed, but the coupon wallet could not refresh.", error);
+    });
+    document.getElementById("coupon-wallet-dialog")?.showModal();
+  } catch (error) {
+    const message = document.getElementById("coupon-wallet-message");
+    if (message) message.textContent = error.message;
+    console.warn("Unable to redeem the Cebu Points reward.", error);
+  } finally {
+    if (actionButton?.isConnected) {
+      actionButton.disabled = false;
+      actionButton.textContent = "Redeem reward";
+    }
+  }
 }
 
 function secureRandomInt(maxExclusive) {
@@ -566,11 +538,10 @@ function playWheelOutcomeSound(context, kind) {
   });
 }
 
-function spinWheel() {
+async function spinWheel() {
   if (spinInProgress) return;
   if (pendingSpinReward) {
-    claimSpinReward();
-    return;
+    return claimSpinReward();
   }
 
   if (!signedInAccount) {
@@ -579,43 +550,61 @@ function spinWheel() {
     return;
   }
 
-  const pointsBalance = getCebuPointsBalance();
-  if (pointsBalance < 1) {
-    const result = document.getElementById("spin-result");
-    if (result) {
-      result.textContent = `You need 1 Cebu Point to spin. Your balance is ${pointsBalance} pts. Earn points from paid hotel bookings.`;
-    }
-    return;
-  }
-
   const wheel = document.getElementById("spin-wheel");
   const result = document.getElementById("spin-result");
   const spinButton = document.getElementById("spin-button");
   if (!wheel || !result) return;
 
+  spinInProgress = true;
+  if (spinButton) {
+    spinButton.disabled = true;
+    spinButton.textContent = "Checking points…";
+  }
+  result.textContent = "Checking your Cebu Points…";
+
+  const audioCtx = window.AudioContext || window.webkitAudioContext;
+  let outcomeAudioContext = null;
+  if (audioCtx) {
+    try {
+      outcomeAudioContext = new audioCtx();
+      const resume = outcomeAudioContext.resume?.();
+      resume?.catch(error => console.warn("The spin sound could not be enabled.", error));
+    } catch (error) {
+      console.warn("The spin sound could not be played.", error);
+    }
+  }
+
   let winner;
   try {
+    await refreshCebuPoints();
+    const pointsBalance = getCebuPointsBalance();
+    if (pointsBalance < 1) {
+      result.textContent = `You need 1 Cebu Point to spin. Your balance is ${pointsBalance} pts. Earn points from paid hotel bookings.`;
+      if (outcomeAudioContext) await outcomeAudioContext.close();
+      spinInProgress = false;
+      if (spinButton) {
+        spinButton.disabled = false;
+        spinButton.textContent = "Spin now";
+      }
+      return;
+    }
+
     winner = selectWheelReward(secureRandomInt(SPIN_WHEEL_TOTAL_WEIGHT));
+    const spinId = `spin-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    await recordPointEntry("Spin the wheel", 1, spinId, "spin");
   } catch (error) {
+    if (outcomeAudioContext) await outcomeAudioContext.close();
+    spinInProgress = false;
+    if (spinButton) {
+      spinButton.disabled = false;
+      spinButton.textContent = "Spin now";
+    }
     result.textContent = error.message;
     return;
   }
-  if (spinButton) spinButton.disabled = true;
-  spinInProgress = true;
   pendingSpinReward = winner;
   pendingSpinRewardOwner = signedInAccount.id;
 
-  const entries = getCebuPointsEntries();
-  const spinId = `spin-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  entries.push({
-    id: spinId,
-    label: "Spin the wheel",
-    points: -1,
-    reference: spinId,
-    date: new Date().toISOString()
-  });
-  setCebuPointsEntries(entries);
-  renderCebuPointsSummary();
   const spinCost = document.querySelector(".spin-cost");
   if (spinCost) spinCost.textContent = `1 Cebu Point per spin · Balance: ${getCebuPointsBalance()} pts`;
 
@@ -633,17 +622,6 @@ function spinWheel() {
   wheel.dataset.rotation = String(nextRotation);
 
   result.textContent = "Spinning… good luck!";
-  const audioCtx = window.AudioContext || window.webkitAudioContext;
-  let outcomeAudioContext = null;
-  if (audioCtx) {
-    try {
-      outcomeAudioContext = new audioCtx();
-      const resume = outcomeAudioContext.resume?.();
-      resume?.catch(error => console.warn("The spin sound could not be enabled.", error));
-    } catch (error) {
-      console.warn("The spin sound could not be played.", error);
-    }
-  }
 
   let spinFinished = false;
   let fallbackTimer;
@@ -712,7 +690,11 @@ function initializeSpinButton() {
     const button = event.target.closest?.("#spin-button");
     if (!button) return;
     event.preventDefault();
-    spinWheel();
+    spinWheel().catch(error => {
+      const result = document.getElementById("spin-result");
+      if (result) result.textContent = error.message;
+      console.error("The spin action could not be completed.", error);
+    });
   }, true);
 }
 
@@ -941,6 +923,7 @@ function updateAccountDisplay(user) {
   if (isSignedIn) {
     if (previousAccountId && previousAccountId !== user.id) {
       couponWallet = [];
+      setCebuPointsEntries([]);
       renderCouponWallet();
       updateCouponCount();
     }
@@ -966,13 +949,19 @@ function updateAccountDisplay(user) {
       }
       console.warn("Unable to refresh the coupon wallet.", error);
     });
-    requestApi("/api/bookings/mine")
-      .then(data => syncCebuPointsFromPaidBookings(Array.isArray(data.reservations) ? data.reservations : []))
-      .catch(() => {});
+    refreshCebuPoints().catch(error => {
+      const historyEl = document.getElementById("cebu-points-history");
+      if (historyEl) {
+        historyEl.textContent = `Cebu Points could not be loaded: ${error.message}`;
+      }
+      console.error("Unable to load Cebu Points from the account service.", error);
+    });
   } else {
     couponWallet = [];
+    setCebuPointsEntries([]);
     renderCouponWallet();
     updateCouponCount();
+    renderCebuPointsSummary();
     if (sidebarUserName) sidebarUserName.textContent = "Guest";
     if (sidebarUserRole) sidebarUserRole.textContent = "Explore mode";
     if (sidebarAvatar) sidebarAvatar.textContent = "G";
@@ -2122,7 +2111,9 @@ document.getElementById("booking-form").addEventListener("submit", async event =
           : "") +
         `Total due: ${peso.format(booking.totalPrice)}.`;
     }
-    recordPaidBookingPoints(booking);
+    recordPaidBookingPoints(booking).catch(error => {
+      console.error("The reservation succeeded, but Cebu Points could not be refreshed.", error);
+    });
     if (booking.couponDiscount) {
       refreshCouponWallet().catch(error => {
         console.warn("The reservation succeeded, but the coupon wallet could not refresh.", error);
