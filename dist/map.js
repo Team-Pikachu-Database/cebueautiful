@@ -13,13 +13,17 @@
 
     if (codespaceMatch) {
       const [, codespaceName, codespacePort] = codespaceMatch;
-      if (["5505", "5506"].includes(codespacePort)) {
-        return `${protocol}//${codespaceName}-5505.app.github.dev`;
+      if (codespacePort === "5505") {
+        return `${protocol}//${codespaceName}-5506.app.github.dev`;
+      }
+      if (codespacePort === "5506") {
+        return "";
       }
     }
 
-    if (["localhost", "127.0.0.1"].includes(hostname) && ["5505", "5506"].includes(port)) {
-      return `${protocol}//${hostname}:3000`;
+    if (["localhost", "127.0.0.1"].includes(hostname)) {
+      if (port === "5505") return `${protocol}//${hostname}:5506`;
+      if (port === "5506") return "";
     }
 
     return configuredApiBaseUrl || "";

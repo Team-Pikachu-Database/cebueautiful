@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CebuStays – Hotels and staycations in Cebu</title>
-  <link rel="stylesheet" href="style.css?v=20261028-cebu-points-restore">
+  <link rel="stylesheet" href="style.css?v=20261029-wheel-animation2">
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -181,8 +181,8 @@
           <button class="sidebar-link" type="button" id="sidebar-events" title="Promotional events" aria-label="Promotional events">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18m3 4h4m-2-2v4"></path></svg><span>Promotional events</span>
           </button>
-          <a class="sidebar-link" id="developer-project-link" href="developer.html" title="Developer project" aria-label="Developer project" hidden>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8-4 4 4 4m8-8 4 4-4 4m-3-11-2 14"></path></svg><span>Developer project</span>
+          <a class="sidebar-link" id="developer-project-link" href="developer.html" title="Developer dashboard" aria-label="Developer dashboard" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8-4 4 4 4m8-8 4 4-4 4m-3-11-2 14"></path></svg><span>Developer dashboard</span>
           </a>
           <button class="sidebar-link sidebar-sign-out" type="button" id="sidebar-logout" title="Sign out" aria-label="Sign out">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5m5 5H3m9-9h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"></path></svg><span>Sign out</span>
@@ -383,11 +383,12 @@
     <section class="account-panel rewards-panel">
       <div class="account-heading">
         <div>
-          <span class="account-kicker">REWARD CATALOG</span>
+          <span class="account-kicker">CEBUSTAYS REWARDS</span>
           <h2 id="reward-catalog-title">Earn rewards</h2>
         </div>
         <button type="button" class="account-close" data-dialog-close aria-label="Close rewards">×</button>
       </div>
+      <p class="reward-catalog-intro">Use your Cebu Points on rewards designed for everyday value, comfort, and memorable experiences.</p>
       <div id="reward-catalog-tabs" class="reward-catalog-tabs" aria-label="Reward categories"></div>
       <div id="reward-catalog-list" class="reward-catalog-list"></div>
     </section>
@@ -403,15 +404,19 @@
         <button type="button" class="account-close" data-dialog-close aria-label="Close spin wheel">×</button>
       </div>
       <div class="spin-wheel-layout">
-        <div class="spin-wheel-wrap">
-          <div class="spin-pointer" aria-hidden="true"></div>
-          <div class="spin-wheel" id="spin-wheel" aria-label="Spin wheel"></div>
+        <div class="spin-wheel-column">
+          <div class="spin-wheel-wrap">
+            <div class="spin-pointer" aria-hidden="true"></div>
+            <div class="spin-wheel" id="spin-wheel" role="img" aria-label="Prize wheel"></div>
+          </div>
         </div>
         <div class="spin-details">
-          <p class="spin-cost">Spend 1 point per spin</p>
-          <div id="spin-result" class="spin-result">Ready to spin</div>
+          <p class="spin-cost">1 Cebu Point per spin</p>
+          <div class="spin-result-row">
+            <div id="spin-result" class="spin-result" role="status" aria-live="polite">Ready to spin</div>
+          </div>
           <button type="button" class="btn btn-primary" id="spin-button">Spin now</button>
-          <button type="button" class="btn btn-ghost" id="spin-claim-button" hidden>Claim it</button>
+          <p class="spin-grand-prize-note">Grand prize: one whole week at your chosen CebuStays hotel, with all hotel amenities included; subject to hotel availability and confirmation.</p>
         </div>
       </div>
     </section>
@@ -555,7 +560,7 @@
 
       <section class="booking-panel" aria-label="Room booking">
         <div class="detail-price">
-          <span>Estimated total</span>
+          <span>Estimated total · 1 bedroom</span>
           <strong id="detail-price"></strong>
           <small id="detail-nights"></small>
         </div>
@@ -586,6 +591,13 @@
             </select>
           </label>
           <label>
+            Bedrooms per room
+            <select id="booking-bedrooms" name="bedrooms" required>
+              <option value="1">1 bedroom</option>
+              <option value="2">2 bedrooms · rate not set</option>
+            </select>
+          </label>
+          <label>
             Guest name
             <input name="guestName" type="text" autocomplete="name" minlength="2" maxlength="120" required>
           </label>
@@ -594,7 +606,7 @@
             <input name="guestEmail" type="email" autocomplete="email" maxlength="254" required>
           </label>
           <p class="booking-total" id="booking-total"></p>
-          <small class="booking-price-note">Coupon discounts apply to the room subtotal only; taxes and fees are not discounted.</small>
+          <small class="booking-price-note">The 1-bedroom rate uses the listed price. The 2-bedroom rate is set separately by the property. Coupon discounts apply to the room subtotal only; taxes and fees are not discounted.</small>
           <label class="booking-coupon-field" for="booking-coupon">
             Coupon
             <select id="booking-coupon" name="couponAssignmentId">
@@ -752,7 +764,7 @@
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""></script>
-  <script defer src="map.js?v=hotel-directions-api-v2"></script>
-  <script defer src="script.js?v=20261028-cebu-points-restore"></script>
+  <script defer src="map.js?v=hotel-directions-api-v3"></script>
+  <script defer src="script.js?v=20261029-wheel-single-claim"></script>
 </body>
 </html>

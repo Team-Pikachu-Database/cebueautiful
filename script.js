@@ -1,5 +1,72 @@
 "use strict";
 
+const DEFAULT_REWARD_CATALOG = [
+  { id: "gift-cafe", category: "coupon", title: "Cebu Coffee Treat", points: 120, description: "₱50 café and snack credit for quick breaks around the city.", rewardType: "coupon", code: "CB-CAFE-50", monetaryValue: 50 },
+  { id: "city-market", category: "coupon", title: "City Market Voucher", points: 260, description: "₱150 voucher for groceries, essentials, and local finds.", rewardType: "coupon", code: "CB-MARKET-150", monetaryValue: 150 },
+  { id: "grocery-bundle", category: "freebies", title: "Grocery Gift Basket", points: 450, description: "A curated bundle of pantry essentials and household basics.", rewardType: "coupon", code: "CB-GROC-250", monetaryValue: 250 },
+  { id: "dining-pass", category: "coupon", title: "Cebu Dining Pass", points: 600, description: "Enjoy a ₱300 dining credit at a participating local restaurant.", rewardType: "coupon", code: "CB-DINE-300", monetaryValue: 300 },
+  { id: "spa-voucher", category: "freebies", title: "Spa & Wellness Mini Pack", points: 700, description: "A relaxing spa voucher for pampering and rejuvenation.", rewardType: "coupon", code: "CB-SPA-500", monetaryValue: 500 },
+  { id: "breakfast-for-two", category: "service", title: "Breakfast for Two", points: 750, description: "A breakfast set for two guests at a participating Cebu hotel.", rewardType: "coupon", code: "CB-BREAKFAST-450", monetaryValue: 450 },
+  { id: "massage-session", category: "service", title: "Massage Session", points: 900, description: "A restorative wellness session for one person.", rewardType: "coupon", code: "CB-MASSAGE-650", monetaryValue: 650 },
+  { id: "airport-transfer", category: "service", title: "Airport Transfer", points: 1000, description: "A convenient one-way airport transfer credit.", rewardType: "coupon", code: "CB-TRANSFER-700", monetaryValue: 700 },
+  { id: "hotel-amenity-pack", category: "freebies", title: "Hotel Amenity Pack", points: 1100, description: "A welcome amenity bundle for a more comfortable stay.", rewardType: "coupon", code: "CB-AMENITY-800", monetaryValue: 800 },
+  { id: "suite-upgrade", category: "package", title: "Hotel Room Upgrade", points: 1400, description: "Request a room upgrade at a participating Cebu property.", rewardType: "package", code: "CB-SUITE-UPGRADE" },
+  { id: "weekend-getaway", category: "package", title: "Weekend Cebu Escape", points: 1800, description: "A two-day local getaway bundle with dining and leisure perks.", rewardType: "package", code: "CB-WEEKEND-ESCAPE" },
+  { id: "sunset-stay", category: "package", title: "Sunset Stay Bundle", points: 2400, description: "A hotel or resort add-on package for a relaxing short stay.", rewardType: "package", code: "CB-SUNSET-STAY" }
+];
+
+const SPIN_WHEEL_REWARDS = [
+  { id: "try-again", title: "Try again", weight: 70, color: "#e5e7eb", kind: "tryAgain" },
+  { id: "voucher-100", title: "₱50 café treat", weight: 12, color: "#fbbf24", kind: "reward", reward: DEFAULT_REWARD_CATALOG[0] },
+  { id: "market-voucher", title: "₱150 market voucher", weight: 7, color: "#f59e0b", kind: "reward", reward: DEFAULT_REWARD_CATALOG[1] },
+  { id: "spa-pack", title: "Spa & wellness pack", weight: 5, color: "#14b8a6", kind: "reward", reward: DEFAULT_REWARD_CATALOG[4] },
+  { id: "weekend-escape", title: "Weekend Cebu escape", weight: 4, color: "#8b5cf6", kind: "reward", reward: DEFAULT_REWARD_CATALOG[10] },
+  {
+    id: "grand-prize",
+    title: "1 whole week free vacation",
+    weight: 2,
+    color: "#ffc107",
+    kind: "reward",
+    reward: {
+      id: "grand-prize",
+      title: "1 whole week free vacation",
+      category: "package",
+      rewardType: "grand",
+      code: "CB-GRAND-1-WEEK",
+      description: "Seven nights at a hotel of your choice with all hotel amenities included. Subject to hotel availability and confirmation."
+    }
+  }
+];
+
+const SPIN_WHEEL_TOTAL_WEIGHT = SPIN_WHEEL_REWARDS.reduce(
+  (total, reward) => total + reward.weight,
+  0
+);
+
+function selectWheelReward(ticket) {
+  if (!Number.isInteger(ticket) || ticket < 0 || ticket >= SPIN_WHEEL_TOTAL_WEIGHT) {
+    throw new RangeError("The spin ticket is outside the wheel odds.");
+  }
+
+  let boundary = 0;
+  for (const reward of SPIN_WHEEL_REWARDS) {
+    boundary += reward.weight;
+    if (ticket < boundary) return reward;
+  }
+
+  throw new Error("The spin wheel could not select a reward.");
+}
+
+function buildWheelGradient() {
+  let angle = 0;
+  const stops = SPIN_WHEEL_REWARDS.map(reward => {
+    const start = angle;
+    angle += reward.weight / SPIN_WHEEL_TOTAL_WEIGHT * 360;
+    return `${reward.color} ${start}deg ${angle}deg`;
+  });
+  return `conic-gradient(${stops.join(", ")})`;
+}
+
 const configuredApiBaseUrl = typeof window.CEBUSTAYS_CONFIG?.apiBaseUrl === "string"
   ? window.CEBUSTAYS_CONFIG.apiBaseUrl.trim().replace(/\/+$/, "")
   : "";
@@ -12,13 +79,17 @@ function resolveApiBaseUrl() {
 
   if (codespaceMatch) {
     const [, codespaceName, codespacePort] = codespaceMatch;
-    if (["5505", "5506"].includes(codespacePort)) {
-      return `${protocol}//${codespaceName}-5505.app.github.dev`;
+    if (codespacePort === "5505") {
+      return `${protocol}//${codespaceName}-5506.app.github.dev`;
+    }
+    if (codespacePort === "5506") {
+      return "";
     }
   }
 
-  if (["localhost", "127.0.0.1"].includes(hostname) && ["5505", "5506"].includes(port)) {
-    return `${protocol}//${hostname}:5505`;
+  if (["localhost", "127.0.0.1"].includes(hostname)) {
+    if (port === "5505") return `${protocol}//${hostname}:5506`;
+    if (port === "5506") return "";
   }
 
   return configuredApiBaseUrl || "";
@@ -104,33 +175,8 @@ let helpHistory = [];
 let helpSending = false;
 let selectedHelpHotelId = null;
 let pendingSpinReward = null;
-
-const defaultRewardCatalog = [
-  { id: "gift-cafe", category: "coupon", title: "Café voucher", points: 30, description: "Enjoy a ₱100 café treat and pastry bundle.", rewardType: "coupon", code: "CB-CAFE-100" },
-  { id: "grocery-bundle", category: "coupon", title: "Grocery bundle", points: 45, description: "Great for your weekly essentials at partner stores.", rewardType: "coupon", code: "CB-GROC-150" },
-  { id: "dining-pass", category: "coupon", title: "Dining pass", points: 80, description: "A flexible dining voucher for restaurant partners.", rewardType: "coupon", code: "CB-DINE-250" },
-  { id: "spa-voucher", category: "freebies", title: "Spa voucher", points: 120, description: "A relaxing wellness break for one person.", rewardType: "coupon", code: "CB-SPA-350" },
-  { id: "hotel-mini", category: "freebies", title: "Hotel mini-bundle", points: 180, description: "A welcome amenity pack with lounge access.", rewardType: "coupon", code: "CB-HOTEL-500" },
-  { id: "weekend getaway", category: "package", title: "Weekend getaway", points: 250, description: "A short weekend stay package for a selected property.", rewardType: "package", code: "CB-GETAWAY-750" },
-  { id: "suite-upgrade", category: "package", title: "Suite upgrade", points: 340, description: "Enjoy a suite-level upgrade at select Cebu properties.", rewardType: "package", code: "CB-SUITE-900" },
-  { id: "beach-escape", category: "package", title: "Beach escape", points: 460, description: "Premium beachfront stay for a memorable getaway.", rewardType: "package", code: "CB-BEACH-1200" },
-  { id: "massage-session", category: "service", title: "Massage session", points: 90, description: "A restorative service reward for 1 person.", rewardType: "coupon", code: "CB-MASSAGE-275" },
-  { id: "airport-transfer", category: "service", title: "Airport transfer", points: 140, description: "A hassle-free car transfer or ride voucher.", rewardType: "coupon", code: "CB-TRANSFER-500" },
-  { id: "travel-support", category: "service", title: "Travel support bundle", points: 220, description: "A premium travel perk for guided assistance and extras.", rewardType: "coupon", code: "CB-TRAVEL-700" },
-  { id: "grand-prize", category: "package", title: "Free 1-week accommodation + flight bundle", points: 0, description: "Grand prize spin reward with premium travel coverage.", rewardType: "grand", code: "CB-GRAND-ALL-IN" }
-];
-
-const defaultSpinWheelRewards = [
-  { id: "try-again-1", title: "Try again", weight: 50, color: "#e5e7eb", kind: "tryAgain" },
-  { id: "voucher-100", title: "₱100 café voucher", weight: 18, color: "#fbbf24", kind: "reward", reward: defaultRewardCatalog[0] },
-  { id: "voucher-150", title: "₱150 grocery gift", weight: 13, color: "#f59e0b", kind: "reward", reward: defaultRewardCatalog[1] },
-  { id: "voucher-250", title: "₱250 dining pass", weight: 9, color: "#fb7185", kind: "reward", reward: defaultRewardCatalog[2] },
-  { id: "freebies-spa", title: "Spa voucher", weight: 5, color: "#14b8a6", kind: "reward", reward: defaultRewardCatalog[3] },
-  { id: "service-transfer", title: "Airport transfer", weight: 3, color: "#60a5fa", kind: "reward", reward: defaultRewardCatalog[9] },
-  { id: "package-getaway", title: "Weekend getaway", weight: 1, color: "#8b5cf6", kind: "reward", reward: defaultRewardCatalog[5] },
-  { id: "package-suite", title: "Suite upgrade", weight: 1, color: "#a78bfa", kind: "reward", reward: defaultRewardCatalog[6] },
-  { id: "grand-price", title: "1-week free vacation", weight: 1, color: "#ffc107", kind: "reward", reward: defaultRewardCatalog[11] }
-];
+let pendingSpinRewardOwner = null;
+let spinInProgress = false;
 
 function readStorageJson(key, fallback) {
   try {
@@ -195,8 +241,14 @@ function setLocalRewardHistory(history) {
 }
 
 function getRewardCatalog() {
-  const catalog = readStorageJson("cebu-reward-catalog", defaultRewardCatalog);
-  return Array.isArray(catalog) && catalog.length ? catalog : defaultRewardCatalog;
+  const savedCatalog = readStorageJson("cebu-reward-catalog", null);
+  const catalog = new Map(
+    (Array.isArray(savedCatalog) ? savedCatalog : [])
+      .filter(reward => reward?.rewardType !== "grand" && reward?.id !== "grand-prize")
+      .map(reward => [reward.id, reward])
+  );
+  DEFAULT_REWARD_CATALOG.forEach(reward => catalog.set(reward.id, reward));
+  return [...catalog.values()];
 }
 
 function writeRewardCatalog(catalog) {
@@ -255,8 +307,10 @@ function mergeRewardWalletIntoCouponWallet(apiCoupons) {
     code: reward.code || "CB-REWARD",
     name: reward.title,
     status: reward.status || "available",
-    discountType: "fixed",
-    discountValue: reward.monetaryValue || reward.points || 0,
+    discountType: reward.monetaryValue ? "fixed" : "reward",
+    discountValue: Number(reward.monetaryValue || 0),
+    rewardType: reward.rewardType,
+    description: reward.description,
     minimumSubtotal: 0,
     expiresAt: reward.expiresAt || new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
     eligibleHotelName: reward.shopName || "CebuStays rewards"
@@ -353,16 +407,23 @@ function renderRewardCatalog() {
   const tabs = document.getElementById("reward-catalog-tabs");
   if (!list || !tabs) return;
 
-  const categories = ["coupon", "freebies", "package", "service"];
+  const categories = ["all", "coupon", "freebies", "package", "service"];
+  const categoryLabels = {
+    all: "All rewards",
+    coupon: "Coupon reward",
+    freebies: "Freebies reward",
+    package: "Package reward",
+    service: "Service reward"
+  };
   const catalog = getRewardCatalog();
-  const currentTab = tabs.dataset.activeCategory || "coupon";
+  const currentTab = tabs.dataset.activeCategory || "all";
   const balance = getCebuPointsBalance();
 
   tabs.replaceChildren(...categories.map(category => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = `reward-category-tab${currentTab === category ? " is-active" : ""}`;
-    button.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+    button.textContent = categoryLabels[category];
     button.addEventListener("click", () => {
       tabs.dataset.activeCategory = category;
       renderRewardCatalog();
@@ -370,28 +431,32 @@ function renderRewardCatalog() {
     return button;
   }));
 
-  const filtered = catalog.filter(reward => reward.category === currentTab);
-  list.innerHTML = filtered.map(reward => {
+  const filtered = catalog.filter(reward => currentTab === "all" || reward.category === currentTab);
+  list.replaceChildren(...filtered.map(reward => {
     const enough = balance >= Number(reward.points || 0);
-    return `
-      <article class="reward-card">
-        <div class="reward-card-header">
-          <h4>${reward.title}</h4>
-          <span class="reward-points">${reward.points} pts</span>
-        </div>
-        <p>${reward.description}</p>
-        <button class="btn ${enough ? "btn-primary" : "btn-ghost"}" type="button" data-redeem-reward="${reward.id}" ${enough ? "" : "disabled"}>${enough ? "Redeem now" : "Need more points"}</button>
-      </article>
-    `;
-  }).join("");
-
-  list.querySelectorAll("[data-redeem-reward]").forEach(button => {
-    button.addEventListener("click", () => {
-      const reward = catalog.find(item => item.id === button.dataset.redeemReward);
-      if (!reward) return;
-      redeemRewardCatalogReward(reward);
-    });
-  });
+    const card = el("article", "reward-card");
+    const header = el("div", "reward-card-header");
+    const title = el("h4", "", reward.title);
+    const type = el("span", "reward-type", reward.category || "reward");
+    const description = el("p", "reward-description", reward.description);
+    const points = el("strong", "reward-points", `${Number(reward.points || 0)} pts`);
+    const value = el(
+      "small",
+      "reward-value",
+      reward.monetaryValue ? `₱${Number(reward.monetaryValue).toLocaleString("en-PH")} value` : "Package reward"
+    );
+    const action = el(
+      "button",
+      `btn ${enough ? "btn-primary" : "btn-ghost"}`,
+      enough ? "Redeem reward" : "Need more points"
+    );
+    action.type = "button";
+    action.disabled = !enough;
+    action.addEventListener("click", () => redeemRewardCatalogReward(reward));
+    header.append(title, type);
+    card.append(header, description, points, value, action);
+    return card;
+  }));
 }
 
 function openRewardCatalog() {
@@ -401,7 +466,7 @@ function openRewardCatalog() {
     return;
   }
   const tabs = document.getElementById("reward-catalog-tabs");
-  if (tabs && !tabs.dataset.activeCategory) tabs.dataset.activeCategory = "coupon";
+  if (tabs && !tabs.dataset.activeCategory) tabs.dataset.activeCategory = "all";
   renderRewardCatalog();
   document.getElementById("reward-catalog-dialog")?.showModal();
 }
@@ -414,9 +479,12 @@ function redeemRewardCatalogReward(reward) {
   }
 
   const balance = getCebuPointsBalance();
-  if (Number(reward.points || 0) > balance) {
+  const pointCost = Number(reward.points);
+  if (!Number.isFinite(pointCost) || pointCost <= 0 || pointCost > balance) {
     const message = document.getElementById("coupon-wallet-message");
-    if (message) message.textContent = "You do not have enough points for this reward yet.";
+    if (message) message.textContent = pointCost > balance
+      ? "You do not have enough points for this reward yet."
+      : "This reward cannot be redeemed from the catalog.";
     return;
   }
 
@@ -432,7 +500,7 @@ function redeemRewardCatalogReward(reward) {
     category: reward.category,
     description: reward.description,
     expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 45).toISOString(),
-    monetaryValue: reward.rewardType === "coupon" ? 150 : 0,
+    monetaryValue: Number(reward.monetaryValue || 0),
     createdAt: new Date().toISOString()
   });
   setLocalRewardWallet(wallet);
@@ -453,100 +521,239 @@ function redeemRewardCatalogReward(reward) {
   document.getElementById("coupon-wallet-dialog")?.showModal();
 }
 
-function buildWheelGradient() {
-  const rewards = defaultSpinWheelRewards;
-  const segmentSize = 360 / rewards.length;
-  const stops = rewards.map((reward, index) => {
-    const start = index * segmentSize;
-    const end = (index + 1) * segmentSize;
-    return `${reward.color} ${start}deg ${end}deg`;
+function secureRandomInt(maxExclusive) {
+  const crypto = window.crypto;
+  if (!crypto?.getRandomValues || !Number.isInteger(maxExclusive) || maxExclusive <= 0) {
+    throw new Error("Secure random selection is unavailable. Please try again later.");
+  }
+
+  const range = 0x100000000;
+  const limit = Math.floor(range / maxExclusive) * maxExclusive;
+  const value = new Uint32Array(1);
+  do {
+    crypto.getRandomValues(value);
+  } while (value[0] >= limit);
+  return value[0] % maxExclusive;
+}
+
+function playWheelOutcomeSound(context, kind) {
+  const notes = kind === "tryAgain"
+    ? [{ frequency: 392, offset: 0, duration: 0.16 }, { frequency: 294, offset: 0.19, duration: 0.24 }]
+    : [
+        { frequency: 523, offset: 0, duration: 0.2 },
+        { frequency: 659, offset: 0.13, duration: 0.2 },
+        { frequency: 784, offset: 0.26, duration: 0.2 },
+        { frequency: 1047, offset: 0.39, duration: 0.34 }
+      ];
+  const startAt = context.currentTime + 0.03;
+
+  notes.forEach((note, index) => {
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    const noteStart = startAt + note.offset;
+    oscillator.type = kind === "tryAgain" ? "sine" : "triangle";
+    oscillator.frequency.value = note.frequency;
+    gain.gain.setValueAtTime(0.0001, noteStart);
+    gain.gain.exponentialRampToValueAtTime(0.035, noteStart + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + note.duration);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    if (index === notes.length - 1) {
+      oscillator.onended = () => context.close();
+    }
+    oscillator.start(noteStart);
+    oscillator.stop(noteStart + note.duration + 0.02);
   });
-  return `conic-gradient(${stops.join(", ")})`;
 }
 
 function spinWheel() {
+  if (spinInProgress) return;
+  if (pendingSpinReward) {
+    claimSpinReward();
+    return;
+  }
+
   if (!signedInAccount) {
     setAccountView("login");
     accountDialog.showModal();
     return;
   }
 
-  if (getCebuPointsBalance() < 1) {
+  const pointsBalance = getCebuPointsBalance();
+  if (pointsBalance < 1) {
     const result = document.getElementById("spin-result");
-    if (result) result.textContent = "You need 1 point to spin.";
+    if (result) {
+      result.textContent = `You need 1 Cebu Point to spin. Your balance is ${pointsBalance} pts. Earn points from paid hotel bookings.`;
+    }
     return;
   }
 
   const wheel = document.getElementById("spin-wheel");
   const result = document.getElementById("spin-result");
-  const claimButton = document.getElementById("spin-claim-button");
   const spinButton = document.getElementById("spin-button");
   if (!wheel || !result) return;
 
+  let winner;
+  try {
+    winner = selectWheelReward(secureRandomInt(SPIN_WHEEL_TOTAL_WEIGHT));
+  } catch (error) {
+    result.textContent = error.message;
+    return;
+  }
   if (spinButton) spinButton.disabled = true;
-  if (claimButton) claimButton.hidden = true;
-
-  const weightedOptions = [];
-  defaultSpinWheelRewards.forEach(item => {
-    for (let i = 0; i < item.weight; i++) {
-      weightedOptions.push(item);
-    }
-  });
-  const winner = weightedOptions[Math.floor(Math.random() * weightedOptions.length)];
+  spinInProgress = true;
   pendingSpinReward = winner;
+  pendingSpinRewardOwner = signedInAccount.id;
 
   const entries = getCebuPointsEntries();
+  const spinId = `spin-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   entries.push({
-    id: `spin-${Date.now()}`,
+    id: spinId,
     label: "Spin the wheel",
     points: -1,
-    reference: `spin-${Date.now()}`,
+    reference: spinId,
     date: new Date().toISOString()
   });
   setCebuPointsEntries(entries);
   renderCebuPointsSummary();
+  const spinCost = document.querySelector(".spin-cost");
+  if (spinCost) spinCost.textContent = `1 Cebu Point per spin · Balance: ${getCebuPointsBalance()} pts`;
 
-  const segmentSize = 360 / defaultSpinWheelRewards.length;
-  const winnerIndex = defaultSpinWheelRewards.findIndex(item => item.id === winner.id);
-  const baseRotation = 360 * 7;
-  const offset = 360 - (winnerIndex * segmentSize + segmentSize / 2);
+  const winnerIndex = SPIN_WHEEL_REWARDS.findIndex(item => item.id === winner.id);
+  const winnerStart = SPIN_WHEEL_REWARDS
+    .slice(0, winnerIndex)
+    .reduce((angle, item) => angle + item.weight / SPIN_WHEEL_TOTAL_WEIGHT * 360, 0);
+  const winnerSize = winner.weight / SPIN_WHEEL_TOTAL_WEIGHT * 360;
+  const targetAngle = (360 - winnerStart - winnerSize / 2 + 360) % 360;
+  const currentRotation = Number(wheel.dataset.rotation || 0);
+  const currentAngle = currentRotation % 360;
+  const rotationDelta = 360 * 7 + (targetAngle - currentAngle + 360) % 360;
+  const nextRotation = currentRotation + rotationDelta;
   wheel.style.background = buildWheelGradient();
-  wheel.style.transform = `rotate(${baseRotation + offset}deg)`;
+  wheel.dataset.rotation = String(nextRotation);
 
   result.textContent = "Spinning… good luck!";
   const audioCtx = window.AudioContext || window.webkitAudioContext;
+  let outcomeAudioContext = null;
   if (audioCtx) {
-    const ctx = new audioCtx();
-    const oscillator = ctx.createOscillator();
-    const gain = ctx.createGain();
-    oscillator.type = winner.kind === "tryAgain" ? "square" : "triangle";
-    oscillator.frequency.value = winner.kind === "tryAgain" ? 180 : 380;
-    gain.gain.value = 0.02;
-    oscillator.connect(gain);
-    gain.connect(ctx.destination);
-    oscillator.start();
-    oscillator.stop(ctx.currentTime + 0.25);
+    try {
+      outcomeAudioContext = new audioCtx();
+      const resume = outcomeAudioContext.resume?.();
+      resume?.catch(error => console.warn("The spin sound could not be enabled.", error));
+    } catch (error) {
+      console.warn("The spin sound could not be played.", error);
+    }
   }
 
-  setTimeout(() => {
-    if (winner.kind === "tryAgain") {
-      result.textContent = "Try again — your next spin could land on a reward.";
-      if (claimButton) claimButton.hidden = true;
-    } else {
-      result.textContent = `${winner.title} is yours!`;
-      if (claimButton) {
-        claimButton.hidden = false;
-        claimButton.textContent = "Claim it";
+  let spinFinished = false;
+  let fallbackTimer;
+  const finishSpin = () => {
+    if (spinFinished) return;
+    spinFinished = true;
+    window.clearTimeout(fallbackTimer);
+    wheel.style.transform = `rotate(${nextRotation}deg)`;
+    if (outcomeAudioContext) {
+      try {
+        playWheelOutcomeSound(outcomeAudioContext, winner.kind);
+      } catch (error) {
+        console.warn("The spin result sound could not be played.", error);
+        outcomeAudioContext.close();
       }
     }
-    if (spinButton) spinButton.disabled = false;
-  }, 4300);
+    result.textContent = winner.kind === "tryAgain"
+      ? "Try again — your next spin could land on a reward."
+      : `${winner.title} is yours! Claim it to add it to My coupons.`;
+    spinInProgress = false;
+    if (winner.kind === "tryAgain") {
+      pendingSpinReward = null;
+      pendingSpinRewardOwner = null;
+    }
+    if (spinButton) {
+      spinButton.disabled = false;
+      spinButton.textContent = winner.kind === "tryAgain" ? "Spin again" : "Claim it";
+    }
+  };
+
+  const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+  const duration = prefersReducedMotion ? 1800 : 4200;
+  let animationStarted = false;
+  if (typeof wheel.animate === "function") {
+    try {
+      const animation = wheel.animate(
+        [
+          { transform: `rotate(${currentRotation}deg)` },
+          { transform: `rotate(${nextRotation}deg)` }
+        ],
+        { duration, easing: "cubic-bezier(0.15, 0.8, 0.12, 1)", fill: "forwards" }
+      );
+      animation.onfinish = () => {
+        finishSpin();
+        animation.cancel();
+      };
+      animationStarted = true;
+    } catch (error) {
+      console.warn("The wheel animation API failed; using the CSS animation fallback.", error);
+    }
+  }
+  if (!animationStarted) {
+    wheel.style.transition = "none";
+    wheel.style.transform = `rotate(${currentRotation}deg)`;
+    void wheel.offsetWidth;
+    window.requestAnimationFrame(() => {
+      wheel.style.transition = `transform ${duration}ms cubic-bezier(0.15, 0.8, 0.12, 1)`;
+      wheel.style.transform = `rotate(${nextRotation}deg)`;
+    });
+  }
+  fallbackTimer = window.setTimeout(finishSpin, duration + 250);
 }
 
-function claimSpinReward() {
-  if (!pendingSpinReward || pendingSpinReward.kind === "tryAgain") {
+function initializeSpinButton() {
+  document.addEventListener("click", event => {
+    const button = event.target.closest?.("#spin-button");
+    if (!button) return;
+    event.preventDefault();
+    spinWheel();
+  }, true);
+}
+
+function flyRewardToCoupons(reward, source, target) {
+  if (!source || !target) return Promise.resolve();
+
+  const sourceRect = source.getBoundingClientRect();
+  const targetRect = target.getBoundingClientRect();
+  const flight = document.createElement("div");
+  flight.className = "reward-flight-item";
+  flight.setAttribute("aria-hidden", "true");
+  flight.textContent = "★";
+  flight.title = reward.title;
+  flight.style.left = `${sourceRect.left + sourceRect.width / 2}px`;
+  flight.style.top = `${sourceRect.top + sourceRect.height / 2}px`;
+  flight.style.setProperty("--dx", `${targetRect.left + targetRect.width / 2 - sourceRect.left - sourceRect.width / 2}px`);
+  flight.style.setProperty("--dy", `${targetRect.top + targetRect.height / 2 - sourceRect.top - sourceRect.height / 2}px`);
+
+  return new Promise(resolve => {
+    flight.addEventListener("animationend", () => {
+      flight.remove();
+      resolve();
+    }, { once: true });
+    document.body.appendChild(flight);
+    window.setTimeout(() => {
+      flight.remove();
+      resolve();
+    }, 1700);
+  });
+}
+
+async function claimSpinReward() {
+  if (
+    !pendingSpinReward ||
+    pendingSpinReward.kind === "tryAgain" ||
+    pendingSpinRewardOwner !== signedInAccount?.id
+  ) {
     const result = document.getElementById("spin-result");
     if (result) result.textContent = "No reward to claim yet.";
+    pendingSpinReward = null;
+    pendingSpinRewardOwner = null;
     return;
   }
 
@@ -562,6 +769,7 @@ function claimSpinReward() {
     rewardType: reward.rewardType || "coupon",
     category: reward.category || "coupon",
     description: reward.description || "Claimed from the spin wheel.",
+    monetaryValue: Number(reward.monetaryValue || 0),
     expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
     createdAt: new Date().toISOString(),
     source: "spin-wheel"
@@ -573,25 +781,28 @@ function claimSpinReward() {
   history.push({ ...rewardEntry, claimedAt: new Date().toISOString() });
   setLocalRewardHistory(history);
 
+  const spinDialog = document.getElementById("spin-wheel-dialog");
+  const spinButton = document.getElementById("spin-button");
+  const couponButton = document.getElementById("sidebar-coupons");
+  if (spinButton) {
+    spinButton.disabled = true;
+    spinButton.textContent = "Claiming…";
+  }
   pendingSpinReward = null;
+  pendingSpinRewardOwner = null;
   renderCebuPointsSummary();
-  refreshCouponWallet().catch(() => {});
+  await refreshCouponWallet();
 
   const result = document.getElementById("spin-result");
-  if (result) result.textContent = `${reward.title} has been added to your wallet.`;
+  if (result) result.textContent = `${reward.title} has been added to My coupons.`;
+  const flight = flyRewardToCoupons(reward, spinButton, couponButton);
+  if (spinButton) {
+    spinButton.disabled = false;
+    spinButton.textContent = "Spin now";
+  }
 
-  const claimButton = document.getElementById("spin-claim-button");
-  if (claimButton) claimButton.hidden = true;
-
-  const rewardFlight = document.createElement("div");
-  rewardFlight.className = "reward-flight-item";
-  rewardFlight.textContent = reward.title.split(" ")[0] || "Reward";
-  rewardFlight.style.left = "50%";
-  rewardFlight.style.top = "50%";
-  rewardFlight.style.setProperty("--dx", "120px");
-  rewardFlight.style.setProperty("--dy", "-100px");
-  document.body.appendChild(rewardFlight);
-  setTimeout(() => rewardFlight.remove(), 1600);
+  spinDialog?.close();
+  await flight;
 
   const couponDialog = document.getElementById("coupon-wallet-dialog");
   if (couponDialog) {
@@ -612,17 +823,33 @@ function initializeRewardsSystem() {
   document.getElementById("sidebar-spin-wheel")?.addEventListener("click", () => {
     const dialog = document.getElementById("spin-wheel-dialog");
     if (dialog) dialog.showModal();
+    const spinCost = document.querySelector(".spin-cost");
+    if (spinCost) spinCost.textContent = `1 Cebu Point per spin · Balance: ${getCebuPointsBalance()} pts`;
     const result = document.getElementById("spin-result");
-    if (result) result.textContent = "Ready to spin";
-    const claim = document.getElementById("spin-claim-button");
-    if (claim) claim.hidden = true;
+    if (result) {
+      result.textContent = pendingSpinReward
+        ? `${pendingSpinReward.title} is yours! Claim it to add it to My coupons.`
+        : "Ready to spin";
+    }
+    const spinButton = document.getElementById("spin-button");
+    if (spinButton) {
+      spinButton.disabled = spinInProgress;
+      spinButton.textContent = pendingSpinReward
+        ? "Claim it"
+        : spinInProgress ? "Spinning…" : "Spin now";
+    }
+    if (!pendingSpinReward && !spinInProgress && result) {
+      result.textContent = getCebuPointsBalance() < 1
+        ? `You need 1 Cebu Point to spin. Your balance is ${getCebuPointsBalance()} pts. Earn points from paid hotel bookings.`
+        : "Ready to spin";
+    }
   });
-  document.getElementById("spin-button")?.addEventListener("click", spinWheel);
-  document.getElementById("spin-claim-button")?.addEventListener("click", claimSpinReward);
   document.getElementById("cebu-points-reward-button")?.addEventListener("click", openRewardCatalog);
 
-  const currentData = getRewardCatalog();
-  writeRewardCatalog(currentData.length ? currentData : defaultRewardCatalog);
+  if (DEFAULT_REWARD_CATALOG.length) {
+    const currentData = getRewardCatalog();
+    writeRewardCatalog(currentData.length ? currentData : DEFAULT_REWARD_CATALOG);
+  }
   renderRewardCatalog();
   renderCebuPointsSummary();
 }
@@ -678,6 +905,10 @@ function setAccountView(view) {
 function updateAccountDisplay(user) {
   const previousAccountId = signedInAccount?.id;
   signedInAccount = user;
+  if (pendingSpinRewardOwner && pendingSpinRewardOwner !== user?.id) {
+    pendingSpinReward = null;
+    pendingSpinRewardOwner = null;
+  }
   const isSignedIn = Boolean(user);
   if (isSignedIn && getCurrentView() === "home") {
     const nextUrl = new URL(window.location.href);
@@ -778,6 +1009,8 @@ function updateCouponCount() {
 }
 
 function couponDiscountText(coupon) {
+  if (coupon.rewardType === "grand") return "1-week free vacation";
+  if (coupon.discountType === "reward") return "Special reward";
   return coupon.discountType === "percentage"
     ? `${coupon.discountValue}% off${coupon.maxDiscount ? `, up to ${peso.format(coupon.maxDiscount)}` : ""}`
     : `${peso.format(coupon.discountValue)} off`;
@@ -818,6 +1051,9 @@ function renderCouponGroup(containerId, coupons, emptyText, used = false) {
     codeRow.append(code);
 
     if (!used && coupon.status === "available") {
+      if (coupon.description) {
+        card.append(el("p", "coupon-rule", coupon.description));
+      }
       const copyButton = el("button", "btn btn-ghost coupon-copy", "Copy code");
       copyButton.type = "button";
       copyButton.addEventListener("click", async () => {
@@ -1268,7 +1504,8 @@ async function loadReservationHistory() {
       const dates = document.createElement("p");
       dates.textContent = `${formatReservationDate(reservation.checkIn)} – ${formatReservationDate(reservation.checkOut)}`;
       const details = document.createElement("p");
-      details.textContent = `${reservation.rooms} room${reservation.rooms === 1 ? "" : "s"} · ${peso.format(reservation.totalPrice)}` +
+      const bedrooms = Number(reservation.bedrooms || 1);
+      details.textContent = `${reservation.rooms} room${reservation.rooms === 1 ? "" : "s"} · ${bedrooms} bedroom${bedrooms === 1 ? "" : "s"} · ${peso.format(reservation.totalPrice)}` +
         (reservation.couponDiscount ? ` · Coupon discount ${peso.format(reservation.couponDiscount)}` : "");
       const reference = document.createElement("small");
       reference.textContent = `Confirmation ${reservation.reference}`;
@@ -1614,16 +1851,23 @@ function updateBookingTotal() {
   const checkin = document.getElementById("booking-checkin").value;
   const checkout = document.getElementById("booking-checkout").value;
   const rooms = Number(document.getElementById("booking-rooms").value || 1);
+  const bedrooms = Number(document.getElementById("booking-bedrooms").value || 1);
+  const nightlyRate = Number(
+    bedrooms === 2 ? activeDetailHotel.price2Bedroom : activeDetailHotel.price
+  );
   const stayNights = Math.max(
     1,
     Math.round((Date.parse(`${checkout}T00:00:00`) -
       Date.parse(`${checkin}T00:00:00`)) / 86400000)
   );
-  const total = Number(activeDetailHotel.price) * stayNights * rooms;
+  const total = nightlyRate * stayNights * rooms;
   document.getElementById("booking-total").textContent =
     `Estimated eligible room subtotal for ${rooms} room${rooms === 1 ? "" : "s"} · ` +
+    `${bedrooms} bedroom${bedrooms === 1 ? "" : "s"} per room · ` +
     `${stayNights} night${stayNights === 1 ? "" : "s"}: ` +
-    (Number.isFinite(total) && total >= 0 ? peso.format(total) : "Rate not provided");
+    (Number.isFinite(nightlyRate) && nightlyRate >= 0 && (bedrooms === 1 || activeDetailHotel.price2Bedroom !== null)
+      ? peso.format(total)
+      : "Rate not provided");
 }
 
 async function loadBookingCoupons() {
@@ -1668,6 +1912,7 @@ async function previewSelectedCoupon() {
   const checkIn = document.getElementById("booking-checkin").value;
   const checkOut = document.getElementById("booking-checkout").value;
   const rooms = Number(document.getElementById("booking-rooms").value || 1);
+  const bedrooms = Number(document.getElementById("booking-bedrooms").value || 1);
   if (!checkIn || !checkOut || checkOut <= checkIn) {
     message.textContent = "Choose valid stay dates before applying a coupon.";
     return;
@@ -1682,7 +1927,8 @@ async function previewSelectedCoupon() {
         hotelId: activeDetailHotel.id,
         checkIn,
         checkOut,
-        rooms
+        rooms,
+        bedrooms
       })
     });
     if (sequence !== couponPreviewSequence) return;
@@ -1731,6 +1977,16 @@ async function refreshBookingAvailability() {
 
     const availableRooms = data.availability.availableRooms;
     const roomsSelect = document.getElementById("booking-rooms");
+    const bedroomsSelect = document.getElementById("booking-bedrooms");
+    const twoBedroomOption = bedroomsSelect.querySelector('option[value="2"]');
+    const hasTwoBedroomRate = activeDetailHotel.price2Bedroom !== null &&
+      Number.isFinite(Number(activeDetailHotel.price2Bedroom)) &&
+      Number(activeDetailHotel.price2Bedroom) >= 0;
+    twoBedroomOption.disabled = !hasTwoBedroomRate;
+    twoBedroomOption.textContent = hasTwoBedroomRate
+      ? `2 bedrooms · ${peso.format(Number(activeDetailHotel.price2Bedroom))}/night`
+      : "2 bedrooms · rate not set";
+    if (!hasTwoBedroomRate && bedroomsSelect.value === "2") bedroomsSelect.value = "1";
     const previousRooms = Number(roomsSelect.value || 1);
     roomsSelect.replaceChildren();
     for (let count = 1; count <= Math.min(availableRooms, 10); count++) {
@@ -1801,6 +2057,11 @@ document.getElementById("booking-rooms").addEventListener("change", () => {
   updateBookingTotal();
   if (document.getElementById("booking-coupon").value) previewSelectedCoupon();
 });
+document.getElementById("booking-bedrooms").addEventListener("change", () => {
+  bookingRequestId = newBookingRequestId();
+  updateBookingTotal();
+  if (document.getElementById("booking-coupon").value) previewSelectedCoupon();
+});
 document.getElementById("booking-coupon").addEventListener("change", () => {
   bookingRequestId = newBookingRequestId();
   previewSelectedCoupon();
@@ -1832,6 +2093,7 @@ document.getElementById("booking-form").addEventListener("submit", async event =
         ...values,
         hotelId: activeDetailHotel.id,
         rooms: Number(values.rooms),
+        bedrooms: Number(values.bedrooms),
         idempotencyKey: bookingRequestId
       })
     });
@@ -1851,6 +2113,7 @@ document.getElementById("booking-form").addEventListener("submit", async event =
         `Reservation submitted for ${booking.hotelName} and is ` +
         `${booking.paymentStatus === "paid" ? "paid" : "pending payment confirmation"}. ` +
         `Reference: ${booking.reference}. ${booking.rooms} room${booking.rooms === 1 ? "" : "s"}, ` +
+        `${booking.bedrooms || 1} bedroom${(booking.bedrooms || 1) === 1 ? "" : "s"} per room, ` +
         `${booking.checkIn} to ${booking.checkOut}. ` +
         (booking.couponDiscount
           ? booking.paymentStatus === "paid"
@@ -3004,6 +3267,7 @@ function initializeHelpChat() {
 
 /* ---------- INITIALIZE APP ---------- */
 
+initializeSpinButton();
 setDefaultDates();
 initializeAccount();
 initializeAccountMenu();

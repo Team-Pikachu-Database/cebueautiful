@@ -12,13 +12,17 @@ function resolveApiBaseUrl() {
 
   if (codespaceMatch) {
     const [, codespaceName, codespacePort] = codespaceMatch;
-    if (["5505", "5506"].includes(codespacePort)) {
-      return `${protocol}//${codespaceName}-5505.app.github.dev`;
+    if (codespacePort === "5505") {
+      return `${protocol}//${codespaceName}-5506.app.github.dev`;
+    }
+    if (codespacePort === "5506") {
+      return "";
     }
   }
 
-  if (["localhost", "127.0.0.1"].includes(hostname) && ["5505", "5506"].includes(port)) {
-    return `${protocol}//${hostname}:5505`;
+  if (["localhost", "127.0.0.1"].includes(hostname)) {
+    if (port === "5505") return `${protocol}//${hostname}:5506`;
+    if (port === "5506") return "";
   }
 
   return configuredApiBaseUrl || "";
@@ -109,7 +113,8 @@ async function loadPendingBookings() {
       dates.textContent =
         `${formatReservationDate(reservation.checkIn)} – ${formatReservationDate(reservation.checkOut)}`;
       const rooms = document.createElement("small");
-      rooms.textContent = `${reservation.rooms} room${reservation.rooms === 1 ? "" : "s"}`;
+      const bedrooms = Number(reservation.bedrooms || 1);
+      rooms.textContent = `${reservation.rooms} room${reservation.rooms === 1 ? "" : "s"} · ${bedrooms} bedroom${bedrooms === 1 ? "" : "s"} each`;
       stay.append(dates, rooms);
 
       const payment = document.createElement("td");
@@ -157,6 +162,7 @@ function openPaymentReview(reservation) {
     ["Check-in", formatReservationDate(reservation.checkIn)],
     ["Check-out", formatReservationDate(reservation.checkOut)],
     ["Rooms", String(reservation.rooms)],
+    ["Bedrooms per room", String(reservation.bedrooms || 1)],
     ["Amount due", new Intl.NumberFormat("en-PH", {
       style: "currency",
       currency: "PHP"
