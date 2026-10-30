@@ -1431,6 +1431,105 @@ function formatReservationDate(value) {
   });
 }
 
+let activeReviewReservation = null;
+
+function setReviewRating(rating) {
+  document.getElementById("hotel-review-rating").value = rating ? String(rating) : "";
+  document.querySelectorAll("#hotel-review-stars button").forEach(button => {
+    const selected = Number(button.dataset.rating) <= rating;
+    button.classList.toggle("is-selected", selected);
+    button.setAttribute("aria-pressed", String(Number(button.dataset.rating) === rating));
+  });
+}
+
+function openReviewDialog(reservation, readOnly = false) {
+  activeReviewReservation = reservation;
+  const form = document.getElementById("hotel-review-form");
+  const comment = document.getElementById("hotel-review-comment");
+  const submit = document.getElementById("hotel-review-submit");
+  const existingReview = readOnly ? reservation.review : null;
+
+  form.reset();
+  document.getElementById("hotel-review-message").textContent = "";
+  document.getElementById("hotel-review-title").textContent =
+    readOnly ? "Your hotel review" : "Review your stay";
+  document.getElementById("hotel-review-name").textContent = reservation.hotelName;
+  comment.readOnly = readOnly;
+  comment.value = existingReview?.comment || "";
+  submit.hidden = readOnly;
+  document.querySelectorAll("#hotel-review-stars button").forEach(button => {
+    button.disabled = readOnly;
+  });
+  setReviewRating(existingReview?.rating || 0);
+  document.getElementById("hotel-review-dialog").showModal();
+}
+
+function initializeReviewForm() {
+  const reviewListDialog = document.getElementById("hotel-review-list-dialog");
+  document.getElementById("hotel-review-list-close").addEventListener("click", () => {
+    reviewListDialog.close();
+  });
+  reviewListDialog.addEventListener("click", event => {
+    if (event.target === reviewListDialog) reviewListDialog.close();
+  });
+  document.querySelectorAll("#hotel-review-stars button").forEach(button => {
+    button.addEventListener("click", () => setReviewRating(Number(button.dataset.rating)));
+  });
+
+  document.getElementById("hotel-review-form").addEventListener("submit", async event => {
+    event.preventDefault();
+    const reservation = activeReviewReservation;
+    const rating = Number(document.getElementById("hotel-review-rating").value);
+    const comment = document.getElementById("hotel-review-comment").value.trim();
+    const submit = document.getElementById("hotel-review-submit");
+    const message = document.getElementById("hotel-review-message");
+
+    if (!reservation || !Number.isInteger(rating) || rating < 1 || rating > 5) {
+      message.textContent = "Choose a rating from 1 to 5 stars.";
+      return;
+    }
+    if (comment.length > 2000) {
+      message.textContent = "Review comments must be 2,000 characters or fewer.";
+      return;
+    }
+
+    submit.disabled = true;
+    message.textContent = "Submitting your review…";
+    try {
+      const result = await requestApi(`/api/reviews/${encodeURIComponent(reservation.reference)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating, comment })
+      });
+      const hotel = hotels.find(item => item.id === reservation.hotelId);
+      if (hotel) {
+        hotel.userReviews = [result.review, ...(hotel.userReviews || [])];
+        hotel.reviews = hotel.userReviews.length;
+        hotel.score = hotelRating(hotel);
+        if (activeDetailHotel?.id === hotel.id) {
+          renderHotelDetailRating(hotel);
+          renderHotelCommentPreview(document.getElementById("detail-reviews-preview"), hotel);
+        }
+        render();
+      }
+      message.textContent = result.rewarded
+        ? "Review saved. You earned 0.5 Cebu Points."
+        : "Review saved.";
+      try {
+        await refreshCebuPoints();
+      } catch (error) {
+        console.warn("The review was saved, but the Cebu Points balance could not refresh.", error);
+      }
+      await loadReservationHistory();
+      window.setTimeout(() => document.getElementById("hotel-review-dialog").close(), 600);
+    } catch (error) {
+      message.textContent = error.message;
+    } finally {
+      submit.disabled = false;
+    }
+  });
+}
+
 function startReservationHistoryRefresh() {
   if (reservationHistoryRefreshTimer) {
     window.clearInterval(reservationHistoryRefreshTimer);
@@ -1532,6 +1631,22 @@ async function loadReservationHistory() {
         actionRow.append(cancelButton);
       }
 
+      if (reservation.reviewEligible && isPaid && !reservation.cancelledAt) {
+        const rateButton = document.createElement("button");
+        rateButton.type = "button";
+        rateButton.className = "btn btn-primary reservation-rate";
+        rateButton.textContent = "Rate It";
+        rateButton.addEventListener("click", () => openReviewDialog(reservation));
+        actionRow.append(rateButton);
+      } else if (reservation.review) {
+        const viewButton = document.createElement("button");
+        viewButton.type = "button";
+        viewButton.className = "btn btn-ghost reservation-rate";
+        viewButton.textContent = "View Review";
+        viewButton.addEventListener("click", () => openReviewDialog(reservation, true));
+        actionRow.append(viewButton);
+      }
+
       if (reservation.cancellationReason && (reservation.cancelledAt || isCancellationRequested)) {
         const reason = document.createElement("small");
         reason.textContent = `Reason: ${reservation.cancellationReason}`;
@@ -1630,17 +1745,8 @@ function openHotelDetails(hotel, photoIndex = 1) {
   document.getElementById("detail-location").textContent =
     `${hotel.location}, ${hotel.town}, Cebu`;
 
-  const hotelScore = Number(hotel.score || 0);
-  const hotelReviews = Number(hotel.reviews || 0);
-
-  document.getElementById("detail-score").textContent =
-    hotelScore.toFixed(1);
-
-  document.getElementById("detail-score-label").textContent =
-    scoreLabel(hotelScore);
-
-  document.getElementById("detail-reviews").textContent =
-    `${hotelReviews.toLocaleString("en-PH")} reviews`;
+  renderHotelDetailRating(hotel);
+  renderHotelCommentPreview(document.getElementById("detail-reviews-preview"), hotel);
 
   document.getElementById("detail-description").textContent =
     hotel.desc || "";
@@ -2149,11 +2255,114 @@ function el(tag, className, text) {
 
 /* ---------- RATING LABEL ---------- */
 
-function scoreLabel(score) {
+function scoreLabel(score, fivePointScale = false) {
+  if (fivePointScale) {
+    if (score >= 4.5) return "Excellent";
+    if (score >= 4) return "Very good";
+    if (score >= 3) return "Good";
+    return "Rated";
+  }
   if (score >= 8.5) return "Excellent";
   if (score >= 8) return "Very good";
 
   return "Good";
+}
+
+function hotelRating(hotel) {
+  const reviews = Array.isArray(hotel.userReviews) ? hotel.userReviews : [];
+  if (reviews.length) {
+    return reviews.reduce((sum, review) => sum + Number(review.rating), 0) / reviews.length;
+  }
+  return Number(hotel.score || 0);
+}
+
+function createStarRating(score, className = "rating-stars") {
+  const stars = el("span", className);
+  stars.setAttribute("role", "img");
+  stars.setAttribute("aria-label", `${score.toFixed(1)} out of 5 stars`);
+  for (let index = 0; index < 5; index++) {
+    const fill = Math.max(0, Math.min(1, score - index)) * 100;
+    const star = el("span", "rating-star", "★");
+    star.style.setProperty("--star-fill", `${fill}%`);
+    stars.appendChild(star);
+  }
+  return stars;
+}
+
+function hotelComments(hotel) {
+  return (Array.isArray(hotel.userReviews) ? hotel.userReviews : []).filter(review =>
+    typeof review.comment === "string" && review.comment.trim()
+  );
+}
+
+function createHotelReviewEntry(review) {
+  const entry = el("article", "hotel-review-entry");
+  const heading = el("div", "hotel-review-heading");
+  heading.append(
+    el("strong", "", review.reviewer || "Guest"),
+    createStarRating(Number(review.rating), "rating-stars hotel-review-stars")
+  );
+  entry.appendChild(heading);
+  entry.appendChild(el("p", "hotel-review-comment", review.comment.trim()));
+  if (review.createdAt) {
+    const reviewDate = new Date(review.createdAt);
+    if (Number.isFinite(reviewDate.getTime())) {
+      entry.appendChild(el("time", "hotel-review-date", reviewDate.toLocaleDateString("en-PH", {
+        timeZone: "Asia/Manila",
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      })));
+    }
+  }
+  return entry;
+}
+
+function openHotelReviewList(hotel) {
+  const comments = hotelComments(hotel);
+  document.getElementById("hotel-review-list-title").textContent = `${hotel.name} comments`;
+  document.getElementById("hotel-review-list-count").textContent =
+    `${comments.length} guest comment${comments.length === 1 ? "" : "s"}`;
+  document.getElementById("hotel-review-list").replaceChildren(
+    ...comments.map(createHotelReviewEntry)
+  );
+  document.getElementById("hotel-review-list-dialog").showModal();
+}
+
+function renderHotelCommentPreview(container, hotel) {
+  const comments = hotelComments(hotel);
+  container.replaceChildren();
+  container.appendChild(el("h3", "hotel-detail-reviews-title", "Guest comments"));
+  if (!comments.length) {
+    container.appendChild(el("p", "hotel-review-empty", "No guest comments yet."));
+    return;
+  }
+
+  container.appendChild(createHotelReviewEntry(comments[0]));
+  if (comments.length > 1) {
+    const moreButton = el("button", "hotel-review-more", `See more (${comments.length})`);
+    moreButton.type = "button";
+    moreButton.setAttribute("aria-label", `See all ${comments.length} comments for ${hotel.name}`);
+    moreButton.addEventListener("click", () => openHotelReviewList(hotel));
+    container.appendChild(moreButton);
+  }
+}
+
+function renderHotelDetailRating(hotel) {
+  const reviews = Array.isArray(hotel.userReviews) ? hotel.userReviews : [];
+  const score = hotelRating(hotel);
+  const hasUserRating = reviews.length > 0;
+  const hasRating = hasUserRating || score > 0;
+  const detailStars = document.getElementById("detail-stars");
+  document.getElementById("detail-score").textContent =
+    hasRating ? score.toFixed(1) : "—";
+  detailStars.replaceChildren();
+  detailStars.hidden = !hasRating;
+  if (hasRating) detailStars.appendChild(createStarRating(score));
+  document.getElementById("detail-score-label").textContent =
+    hasRating ? scoreLabel(score, hasUserRating) : "No ratings yet";
+  document.getElementById("detail-reviews").textContent =
+    `${Number(hotel.reviews || 0).toLocaleString("en-PH")} ${Number(hotel.reviews || 0) === 1 ? "review" : "reviews"}`;
 }
 
 /* ---------- CALCULATE NIGHTS ---------- */
@@ -2356,18 +2565,22 @@ function buildCard(hotel) {
 
   const hotelScore = Number(hotel.score || 0);
   const hotelReviews = Number(hotel.reviews || 0);
+  const userReviews = Array.isArray(hotel.userReviews) ? hotel.userReviews : [];
+  const hasUserRating = userReviews.length > 0;
+  const displayedScore = hasUserRating ? hotelRating(hotel) : hotelScore;
+  const hasRating = hasUserRating || displayedScore > 0;
 
-  const label = el(
-    "div",
-    "score-label",
-    scoreLabel(hotelScore)
-  );
+  const label = el("div", "score-label");
+  label.appendChild(el("span", "", hasRating ? scoreLabel(displayedScore, hasUserRating) : "No ratings yet"));
+  if (hasRating) {
+    label.appendChild(createStarRating(displayedScore, "rating-stars score-stars"));
+  }
 
   label.appendChild(
     el(
       "small",
       "",
-      `${hotelReviews.toLocaleString("en-PH")} reviews`
+      `${hotelReviews.toLocaleString("en-PH")} ${hotelReviews === 1 ? "review" : "reviews"}`
     )
   );
 
@@ -2376,9 +2589,16 @@ function buildCard(hotel) {
     el(
       "span",
       "score-badge",
-      hotelScore.toFixed(1)
+      hasRating ? displayedScore.toFixed(1) : "—"
     )
   );
+
+  let reviewSection = null;
+  if (hotelComments(hotel).length) {
+    reviewSection = el("section", "hotel-review-preview");
+    reviewSection.setAttribute("aria-label", `Guest reviews for ${hotel.name}`);
+    renderHotelCommentPreview(reviewSection, hotel);
+  }
 
   /* Price */
 
@@ -2429,6 +2649,7 @@ function buildCard(hotel) {
   side.append(score, bottom, locate, cta);
 
   card.append(gallery, info, side);
+  if (reviewSection) card.appendChild(reviewSection);
 
   return card;
 }
@@ -3262,6 +3483,7 @@ initializeSpinButton();
 setDefaultDates();
 initializeAccount();
 initializeAccountMenu();
+initializeReviewForm();
 initializeHomepageNavigation();
 initializeSidebarNavigation();
 initializePageLinks();

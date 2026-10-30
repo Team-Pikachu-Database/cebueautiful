@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CebuStays – Hotels and staycations in Cebu</title>
-  <link rel="stylesheet" href="style.css?v=20261029-wheel-animation2">
+  <link rel="stylesheet" href="style.css?v=20261030-reviews">
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -485,6 +485,40 @@
     </section>
   </dialog>
 
+  <dialog class="account-dialog review-dialog" id="hotel-review-dialog" aria-labelledby="hotel-review-title">
+    <section class="account-panel">
+      <div class="account-heading">
+        <div>
+          <span class="account-kicker">YOUR STAY</span>
+          <h2 id="hotel-review-title">Review your stay</h2>
+        </div>
+        <button type="button" class="account-close" data-dialog-close aria-label="Close review">×</button>
+      </div>
+      <p class="review-hotel-name" id="hotel-review-name"></p>
+      <form class="account-form" id="hotel-review-form">
+        <fieldset class="review-rating-fieldset">
+          <legend>Your rating</legend>
+          <div class="review-stars" id="hotel-review-stars" role="group" aria-label="Choose a rating from 1 to 5 stars">
+            <button type="button" data-rating="1" aria-label="1 star" aria-pressed="false">★</button>
+            <button type="button" data-rating="2" aria-label="2 stars" aria-pressed="false">★</button>
+            <button type="button" data-rating="3" aria-label="3 stars" aria-pressed="false">★</button>
+            <button type="button" data-rating="4" aria-label="4 stars" aria-pressed="false">★</button>
+            <button type="button" data-rating="5" aria-label="5 stars" aria-pressed="false">★</button>
+          </div>
+          <input type="hidden" id="hotel-review-rating" name="rating">
+        </fieldset>
+        <label for="hotel-review-comment">Comment (optional)
+          <textarea id="hotel-review-comment" name="comment" rows="4" maxlength="2000" placeholder="Share a few details about your stay"></textarea>
+        </label>
+        <p class="account-message" id="hotel-review-message" aria-live="polite"></p>
+        <div class="review-form-actions">
+          <button type="button" class="btn btn-ghost" data-dialog-close>Cancel</button>
+          <button type="submit" class="btn btn-primary" id="hotel-review-submit">Submit review</button>
+        </div>
+      </form>
+    </section>
+  </dialog>
+
   <!-- HOTEL DETAILS MODAL -->
   <div class="hotel-modal" id="hotel-modal" aria-hidden="true">
     <button
@@ -537,6 +571,7 @@
           id="detail-thumbnails"
           aria-label="More hotel photos">
         </div>
+        <section class="hotel-detail-reviews" id="detail-reviews-preview" aria-label="Guest comments"></section>
       </div>
 
       <!-- HOTEL SUMMARY -->
@@ -547,6 +582,7 @@
 
         <div class="detail-rating">
           <span id="detail-score"></span>
+          <span id="detail-stars" hidden></span>
           <span id="detail-score-label"></span>
           <span id="detail-reviews"></span>
         </div>
@@ -625,6 +661,20 @@
       </section>
     </section>
   </div>
+
+  <dialog class="account-dialog hotel-review-list-dialog" id="hotel-review-list-dialog" aria-labelledby="hotel-review-list-title">
+    <section class="account-panel">
+      <div class="account-heading">
+        <div>
+          <span class="account-kicker">GUEST EXPERIENCES</span>
+          <h2 id="hotel-review-list-title">Hotel comments</h2>
+        </div>
+        <button type="button" class="account-close" id="hotel-review-list-close" aria-label="Close hotel comments">×</button>
+      </div>
+      <p class="hotel-review-list-count" id="hotel-review-list-count"></p>
+      <div class="hotel-review-list" id="hotel-review-list"></div>
+    </section>
+  </dialog>
 
   <dialog class="account-dialog help-dialog" id="help-dialog" aria-labelledby="help-title">
     <section class="help-panel">
@@ -765,6 +815,6 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""></script>
   <script defer src="map.js?v=hotel-directions-api-v3"></script>
-  <script defer src="script.js?v=20261029-supabase-points-ledger"></script>
+  <script defer src="script.js?v=20261030-reviews"></script>
 </body>
 </html>
