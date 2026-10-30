@@ -2333,24 +2333,38 @@ img {
   }
 
   .developer-page .header-top {
-    min-height: 48px;
-    padding-inline: 12px;
+    min-height: 44px;
+    padding: 8px 10px;
   }
 
   .developer-main {
-    padding-top: 22px;
+    padding-block: 14px 36px;
   }
 
   .developer-card {
-    border-radius: 16px;
+    padding: 16px;
+    border-radius: 14px;
   }
 
   .developer-destinations {
     grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .developer-bookings {
+    margin-block: 16px;
+    padding: 14px;
   }
 
   .developer-destination {
-    min-height: 220px;
+    min-height: 176px;
+    padding: 16px;
+    gap: 8px;
+  }
+
+  .payment-review-panel {
+    gap: 12px;
+    padding: 16px;
   }
 }
 
