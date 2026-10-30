@@ -2494,13 +2494,13 @@ img {
 
 .filters {
   min-width: 0;
-  background: linear-gradient(145deg, rgba(31, 22, 10, 0.88), rgba(65, 43, 13, 0.82));
-  backdrop-filter: blur(18px) saturate(125%);
-  -webkit-backdrop-filter: blur(18px) saturate(125%);
-  border: 1px solid rgba(255, 212, 71, 0.42);
+  background: linear-gradient(145deg, rgba(8, 24, 58, 0.94), rgba(12, 43, 82, 0.9));
+  backdrop-filter: blur(18px) saturate(135%);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
+  border: 1px solid rgba(255, 212, 71, 0.3);
   border-radius: 8px;
   padding: 18px;
-  box-shadow: 0 18px 38px rgba(10, 7, 3, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  box-shadow: 0 18px 38px rgba(2, 10, 28, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   position: sticky;
   top: 20px;
 }
@@ -2508,7 +2508,7 @@ img {
 .filters h2 {
   margin: 0 0 12px;
   font-size: 1.1rem;
-  color: #fff3c4;
+  color: #ffe28a;
 }
 
 .filters fieldset {
@@ -2524,9 +2524,9 @@ img {
   gap: 10px;
   padding: 8px 0;
   cursor: pointer;
-  border-bottom: 1px solid rgba(255, 212, 71, 0.18);
+  border-bottom: 1px solid rgba(166, 197, 235, 0.16);
   font-size: 0.9rem;
-  color: rgba(255, 248, 223, 0.88);
+  color: rgba(239, 246, 255, 0.9);
 }
 
 .check:hover {
@@ -2542,13 +2542,13 @@ img {
 }
 
 .filters #clear-filters {
-  border-color: rgba(255, 212, 71, 0.48);
+  border-color: rgba(255, 212, 71, 0.42);
   color: #ffe078;
-  background: rgba(255, 212, 71, 0.08);
+  background: rgba(255, 212, 71, 0.06);
 }
 
 .filters #clear-filters:hover {
-  color: #26190b;
+  color: #081832;
   background: #ffd447;
 }
 
