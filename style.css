@@ -3389,6 +3389,9 @@ img {
   display: flex;
   max-height: calc(100dvh - 32px);
   flex-direction: column;
+  background-image: linear-gradient(115deg, rgba(5, 23, 38, 0.62), rgba(5, 23, 38, 0.16)), url("UI images/Golden-Hour Tropical Resort Coastline.png");
+  background-position: center;
+  background-size: cover;
 }
 
 .hotel-map-header {
@@ -3397,24 +3400,27 @@ img {
   justify-content: space-between;
   gap: 16px;
   padding: 18px 22px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(5, 23, 38, 0.38);
+  backdrop-filter: blur(8px);
 }
 
 .hotel-map-header h2 {
   margin: 2px 0 0;
-  color: var(--navy);
+  color: #fff;
   font-size: 1.35rem;
   line-height: 1.3;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.38);
 }
 
 .hotel-map-header p {
   margin: 4px 0 0;
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.88);
   font-size: 0.86rem;
 }
 
 .map-kicker {
-  color: var(--blue);
+  color: #ffe08a;
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.09em;
@@ -3432,10 +3438,10 @@ img {
   height: 36px;
   place-items: center;
   padding: 0;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255, 255, 255, 0.62);
   border-radius: 50%;
-  color: var(--navy);
-  background: #f7f9fb;
+  color: #fff;
+  background: rgba(5, 23, 38, 0.56);
   font-size: 1.35rem;
 }
 
@@ -3450,13 +3456,19 @@ img {
   grid-template-columns: minmax(0, 1fr) minmax(290px, 350px);
   flex: 1;
   overflow: hidden;
+  gap: 14px;
+  padding: 16px;
 }
 
 .hotel-map-canvas-wrap {
   position: relative;
   min-width: 0;
   min-height: 480px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 12px;
   background: #eaf0f3;
+  box-shadow: 0 14px 34px rgba(5, 23, 38, 0.24);
 }
 
 #hotel-map-canvas {
@@ -3486,7 +3498,11 @@ img {
   max-height: min(70vh, 650px);
   padding: 16px;
   overflow: auto;
-  border-left: 1px solid var(--line);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 14px 34px rgba(5, 23, 38, 0.22);
+  backdrop-filter: blur(12px);
 }
 
 .hotel-map-privacy {
@@ -4636,6 +4652,8 @@ img {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(230px, 35dvh) minmax(0, 1fr);
     overflow: auto;
+    gap: 10px;
+    padding: 10px;
   }
 
   .hotel-map-canvas-wrap,
@@ -4646,8 +4664,6 @@ img {
   .hotel-map-details {
     max-height: none;
     overflow: visible;
-    border-top: 1px solid var(--line);
-    border-left: 0;
     padding: 12px 14px;
   }
 
