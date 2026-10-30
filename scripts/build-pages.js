@@ -49,6 +49,24 @@ fs.copyFileSync(
   path.join(projectRoot, "dashboard-background.png"),
   path.join(outputDirectory, "dashboard-background.png")
 );
+const heroImageDirectory = path.join(outputDirectory, "UI images");
+fs.mkdirSync(heroImageDirectory, { recursive: true });
+fs.copyFileSync(
+  path.join(projectRoot, "UI images", "Luxury Lightning Lobby at Sunset.png"),
+  path.join(heroImageDirectory, "Luxury Lightning Lobby at Sunset.png")
+);
+fs.copyFileSync(
+  path.join(projectRoot, "UI images", "Golden Pikachu-Inspired Sunset Lounge.png"),
+  path.join(heroImageDirectory, "Golden Pikachu-Inspired Sunset Lounge.png")
+);
+fs.copyFileSync(
+  path.join(projectRoot, "UI images", "Pikachu-Inspired Geometric Dark Wallpaper (1).png"),
+  path.join(heroImageDirectory, "Pikachu-Inspired Geometric Dark Wallpaper (1).png")
+);
+fs.copyFileSync(
+  path.join(projectRoot, "UI images", "Electric Futuristic Dashboard Overlay.png"),
+  path.join(heroImageDirectory, "Electric Futuristic Dashboard Overlay.png")
+);
 
 fs.cpSync(
   path.join(projectRoot, "logo_folder"),

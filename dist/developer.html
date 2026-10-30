@@ -4,9 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Developer workspace – CebuStays</title>
-  <link rel="stylesheet" href="style.css?v=compact-payment-controls">
+  <link rel="stylesheet" href="style.css?v=20261030-electric-dashboard-bg-v4">
 </head>
 <body class="developer-page">
+  <img
+    class="developer-background"
+    src="dashboard-background.png"
+    alt=""
+    aria-hidden="true">
   <header class="site-header">
     <div class="header-top container">
       <a href="./" class="logo" aria-label="CebuStays home">CebuStays</a>
@@ -106,11 +111,15 @@
           ×
         </button>
       </div>
-      <p class="developer-bookings-note">Compare the guest and reservation details below with the actual receipt or transfer record. The website does not verify a payment automatically.</p>
+      <p class="developer-bookings-note">For online payments, compare the reference shown by the guest with the PayMongo-verified reference below. For counter payments, verify the actual received payment before confirming.</p>
       <dl class="payment-review-details" id="payment-review-details"></dl>
+      <label class="payment-review-reference-field" id="payment-review-reference-field" hidden>
+        Reference shown by customer
+        <input type="text" id="payment-review-reference" maxlength="64" autocomplete="off">
+      </label>
       <label class="payment-review-check">
         <input type="checkbox" id="payment-review-checked">
-        I checked the payment record and verified the payer and amount match this reservation.
+        <span id="payment-review-check-label">I verified the payment against this reservation.</span>
       </label>
       <p class="payment-review-message" id="payment-review-message" aria-live="polite"></p>
       <button class="btn btn-primary" type="button" id="payment-review-confirm" disabled>Mark as paid</button>
@@ -118,6 +127,6 @@
   </dialog>
 
   <script src="config.js"></script>
-  <script src="developer.js?v=20261029-same-origin-api"></script>
+  <script src="developer.js?v=20261030-counter-payment-verification"></script>
 </body>
 </html>

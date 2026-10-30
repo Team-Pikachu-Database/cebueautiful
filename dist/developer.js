@@ -40,6 +40,9 @@ const paymentReviewDetails = document.getElementById("payment-review-details");
 const paymentReviewChecked = document.getElementById("payment-review-checked");
 const paymentReviewConfirm = document.getElementById("payment-review-confirm");
 const paymentReviewMessage = document.getElementById("payment-review-message");
+const paymentReviewReferenceField = document.getElementById("payment-review-reference-field");
+const paymentReviewReference = document.getElementById("payment-review-reference");
+const paymentReviewCheckLabel = document.getElementById("payment-review-check-label");
 const retryButton = document.getElementById("developer-retry");
 let selectedReservation = null;
 let pendingBookingsRefreshTimer = null;
@@ -127,8 +130,18 @@ async function loadPendingBookings() {
       paymentStatus.className = isCancellation
         ? "reservation-status is-cancelled"
         : "reservation-status is-pending";
-      paymentStatus.textContent = isCancellation ? "Cancellation" : "Pending";
-      payment.append(amount, paymentStatus);
+      paymentStatus.textContent = isCancellation
+        ? "Cancellation"
+        : reservation.paymentMethod === "online"
+          ? "Online payment — verify reference"
+          : "Counter payment — verify receipt";
+      if (reservation.paymentReference) {
+        const paymentReference = document.createElement("small");
+        paymentReference.textContent = `PayMongo reference ${reservation.paymentReference}`;
+        payment.append(amount, paymentStatus, paymentReference);
+      } else {
+        payment.append(amount, paymentStatus);
+      }
 
       const action = document.createElement("td");
       const checkButton = document.createElement("button");
@@ -169,6 +182,13 @@ function openPaymentReview(reservation) {
     }).format(reservation.totalPrice)],
     ["Reservation reference", reservation.reference]
   ];
+  details.push([
+    "Payment method",
+    reservation.paymentMethod === "online" ? "PayMongo online payment" : "Pay at counter"
+  ]);
+  if (reservation.paymentReference) {
+    details.push(["Verified PayMongo reference", reservation.paymentReference]);
+  }
   if (reservation.cancellationStatus === "requested") {
     details.push(["Cancellation reason", reservation.cancellationReason || "No reason supplied."]);
   }
@@ -182,9 +202,22 @@ function openPaymentReview(reservation) {
   }
 
   paymentReviewChecked.checked = false;
-  paymentReviewConfirm.disabled = true;
+  const isOnlinePayment = reservation.paymentMethod === "online";
+  paymentReviewReferenceField.hidden = !isOnlinePayment;
+  paymentReviewReference.required = isOnlinePayment;
+  paymentReviewReference.value = "";
+  paymentReviewCheckLabel.textContent = isOnlinePayment
+    ? "I matched the reference shown by the customer to the PayMongo-verified reference above."
+    : "I received and verified the payment at the hotel counter.";
+  updatePaymentReviewConfirmation();
   paymentReviewMessage.textContent = "";
   paymentReviewDialog.showModal();
+}
+
+function updatePaymentReviewConfirmation() {
+  const needsReference = selectedReservation?.paymentMethod === "online";
+  paymentReviewConfirm.disabled = !paymentReviewChecked.checked ||
+    (needsReference && !paymentReviewReference.value.trim());
 }
 
 async function confirmPayment() {
@@ -197,14 +230,18 @@ async function confirmPayment() {
     await requestApi(
       `/api/bookings/${encodeURIComponent(selectedReservation.reference)}/confirm-payment`,
       {
-      method: "PATCH"
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentReference: paymentReviewReference.value.trim()
+        })
       }
     );
     paymentReviewDialog.close();
     await loadPendingBookings();
   } catch (error) {
     paymentReviewMessage.textContent = error.message;
-    paymentReviewConfirm.disabled = false;
+    updatePaymentReviewConfirmation();
   }
 }
 
@@ -262,8 +299,9 @@ paymentReviewDialog.addEventListener("click", event => {
   if (event.target === paymentReviewDialog) paymentReviewDialog.close();
 });
 paymentReviewChecked.addEventListener("change", () => {
-  paymentReviewConfirm.disabled = !paymentReviewChecked.checked;
+  updatePaymentReviewConfirmation();
 });
+paymentReviewReference.addEventListener("input", updatePaymentReviewConfirmation);
 paymentReviewConfirm.addEventListener("click", confirmPayment);
 
 document.getElementById("developer-logout").addEventListener("click", async event => {

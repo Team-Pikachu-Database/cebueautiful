@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CebuStays – Hotels and staycations in Cebu</title>
-  <link rel="stylesheet" href="style.css?v=20261030-reviews">
+  <link rel="stylesheet" href="style.css?v=20261030-sidebar-heading-alignment">
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -128,7 +128,7 @@
     <aside class="site-sidebar" id="site-sidebar" aria-label="CebuStays navigation">
       <div class="sidebar-brand-row">
         <a class="sidebar-brand" href="./" data-page-link="home" aria-label="CebuStays home">C<span class="sidebar-brand-label">ebuStays</span></a>
-        <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Pin navigation open" aria-expanded="false" aria-controls="site-sidebar">
+        <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="site-sidebar">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
         </button>
       </div>
@@ -641,8 +641,15 @@
             Guest email address
             <input name="guestEmail" type="email" autocomplete="email" maxlength="254" required>
           </label>
+          <label class="booking-payment-method-field">
+            Mode of payment
+            <select id="booking-payment-method" name="paymentMethod" required>
+              <option value="online">Online payment</option>
+              <option value="counter">Pay at hotel counter</option>
+            </select>
+          </label>
           <p class="booking-total" id="booking-total"></p>
-          <small class="booking-price-note">The 1-bedroom rate uses the listed price. The 2-bedroom rate is set separately by the property. Coupon discounts apply to the room subtotal only; taxes and fees are not discounted.</small>
+          <small class="booking-price-note">Checkout shows the room subtotal, any coupon discount, applicable 12% VAT, and the total due. Online payment uses PayMongo; payment processing fees are not added to your total.</small>
           <label class="booking-coupon-field" for="booking-coupon">
             Coupon
             <select id="booking-coupon" name="couponAssignmentId">
@@ -650,12 +657,12 @@
             </select>
           </label>
           <p class="booking-coupon-status" id="booking-coupon-status" aria-live="polite"></p>
-          <button class="btn btn-primary booking-submit" type="submit">Submit reservation</button>
-          <small class="booking-payment-note">Pay the property directly. Your reservation stays pending until a developer confirms your payment.</small>
+          <button class="btn btn-primary booking-submit" id="booking-submit" type="submit">Reserve and pay online</button>
+          <small class="booking-payment-note" id="booking-payment-note">Pay securely through PayMongo. After payment, show the payment reference in Reservation History at the counter; staff must verify it before the reservation is marked paid. Rooms are held for 30 minutes.</small>
         </form>
 
         <p class="detail-note">
-          Room availability is limited. Your dates and rooms are reserved when your booking is confirmed.
+          Room availability is limited. An unpaid reservation holds inventory temporarily; confirmed payments keep the rooms for the booked dates.
         </p>
         <button class="btn btn-ghost detail-help-button" type="button" data-help-open>Need help with this hotel?</button>
       </section>
@@ -815,6 +822,6 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""></script>
   <script defer src="map.js?v=hotel-directions-api-v3"></script>
-  <script defer src="script.js?v=20261030-reviews"></script>
+  <script defer src="script.js?v=20261030-voucher-booking-filter"></script>
 </body>
 </html>
