@@ -103,6 +103,12 @@ const peso = new Intl.NumberFormat("en-PH", {
   currency: "PHP",
   maximumFractionDigits: 0
 });
+const pesoExact = new Intl.NumberFormat("en-PH", {
+  style: "currency",
+  currency: "PHP",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+});
 
 const VISIBLE_IMAGES = 4;
 const DESCRIPTION_PREVIEW_LENGTH = 180;
@@ -1000,9 +1006,17 @@ function updateCouponCount() {
 function couponDiscountText(coupon) {
   if (coupon.rewardType === "grand") return "1-week free vacation";
   if (coupon.discountType === "reward") return "Special reward";
+  if (!Number.isFinite(Number(coupon.discountValue))) {
+    return "Discount details unavailable";
+  }
   return coupon.discountType === "percentage"
     ? `${coupon.discountValue}% off${coupon.maxDiscount ? `, up to ${peso.format(coupon.maxDiscount)}` : ""}`
     : `${peso.format(coupon.discountValue)} off`;
+}
+
+function isHotelBookingCoupon(coupon) {
+  return typeof coupon.campaignId === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(coupon.id);
 }
 
 function renderCouponGroup(containerId, coupons, emptyText, used = false) {
@@ -1207,6 +1221,44 @@ async function submitAccountForm(event, endpoint) {
   }
 }
 
+async function handlePaymentReturn() {
+  const query = new URLSearchParams(window.location.search);
+  const outcome = query.get("payment");
+  const reference = query.get("reference");
+  if (!["success", "cancelled"].includes(outcome) || !reference) return;
+
+  query.delete("payment");
+  query.delete("reference");
+  const cleanUrl = `${window.location.pathname}${query.size ? `?${query}` : ""}${window.location.hash}`;
+  window.history.replaceState(null, "", cleanUrl);
+
+  let message;
+  if (outcome === "cancelled") {
+    message = "Checkout was closed. The return page does not determine payment status; check Reservation History before retrying while the room hold is active.";
+  } else {
+    try {
+      const data = await requestApi(
+        `/api/bookings/${encodeURIComponent(reference)}/payment-status`
+      );
+      message = data.payment.paymentReference
+        ? `PayMongo verified the payment for ${reference}. Show payment reference ${data.payment.paymentReference} at the counter; staff must verify it before the reservation is marked paid.`
+        : data.payment.paymentStatus === "paid"
+          ? `Payment confirmed for ${reference}. Total paid: ${pesoExact.format(data.payment.totalPrice)}.`
+          : "PayMongo has not confirmed this payment yet. Check Reservation History before retrying; after provider confirmation, show the payment reference at the counter.";
+    } catch (error) {
+      message = `We couldn't verify the payment status yet: ${error.message} Check Reservation History before trying to pay again.`;
+    }
+  }
+
+  window.alert(message);
+  const reservationsDialog = document.getElementById("reservation-history-dialog");
+  if (reservationsDialog && signedInAccount) {
+    reservationsDialog.showModal();
+    startReservationHistoryRefresh();
+    await loadReservationHistory();
+  }
+}
+
 function initializeAccount() {
   document.querySelectorAll("[data-account-open]").forEach(button => {
     button.addEventListener("click", () => {
@@ -1324,7 +1376,10 @@ function initializeAccount() {
   }
 
   requestAccountApi("/me")
-    .then(data => updateAccountDisplay(data.user))
+    .then(data => {
+      updateAccountDisplay(data.user);
+      void handlePaymentReturn();
+    })
     .catch(() => updateAccountDisplay(null));
 }
 
@@ -1434,7 +1489,7 @@ function formatReservationDate(value) {
 let activeReviewReservation = null;
 
 function setReviewRating(rating) {
-  document.getElementById("hotel-review-rating").value = rating ? String(rating) : "";
+  document.getElementById("hotel-review-rating").value = String(rating);
   document.querySelectorAll("#hotel-review-stars button").forEach(button => {
     const selected = Number(button.dataset.rating) <= rating;
     button.classList.toggle("is-selected", selected);
@@ -1444,15 +1499,16 @@ function setReviewRating(rating) {
 
 function openReviewDialog(reservation, readOnly = false) {
   activeReviewReservation = reservation;
+  const dialog = document.getElementById("hotel-review-dialog");
   const form = document.getElementById("hotel-review-form");
   const comment = document.getElementById("hotel-review-comment");
   const submit = document.getElementById("hotel-review-submit");
+  const message = document.getElementById("hotel-review-message");
   const existingReview = readOnly ? reservation.review : null;
 
   form.reset();
-  document.getElementById("hotel-review-message").textContent = "";
-  document.getElementById("hotel-review-title").textContent =
-    readOnly ? "Your hotel review" : "Review your stay";
+  message.textContent = "";
+  document.getElementById("hotel-review-title").textContent = readOnly ? "Your hotel review" : "Review your stay";
   document.getElementById("hotel-review-name").textContent = reservation.hotelName;
   comment.readOnly = readOnly;
   comment.value = existingReview?.comment || "";
@@ -1461,7 +1517,14 @@ function openReviewDialog(reservation, readOnly = false) {
     button.disabled = readOnly;
   });
   setReviewRating(existingReview?.rating || 0);
-  document.getElementById("hotel-review-dialog").showModal();
+  if (!readOnly) {
+    document.getElementById("hotel-review-rating").value = "";
+    document.querySelectorAll("#hotel-review-stars button").forEach(button => {
+      button.classList.remove("is-selected");
+      button.setAttribute("aria-pressed", "false");
+    });
+  }
+  dialog.showModal();
 }
 
 function initializeReviewForm() {
@@ -1472,13 +1535,17 @@ function initializeReviewForm() {
   reviewListDialog.addEventListener("click", event => {
     if (event.target === reviewListDialog) reviewListDialog.close();
   });
+
   document.querySelectorAll("#hotel-review-stars button").forEach(button => {
     button.addEventListener("click", () => setReviewRating(Number(button.dataset.rating)));
   });
-
+  document.getElementById("hotel-review-dialog").addEventListener("click", event => {
+    if (event.target === event.currentTarget) event.currentTarget.close();
+  });
   document.getElementById("hotel-review-form").addEventListener("submit", async event => {
     event.preventDefault();
     const reservation = activeReviewReservation;
+    const form = event.currentTarget;
     const rating = Number(document.getElementById("hotel-review-rating").value);
     const comment = document.getElementById("hotel-review-comment").value.trim();
     const submit = document.getElementById("hotel-review-submit");
@@ -1505,10 +1572,12 @@ function initializeReviewForm() {
       if (hotel) {
         hotel.userReviews = [result.review, ...(hotel.userReviews || [])];
         hotel.reviews = hotel.userReviews.length;
-        hotel.score = hotelRating(hotel);
+        hotel.score = hotel.userReviews.reduce((sum, review) => sum + Number(review.rating), 0) / hotel.reviews;
         if (activeDetailHotel?.id === hotel.id) {
-          renderHotelDetailRating(hotel);
-          renderHotelCommentPreview(document.getElementById("detail-reviews-preview"), hotel);
+          renderHotelCommentPreview(
+            document.getElementById("detail-reviews-preview"),
+            hotel
+          );
         }
         render();
       }
@@ -1586,21 +1655,89 @@ async function loadReservationHistory() {
         ? "Cancelled"
         : isCancellationRequested
           ? "Cancellation requested"
-          : isPaid ? "Paid" : "Pending payment";
+          : isPaid
+            ? "Paid"
+            : reservation.paymentCheckoutStatus === "paid"
+              ? "Verify payment at counter"
+              : "Pending payment";
       heading.append(hotelName, status);
 
       const dates = document.createElement("p");
       dates.textContent = `${formatReservationDate(reservation.checkIn)} – ${formatReservationDate(reservation.checkOut)}`;
       const details = document.createElement("p");
       const bedrooms = Number(reservation.bedrooms || 1);
-      details.textContent = `${reservation.rooms} room${reservation.rooms === 1 ? "" : "s"} · ${bedrooms} bedroom${bedrooms === 1 ? "" : "s"} · ${peso.format(reservation.totalPrice)}` +
+      details.textContent = `${reservation.rooms} room${reservation.rooms === 1 ? "" : "s"} · ${bedrooms} bedroom${bedrooms === 1 ? "" : "s"} · ${pesoExact.format(reservation.totalPrice)}` +
         (reservation.couponDiscount ? ` · Coupon discount ${peso.format(reservation.couponDiscount)}` : "");
       const reference = document.createElement("small");
       reference.textContent = `Confirmation ${reservation.reference}`;
 
       const actionRow = document.createElement("div");
       actionRow.className = "reservation-item-actions";
-      if (!reservation.cancelledAt && reservation.paymentStatus === "pending" && !isCancellationRequested) {
+      if (reservation.paymentReference) {
+        const paymentReference = document.createElement("small");
+        paymentReference.className = "reservation-payment-reference";
+        paymentReference.textContent =
+          `PayMongo reference ${reservation.paymentReference} — show this at the counter for verification.`;
+        actionRow.append(paymentReference);
+      } else if (
+        reservation.paymentMethod === "online" &&
+        reservation.paymentStatus === "pending" &&
+        reservation.paymentCheckoutStatus === "paid"
+      ) {
+        const paymentVerification = document.createElement("small");
+        paymentVerification.className = "reservation-payment-reference";
+        paymentVerification.textContent =
+          "PayMongo received the payment. Your reservation stays pending until staff verifies your payment reference at the counter.";
+        actionRow.append(paymentVerification);
+      }
+
+      if (
+        !reservation.cancelledAt &&
+        reservation.paymentStatus === "pending" &&
+        reservation.cancellationStatus !== "requested" &&
+        reservation.paymentCheckoutStatus !== "paid"
+      ) {
+        if (reservation.paymentMethod === "counter") {
+          const counterPayment = document.createElement("small");
+          counterPayment.className = "reservation-payment-reference";
+          counterPayment.textContent = "Pay at the hotel counter before the 30-minute reservation hold expires.";
+          actionRow.append(counterPayment);
+        } else {
+          const payButton = document.createElement("button");
+          payButton.type = "button";
+          payButton.className = "btn btn-primary reservation-rate";
+          payButton.textContent = "Pay online";
+          payButton.addEventListener("click", async () => {
+            payButton.disabled = true;
+            payButton.textContent = "Opening checkout…";
+            try {
+              const result = await requestApi(
+                `/api/bookings/${encodeURIComponent(reservation.reference)}/checkout`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    returnPath: `${window.location.pathname}${window.location.search}`
+                  })
+                }
+              );
+              window.location.assign(result.checkout.checkoutUrl);
+            } catch (error) {
+              window.alert(error.message);
+              payButton.disabled = false;
+              payButton.textContent = "Pay online";
+            }
+          });
+          actionRow.append(payButton);
+        }
+      }
+
+      if (
+        !reservation.cancelledAt &&
+        reservation.paymentStatus === "pending" &&
+        !isCancellationRequested &&
+        reservation.paymentCheckoutStatus !== "paid"
+      ) {
         const cancelButton = document.createElement("button");
         cancelButton.type = "button";
         cancelButton.className = "btn btn-ghost reservation-cancel";
@@ -1631,7 +1768,7 @@ async function loadReservationHistory() {
         actionRow.append(cancelButton);
       }
 
-      if (reservation.reviewEligible && isPaid && !reservation.cancelledAt) {
+      if (reservation.reviewEligible) {
         const rateButton = document.createElement("button");
         rateButton.type = "button";
         rateButton.className = "btn btn-primary reservation-rate";
@@ -1719,6 +1856,10 @@ function showDetailPhoto(index) {
 
 function openHotelDetails(hotel, photoIndex = 1) {
   activeDetailHotel = hotel;
+  renderHotelCommentPreview(
+    document.getElementById("detail-reviews-preview"),
+    hotel
+  );
   bookingRequestId = newBookingRequestId();
   lastFocusedElement = document.activeElement;
   const bookingForm = document.getElementById("booking-form");
@@ -1745,8 +1886,25 @@ function openHotelDetails(hotel, photoIndex = 1) {
   document.getElementById("detail-location").textContent =
     `${hotel.location}, ${hotel.town}, Cebu`;
 
-  renderHotelDetailRating(hotel);
-  renderHotelCommentPreview(document.getElementById("detail-reviews-preview"), hotel);
+  const hotelScore = Number(hotel.score || 0);
+  const hotelReviews = Number(hotel.reviews || 0);
+  const hasHotelRating = hotelReviews > 0 && hotelScore > 0;
+  const detailStars = document.getElementById("detail-stars");
+
+  document.getElementById("detail-score").textContent =
+    hasHotelRating ? hotelScore.toFixed(1) : "—";
+
+  detailStars.replaceChildren();
+  detailStars.hidden = !hasHotelRating;
+  if (hasHotelRating) {
+    detailStars.appendChild(createStarRating(hotelScore));
+  }
+
+  document.getElementById("detail-score-label").textContent =
+    hasHotelRating ? scoreLabel(hotelScore) : "No ratings yet";
+
+  document.getElementById("detail-reviews").textContent =
+    `${hotelReviews.toLocaleString("en-PH")} ${hotelReviews === 1 ? "review" : "reviews"}`;
 
   document.getElementById("detail-description").textContent =
     hotel.desc || "";
@@ -1955,13 +2113,15 @@ function updateBookingTotal() {
     Math.round((Date.parse(`${checkout}T00:00:00`) -
       Date.parse(`${checkin}T00:00:00`)) / 86400000)
   );
-  const total = nightlyRate * stayNights * rooms;
+  const subtotal = Math.round(nightlyRate * stayNights * rooms * 100) / 100;
+  const vat = Math.round(subtotal * 0.12 * 100) / 100;
+  const amountDue = Math.round((subtotal + vat) * 100) / 100;
   document.getElementById("booking-total").textContent =
-    `Estimated eligible room subtotal for ${rooms} room${rooms === 1 ? "" : "s"} · ` +
+    `Room subtotal for ${rooms} room${rooms === 1 ? "" : "s"} · ` +
     `${bedrooms} bedroom${bedrooms === 1 ? "" : "s"} per room · ` +
     `${stayNights} night${stayNights === 1 ? "" : "s"}: ` +
     (Number.isFinite(nightlyRate) && nightlyRate >= 0 && (bedrooms === 1 || activeDetailHotel.price2Bedroom !== null)
-      ? peso.format(total)
+      ? `${pesoExact.format(subtotal)} · VAT (12%): ${pesoExact.format(vat)} · Total due: ${pesoExact.format(amountDue)}`
       : "Rate not provided");
 }
 
@@ -1971,8 +2131,11 @@ async function loadBookingCoupons() {
   const selectedId = select.value || preferredCouponId;
   try {
     const coupons = await refreshCouponWallet();
+    const bookingCoupons = coupons.filter(
+      coupon => coupon.status === "available" && isHotelBookingCoupon(coupon)
+    );
     select.replaceChildren(new Option("No coupon", ""));
-    coupons.filter(coupon => coupon.status === "available").forEach(coupon => {
+    bookingCoupons.forEach(coupon => {
       const restriction = coupon.eligibleHotelName
         ? ` · ${coupon.eligibleHotelName}`
         : "";
@@ -1981,8 +2144,12 @@ async function loadBookingCoupons() {
         coupon.id
       ));
     });
-    if (coupons.some(coupon => coupon.id === selectedId && coupon.status === "available")) {
+    if (bookingCoupons.some(coupon => coupon.id === selectedId)) {
       select.value = selectedId;
+    } else if (selectedId) {
+      preferredCouponId = "";
+      document.getElementById("booking-coupon-status").textContent =
+        "Only active hotel coupons can discount a room booking. Other Cebu Points rewards are redeemed separately.";
     }
   } catch (error) {
     document.getElementById("booking-coupon-status").textContent =
@@ -2027,12 +2194,21 @@ async function previewSelectedCoupon() {
       })
     });
     if (sequence !== couponPreviewSequence) return;
+    const previewValues = [
+      data.preview?.subtotal,
+      data.preview?.discount,
+      data.preview?.vatAmount,
+      data.preview?.amountDue
+    ].map(Number);
+    if (!previewValues.every(Number.isFinite)) {
+      throw new Error("The coupon total could not be calculated. Please choose another coupon or try again.");
+    }
     total.textContent =
-      `Eligible room subtotal: ${peso.format(data.preview.subtotal)} · ` +
-      `Coupon discount: −${peso.format(data.preview.discount)} · ` +
-      `Room total: ${peso.format(data.preview.finalSubtotal)}`;
-    message.textContent =
-      "Coupon applied to the eligible room subtotal only. Taxes and fees are not discounted.";
+      `Room subtotal: ${pesoExact.format(previewValues[0])} · ` +
+      `Coupon discount: −${pesoExact.format(previewValues[1])} · ` +
+      `VAT (12%): ${pesoExact.format(previewValues[2])} · ` +
+      `Total due: ${pesoExact.format(previewValues[3])}`;
+    message.textContent = "Coupon discount is applied before VAT.";
   } catch (error) {
     if (sequence !== couponPreviewSequence) return;
     updateBookingTotal();
@@ -2161,6 +2337,20 @@ document.getElementById("booking-coupon").addEventListener("change", () => {
   bookingRequestId = newBookingRequestId();
   previewSelectedCoupon();
 });
+document.getElementById("booking-payment-method").addEventListener("change", () => {
+  bookingRequestId = newBookingRequestId();
+  updateBookingPaymentNote();
+});
+
+function updateBookingPaymentNote() {
+  const paymentMethod = document.getElementById("booking-payment-method").value;
+  document.getElementById("booking-submit").textContent = paymentMethod === "counter"
+    ? "Reserve and pay at counter"
+    : "Reserve and pay online";
+  document.getElementById("booking-payment-note").textContent = paymentMethod === "counter"
+    ? "Pay at the hotel counter. Rooms are held for 30 minutes; the reservation expires if staff does not confirm payment before then."
+    : "Pay securely through PayMongo. After payment, show the payment reference in Reservation History at the counter; staff must verify it before the reservation is marked paid. Rooms are held for 30 minutes.";
+}
 
 document.getElementById("booking-form").addEventListener("submit", async event => {
   event.preventDefault();
@@ -2176,8 +2366,12 @@ document.getElementById("booking-form").addEventListener("submit", async event =
   const submit = form.querySelector('button[type="submit"]');
   const values = Object.fromEntries(new FormData(form));
   const status = document.getElementById("booking-status");
+  const paymentMethod = values.paymentMethod;
+  const couponAssignmentId = document.getElementById("booking-coupon").value;
   submit.disabled = true;
-  status.textContent = "Saving your reservation…";
+  status.textContent = paymentMethod === "counter"
+    ? "Reserving the rooms for counter payment…"
+    : "Reserving the rooms and preparing secure checkout…";
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/bookings`, {
@@ -2186,6 +2380,7 @@ document.getElementById("booking-form").addEventListener("submit", async event =
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...values,
+        couponAssignmentId: couponAssignmentId || null,
         hotelId: activeDetailHotel.id,
         rooms: Number(values.rooms),
         bedrooms: Number(values.bedrooms),
@@ -2198,24 +2393,40 @@ document.getElementById("booking-form").addEventListener("submit", async event =
     }
 
     const booking = data.booking;
-    form.hidden = true;
     if (booking.cancelledAt) {
+      form.hidden = true;
       status.textContent =
         `Reservation ${booking.reference} expired before payment was confirmed. ` +
         "Its coupon, if used, is no longer held.";
     } else {
-      status.textContent =
-        `Reservation submitted for ${booking.hotelName} and is ` +
-        `${booking.paymentStatus === "paid" ? "paid" : "pending payment confirmation"}. ` +
-        `Reference: ${booking.reference}. ${booking.rooms} room${booking.rooms === 1 ? "" : "s"}, ` +
-        `${booking.bedrooms || 1} bedroom${(booking.bedrooms || 1) === 1 ? "" : "s"} per room, ` +
-        `${booking.checkIn} to ${booking.checkOut}. ` +
-        (booking.couponDiscount
-          ? booking.paymentStatus === "paid"
-            ? `Coupon discount: ${peso.format(booking.couponDiscount)}. `
-            : `Coupon discount: ${peso.format(booking.couponDiscount)}. Held until ${formatCouponDate(booking.couponHeldUntil, true)} Philippines time while payment is pending. `
-          : "") +
-        `Total due: ${peso.format(booking.totalPrice)}.`;
+      form.hidden = true;
+      if (paymentMethod === "online") {
+        status.textContent = "Opening PayMongo's secure checkout…";
+        const checkout = await requestApi(
+          `/api/bookings/${encodeURIComponent(booking.reference)}/checkout`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              returnPath: `${window.location.pathname}${window.location.search}`
+            })
+          }
+        );
+        window.location.assign(checkout.checkout.checkoutUrl);
+        status.textContent =
+          `Reservation ${booking.reference} is held for 30 minutes. ` +
+          `${booking.couponDiscount
+            ? `Voucher discount: ${pesoExact.format(booking.couponDiscount)}. `
+            : ""}` +
+          `Total due: ${pesoExact.format(booking.totalPrice)}.`;
+      } else {
+        status.textContent =
+          `Reservation ${booking.reference} is held for 30 minutes. ` +
+          `${booking.couponDiscount
+            ? `Voucher discount: ${pesoExact.format(booking.couponDiscount)}. `
+            : ""}` +
+          "Pay at the hotel counter before the hold expires.";
+      }
     }
     recordPaidBookingPoints(booking).catch(error => {
       console.error("The reservation succeeded, but Cebu Points could not be refreshed.", error);
@@ -2255,42 +2466,30 @@ function el(tag, className, text) {
 
 /* ---------- RATING LABEL ---------- */
 
-function scoreLabel(score, fivePointScale = false) {
-  if (fivePointScale) {
-    if (score >= 4.5) return "Excellent";
-    if (score >= 4) return "Very good";
-    if (score >= 3) return "Good";
-    return "Rated";
-  }
-  if (score >= 8.5) return "Excellent";
-  if (score >= 8) return "Very good";
-
-  return "Good";
-}
-
-function hotelRating(hotel) {
-  const reviews = Array.isArray(hotel.userReviews) ? hotel.userReviews : [];
-  if (reviews.length) {
-    return reviews.reduce((sum, review) => sum + Number(review.rating), 0) / reviews.length;
-  }
-  return Number(hotel.score || 0);
+function scoreLabel(score) {
+  if (score >= 4.5) return "Excellent";
+  if (score >= 4) return "Very good";
+  if (score >= 3) return "Good";
+  return "Rated";
 }
 
 function createStarRating(score, className = "rating-stars") {
   const stars = el("span", className);
   stars.setAttribute("role", "img");
   stars.setAttribute("aria-label", `${score.toFixed(1)} out of 5 stars`);
+
   for (let index = 0; index < 5; index++) {
     const fill = Math.max(0, Math.min(1, score - index)) * 100;
     const star = el("span", "rating-star", "★");
     star.style.setProperty("--star-fill", `${fill}%`);
     stars.appendChild(star);
   }
+
   return stars;
 }
 
 function hotelComments(hotel) {
-  return (Array.isArray(hotel.userReviews) ? hotel.userReviews : []).filter(review =>
+  return (hotel.userReviews || []).filter(review =>
     typeof review.comment === "string" && review.comment.trim()
   );
 }
@@ -2329,40 +2528,23 @@ function openHotelReviewList(hotel) {
   document.getElementById("hotel-review-list-dialog").showModal();
 }
 
-function renderHotelCommentPreview(container, hotel) {
+function renderHotelCommentPreview(container, hotel, emptyMessage = "No guest comments yet.") {
   const comments = hotelComments(hotel);
   container.replaceChildren();
   container.appendChild(el("h3", "hotel-detail-reviews-title", "Guest comments"));
-  if (!comments.length) {
-    container.appendChild(el("p", "hotel-review-empty", "No guest comments yet."));
-    return;
-  }
 
-  container.appendChild(createHotelReviewEntry(comments[0]));
-  if (comments.length > 1) {
-    const moreButton = el("button", "hotel-review-more", `See more (${comments.length})`);
-    moreButton.type = "button";
-    moreButton.setAttribute("aria-label", `See all ${comments.length} comments for ${hotel.name}`);
-    moreButton.addEventListener("click", () => openHotelReviewList(hotel));
-    container.appendChild(moreButton);
+  if (comments.length) {
+    container.appendChild(createHotelReviewEntry(comments[0]));
+    if (comments.length > 1) {
+      const moreButton = el("button", "hotel-review-more", `See more (${comments.length})`);
+      moreButton.type = "button";
+      moreButton.setAttribute("aria-label", `See all ${comments.length} comments for ${hotel.name}`);
+      moreButton.addEventListener("click", () => openHotelReviewList(hotel));
+      container.appendChild(moreButton);
+    }
+  } else {
+    container.appendChild(el("p", "hotel-review-empty", emptyMessage));
   }
-}
-
-function renderHotelDetailRating(hotel) {
-  const reviews = Array.isArray(hotel.userReviews) ? hotel.userReviews : [];
-  const score = hotelRating(hotel);
-  const hasUserRating = reviews.length > 0;
-  const hasRating = hasUserRating || score > 0;
-  const detailStars = document.getElementById("detail-stars");
-  document.getElementById("detail-score").textContent =
-    hasRating ? score.toFixed(1) : "—";
-  detailStars.replaceChildren();
-  detailStars.hidden = !hasRating;
-  if (hasRating) detailStars.appendChild(createStarRating(score));
-  document.getElementById("detail-score-label").textContent =
-    hasRating ? scoreLabel(score, hasUserRating) : "No ratings yet";
-  document.getElementById("detail-reviews").textContent =
-    `${Number(hotel.reviews || 0).toLocaleString("en-PH")} ${Number(hotel.reviews || 0) === 1 ? "review" : "reviews"}`;
 }
 
 /* ---------- CALCULATE NIGHTS ---------- */
@@ -2565,15 +2747,15 @@ function buildCard(hotel) {
 
   const hotelScore = Number(hotel.score || 0);
   const hotelReviews = Number(hotel.reviews || 0);
-  const userReviews = Array.isArray(hotel.userReviews) ? hotel.userReviews : [];
-  const hasUserRating = userReviews.length > 0;
-  const displayedScore = hasUserRating ? hotelRating(hotel) : hotelScore;
-  const hasRating = hasUserRating || displayedScore > 0;
-
+  const hasHotelRating = hotelReviews > 0 && hotelScore > 0;
   const label = el("div", "score-label");
-  label.appendChild(el("span", "", hasRating ? scoreLabel(displayedScore, hasUserRating) : "No ratings yet"));
-  if (hasRating) {
-    label.appendChild(createStarRating(displayedScore, "rating-stars score-stars"));
+  label.appendChild(el(
+    "span",
+    "",
+    hasHotelRating ? scoreLabel(hotelScore) : "No ratings yet"
+  ));
+  if (hasHotelRating) {
+    label.appendChild(createStarRating(hotelScore, "rating-stars score-stars"));
   }
 
   label.appendChild(
@@ -2589,7 +2771,7 @@ function buildCard(hotel) {
     el(
       "span",
       "score-badge",
-      hasRating ? displayedScore.toFixed(1) : "—"
+      hasHotelRating ? hotelScore.toFixed(1) : "—"
     )
   );
 
@@ -2597,7 +2779,7 @@ function buildCard(hotel) {
   if (hotelComments(hotel).length) {
     reviewSection = el("section", "hotel-review-preview");
     reviewSection.setAttribute("aria-label", `Guest reviews for ${hotel.name}`);
-    renderHotelCommentPreview(reviewSection, hotel);
+    renderHotelCommentPreview(reviewSection, hotel, "No guest comments yet.");
   }
 
   /* Price */
@@ -3482,8 +3664,8 @@ function initializeHelpChat() {
 initializeSpinButton();
 setDefaultDates();
 initializeAccount();
-initializeAccountMenu();
 initializeReviewForm();
+initializeAccountMenu();
 initializeHomepageNavigation();
 initializeSidebarNavigation();
 initializePageLinks();
