@@ -1459,8 +1459,35 @@ img {
 ========================================= */
 
 .developer-page {
+  position: relative;
+  isolation: isolate;
   min-height: 100vh;
+  color: #f3f5f8;
   background: #0d1117;
+}
+
+.developer-background {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+}
+
+.developer-page > .site-header,
+.developer-main {
+  position: relative;
+  z-index: 1;
+}
+
+.developer-page > .site-header {
+  background: rgba(8, 12, 18, 0.62);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
 
 .developer-badge {
@@ -1481,8 +1508,10 @@ img {
   padding: clamp(24px, 5vw, 48px);
   border: 1px solid #30363d;
   border-radius: 12px;
-  background: #161b22;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.2);
+  background: rgba(15, 20, 28, 0.68);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.42), 0 0 32px rgba(255, 183, 3, 0.08);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
 
 .developer-card h1 {
@@ -1515,7 +1544,9 @@ img {
   padding: 20px;
   border: 1px solid #30363d;
   border-radius: 12px;
-  background: #0d1117;
+  background: rgba(7, 11, 17, 0.68);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
 
 .developer-bookings[hidden] {
@@ -1799,8 +1830,11 @@ img {
   border: 1px solid #30363d;
   border-radius: 12px;
   color: #f0f6fc;
+  background: rgba(15, 20, 28, 0.68);
   text-decoration: none;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
 }
 

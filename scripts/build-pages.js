@@ -45,6 +45,10 @@ for (const file of ["index.html", "developer.html", "script.js", "developer.js",
 }
 
 fs.copyFileSync(path.join(projectRoot, "plane.png"), path.join(outputDirectory, "plane.png"));
+fs.copyFileSync(
+  path.join(projectRoot, "dashboard-background.png"),
+  path.join(outputDirectory, "dashboard-background.png")
+);
 
 fs.cpSync(
   path.join(projectRoot, "logo_folder"),
