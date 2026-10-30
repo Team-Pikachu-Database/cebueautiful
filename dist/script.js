@@ -3410,6 +3410,15 @@ function initializeSidebarNavigation() {
 
   document.addEventListener("click", event => {
     if (
+      window.innerWidth <= 700 &&
+      sidebar.classList.contains("is-open") &&
+      !sidebar.contains(event.target) &&
+      !mobileSidebarToggle?.contains(event.target)
+    ) {
+      setMobileSidebarOpen(false);
+    }
+
+    if (
       window.innerWidth > 700 &&
       sidebar.classList.contains("is-expanded") &&
       !sidebar.contains(event.target) &&

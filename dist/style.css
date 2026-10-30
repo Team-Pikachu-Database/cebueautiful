@@ -1058,13 +1058,13 @@ img {
     position: fixed;
     inset: 0;
     z-index: 45;
-    display: block;
+    display: none !important;
     border: 0;
-    background: rgba(10, 25, 47, 0.4);
+    pointer-events: none;
   }
 
   .sidebar-backdrop[hidden] {
-    display: none;
+    display: none !important;
   }
 
   .sidebar-toggle,
