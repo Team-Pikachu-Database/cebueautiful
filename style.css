@@ -4757,7 +4757,7 @@ img {
   z-index: 80;
   right: clamp(18px, 3vw, 40px);
   bottom: clamp(100px, 16vh, 156px);
-  display: none;
+  display: grid;
   place-items: center;
   width: 76px;
   height: 76px;
@@ -4769,10 +4769,6 @@ img {
   touch-action: none;
   user-select: none;
   cursor: grab;
-}
-
-body.home-view .pokeball-launcher {
-  display: grid;
 }
 
 .pokeball-launcher[hidden] {

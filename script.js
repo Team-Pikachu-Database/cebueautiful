@@ -3408,7 +3408,7 @@ function initializeFloatingPokeball() {
     setPosition(bounds.left, bounds.top);
   };
 
-  const isVisible = () => document.body.classList.contains("home-view") && !launcher.hidden;
+  const isVisible = () => !launcher.hidden;
 
   const stopMotion = () => {
     if (!animationFrame) return;
