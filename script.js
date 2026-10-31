@@ -79,7 +79,7 @@ function resolveApiBaseUrl() {
 
   if (codespaceMatch) {
     const [, codespaceName, codespacePort] = codespaceMatch;
-    if (codespacePort === "5505") {
+    if (codespacePort === "5500" || codespacePort === "5505") {
       return `${protocol}//${codespaceName}-5506.app.github.dev`;
     }
     if (codespacePort === "5506") {
@@ -88,7 +88,7 @@ function resolveApiBaseUrl() {
   }
 
   if (["localhost", "127.0.0.1"].includes(hostname)) {
-    if (port === "5505") return `${protocol}//${hostname}:5506`;
+    if (port === "5500" || port === "5505") return `${protocol}//${hostname}:5506`;
     if (port === "5506") return "";
   }
 
@@ -3344,6 +3344,270 @@ document
     render();
   });
 
+function initializeFloatingPokeball() {
+  const launcher = document.getElementById("pokeball-launcher");
+  if (!launcher) return;
+
+  const bubble = launcher.querySelector(".pokeball-help-bubble");
+  let positioned = false;
+  let dragging = false;
+  let dragStarted = false;
+  let suppressNextClick = false;
+  let positionX = 0;
+  let positionY = 0;
+  let pointerOffsetX = 0;
+  let pointerOffsetY = 0;
+  let previousPointerX = 0;
+  let previousPointerY = 0;
+  let previousPointerTime = 0;
+  let velocityX = 0;
+  let velocityY = 0;
+  let animationFrame = 0;
+  let helpBubbleTimer = 0;
+  let helpBubbleDismissTimer = 0;
+
+  const setHelpBubbleVisible = visible => {
+    if (!bubble) return;
+    bubble.classList.toggle("is-visible", visible);
+  };
+
+  const queueHelpBubble = () => {
+    if (!bubble || !isVisible() || dragging) {
+      setHelpBubbleVisible(false);
+      return;
+    }
+
+    window.clearTimeout(helpBubbleTimer);
+    window.clearTimeout(helpBubbleDismissTimer);
+
+    helpBubbleTimer = window.setTimeout(() => {
+      if (!isVisible() || dragging) return;
+      setHelpBubbleVisible(true);
+      helpBubbleDismissTimer = window.setTimeout(() => {
+        setHelpBubbleVisible(false);
+        queueHelpBubble();
+      }, 3200);
+    }, 10000);
+  };
+
+  const setPosition = (nextX, nextY) => {
+    const maxX = Math.max(8, window.innerWidth - launcher.offsetWidth - 8);
+    const maxY = Math.max(8, window.innerHeight - launcher.offsetHeight - 8);
+    positionX = Math.min(maxX, Math.max(8, nextX));
+    positionY = Math.min(maxY, Math.max(8, nextY));
+    launcher.style.left = `${positionX}px`;
+    launcher.style.top = `${positionY}px`;
+    launcher.style.right = "auto";
+    launcher.style.bottom = "auto";
+  };
+
+  const initializePosition = () => {
+    if (positioned) return;
+    const bounds = launcher.getBoundingClientRect();
+    positioned = true;
+    setPosition(bounds.left, bounds.top);
+  };
+
+  const isVisible = () => document.body.classList.contains("home-view") && !launcher.hidden;
+
+  const stopMotion = () => {
+    if (!animationFrame) return;
+    window.cancelAnimationFrame(animationFrame);
+    animationFrame = 0;
+  };
+
+  const startWandering = () => {
+    if (!isVisible() || dragging || animationFrame) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    initializePosition();
+
+    let previousFrameTime = performance.now();
+    let targetX = positionX;
+    let targetY = positionY;
+    let nextTargetTime = 0;
+
+    const chooseTarget = frameTime => {
+      const maxX = Math.max(8, window.innerWidth - launcher.offsetWidth - 8);
+      const maxY = Math.max(8, window.innerHeight - launcher.offsetHeight - 8);
+      targetX = 8 + Math.random() * Math.max(0, maxX - 8);
+      targetY = 8 + Math.random() * Math.max(0, maxY - 8);
+      nextTargetTime = frameTime + 2500 + Math.random() * 3500;
+    };
+
+    const wander = frameTime => {
+      if (!isVisible() || dragging) {
+        animationFrame = 0;
+        return;
+      }
+
+      const elapsed = Math.min((frameTime - previousFrameTime) / 1000, 0.04);
+      previousFrameTime = frameTime;
+      const deltaX = targetX - positionX;
+      const deltaY = targetY - positionY;
+      const distance = Math.hypot(deltaX, deltaY);
+      if (!nextTargetTime || frameTime >= nextTargetTime || distance < 28) {
+        chooseTarget(frameTime);
+      }
+
+      const targetDistance = Math.max(1, Math.hypot(targetX - positionX, targetY - positionY));
+      const targetSpeed = Math.min(52, Math.max(14, targetDistance * 0.16));
+      const steering = 1 - Math.exp(-0.7 * elapsed);
+      velocityX += ((targetX - positionX) / targetDistance * targetSpeed - velocityX) * steering;
+      velocityY += ((targetY - positionY) / targetDistance * targetSpeed - velocityY) * steering;
+
+      let nextX = positionX + velocityX * elapsed;
+      let nextY = positionY + velocityY * elapsed;
+      const maxX = Math.max(8, window.innerWidth - launcher.offsetWidth - 8);
+      const maxY = Math.max(8, window.innerHeight - launcher.offsetHeight - 8);
+
+      if (nextX < 8 || nextX > maxX) velocityX = -velocityX * 0.55;
+      if (nextY < 8 || nextY > maxY) velocityY = -velocityY * 0.55;
+      nextX = Math.min(maxX, Math.max(8, nextX));
+      nextY = Math.min(maxY, Math.max(8, nextY));
+      setPosition(nextX, nextY);
+      animationFrame = window.requestAnimationFrame(wander);
+    };
+
+    animationFrame = window.requestAnimationFrame(wander);
+  };
+
+  const startThrow = () => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      startWandering();
+      return;
+    }
+
+    let previousFrameTime = performance.now();
+    const animateThrow = frameTime => {
+      if (!isVisible() || dragging) {
+        animationFrame = 0;
+        return;
+      }
+      const elapsed = Math.min((frameTime - previousFrameTime) / 1000, 0.04);
+      previousFrameTime = frameTime;
+      let nextX = positionX + velocityX * elapsed;
+      let nextY = positionY + velocityY * elapsed;
+      const maxX = Math.max(8, window.innerWidth - launcher.offsetWidth - 8);
+      const maxY = Math.max(8, window.innerHeight - launcher.offsetHeight - 8);
+
+      if (nextX < 8) {
+        nextX = 8;
+        velocityX = Math.abs(velocityX) * 0.72;
+      } else if (nextX > maxX) {
+        nextX = maxX;
+        velocityX = -Math.abs(velocityX) * 0.72;
+      }
+      if (nextY < 8) {
+        nextY = 8;
+        velocityY = Math.abs(velocityY) * 0.72;
+      } else if (nextY > maxY) {
+        nextY = maxY;
+        velocityY = -Math.abs(velocityY) * 0.72;
+      }
+      nextX = Math.min(maxX, Math.max(8, nextX));
+      nextY = Math.min(maxY, Math.max(8, nextY));
+      const damping = Math.exp(-1.2 * elapsed);
+      velocityX *= damping;
+      velocityY *= damping;
+      setPosition(nextX, nextY);
+
+      if (Math.hypot(velocityX, velocityY) > 18) {
+        animationFrame = window.requestAnimationFrame(animateThrow);
+      } else {
+        velocityX = 0;
+        velocityY = 0;
+        animationFrame = 0;
+        startWandering();
+      }
+    };
+
+    animationFrame = window.requestAnimationFrame(animateThrow);
+  };
+
+  launcher.addEventListener("pointerdown", event => {
+    if (!event.isPrimary || (event.pointerType === "mouse" && event.button !== 0)) return;
+    initializePosition();
+    stopMotion();
+    dragging = true;
+    dragStarted = false;
+    velocityX = 0;
+    velocityY = 0;
+    pointerOffsetX = event.clientX - positionX;
+    pointerOffsetY = event.clientY - positionY;
+    previousPointerX = event.clientX;
+    previousPointerY = event.clientY;
+    previousPointerTime = performance.now();
+    launcher.classList.add("is-dragging");
+    launcher.setPointerCapture(event.pointerId);
+  });
+
+  launcher.addEventListener("pointermove", event => {
+    if (!dragging) return;
+    const distance = Math.hypot(
+      event.clientX - (positionX + pointerOffsetX),
+      event.clientY - (positionY + pointerOffsetY)
+    );
+    if (!dragStarted && distance < 5) return;
+
+    dragStarted = true;
+    const currentTime = performance.now();
+    const elapsed = Math.max(8, currentTime - previousPointerTime);
+    velocityX = (event.clientX - previousPointerX) / elapsed * 1000;
+    velocityY = (event.clientY - previousPointerY) / elapsed * 1000;
+    previousPointerX = event.clientX;
+    previousPointerY = event.clientY;
+    previousPointerTime = currentTime;
+    setPosition(event.clientX - pointerOffsetX, event.clientY - pointerOffsetY);
+  });
+
+  const finishDrag = shouldThrow => {
+    if (!dragging) return;
+    dragging = false;
+    launcher.classList.remove("is-dragging");
+    if (!dragStarted) {
+      startWandering();
+      return;
+    }
+
+    suppressNextClick = true;
+    window.setTimeout(() => {
+      suppressNextClick = false;
+    }, 0);
+    if (shouldThrow) startThrow();
+    else startWandering();
+  };
+
+  launcher.addEventListener("pointerup", () => finishDrag(true));
+  launcher.addEventListener("pointercancel", () => finishDrag(false));
+  launcher.addEventListener("click", event => {
+    if (!suppressNextClick) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    suppressNextClick = false;
+  }, true);
+
+  window.addEventListener("resize", () => {
+    if (positioned) setPosition(positionX, positionY);
+    syncMotion();
+  });
+
+  const syncMotion = () => {
+    if (isVisible()) {
+      startWandering();
+      queueHelpBubble();
+    } else {
+      stopMotion();
+      setHelpBubbleVisible(false);
+      window.clearTimeout(helpBubbleTimer);
+      window.clearTimeout(helpBubbleDismissTimer);
+    }
+  };
+  const motionObserver = new MutationObserver(syncMotion);
+  motionObserver.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  motionObserver.observe(launcher, { attributes: true, attributeFilter: ["hidden"] });
+  syncMotion();
+}
+
 function initializeHomepageNavigation() {
   if (!homeNavToggle || !homeNavigationLinks) return;
 
@@ -3409,15 +3673,6 @@ function initializeSidebarNavigation() {
   });
 
   document.addEventListener("click", event => {
-    if (
-      window.innerWidth <= 700 &&
-      sidebar.classList.contains("is-open") &&
-      !sidebar.contains(event.target) &&
-      !mobileSidebarToggle?.contains(event.target)
-    ) {
-      setMobileSidebarOpen(false);
-    }
-
     if (
       window.innerWidth > 700 &&
       sidebar.classList.contains("is-expanded") &&
@@ -3497,6 +3752,7 @@ function initializePageLinks() {
 
 function initializeHelpChat() {
   const dialog = document.getElementById("help-dialog");
+  const pokeballLauncher = document.getElementById("pokeball-launcher");
   const conversation = document.getElementById("help-conversation");
   const suggestions = document.getElementById("help-suggestions");
   const form = document.getElementById("help-form");
@@ -3561,7 +3817,6 @@ function initializeHelpChat() {
     conversation.setAttribute("aria-busy", String(busy));
     input.disabled = busy;
     sendButton.disabled = busy;
-    document.getElementById("help-new-chat").disabled = busy;
     document.querySelectorAll("[data-help-question]").forEach(button => {
       button.disabled = busy;
     });
@@ -3648,13 +3903,10 @@ function initializeHelpChat() {
     }
   });
 
-  document.getElementById("help-new-chat")?.addEventListener("click", () => {
-    if (helpSending) return;
-    resetHelpConversation();
-    input.focus();
-  });
-
   document.getElementById("help-close")?.addEventListener("click", () => dialog.close());
+  dialog.addEventListener("close", () => {
+    if (pokeballLauncher) pokeballLauncher.hidden = false;
+  });
   dialog.addEventListener("click", event => {
     if (event.target === dialog) dialog.close();
   });
@@ -3663,10 +3915,39 @@ function initializeHelpChat() {
     button.addEventListener("click", () => submitHelpQuestion(button.textContent));
   });
 
+  const triggerHelpPortalAnimation = () => {
+    if (!pokeballLauncher) return;
+    const mascot = dialog.querySelector(".help-mascot");
+    if (!mascot) return;
+
+    const launcherRect = pokeballLauncher.getBoundingClientRect();
+    const mascotRect = mascot.getBoundingClientRect();
+    const startX = launcherRect.left + launcherRect.width / 2 - mascotRect.left - mascotRect.width / 2;
+    const startY = launcherRect.top + launcherRect.height / 2 - mascotRect.top - mascotRect.height / 2;
+    const startScale = Math.max(0.22, Math.min(0.9, launcherRect.width / Math.max(mascotRect.width, 1)));
+
+    mascot.style.setProperty("--portal-start-x", `${startX}px`);
+    mascot.style.setProperty("--portal-start-y", `${startY}px`);
+    mascot.style.setProperty("--portal-start-scale", startScale.toFixed(3));
+    dialog.dataset.portalAnimation = "true";
+    mascot.classList.remove("portal-animate");
+    void mascot.offsetWidth;
+    mascot.classList.add("portal-animate");
+
+    window.setTimeout(() => {
+      dialog.dataset.portalAnimation = "";
+      mascot.classList.remove("portal-animate");
+    }, 760);
+  };
+
   document.querySelectorAll("[data-help-open]").forEach(button => {
     button.addEventListener("click", () => {
       selectedHelpHotelId = activeDetailHotel?.id ?? null;
       dialog.showModal();
+      if (button === pokeballLauncher) {
+        triggerHelpPortalAnimation();
+      }
+      if (pokeballLauncher) pokeballLauncher.hidden = true;
       input.focus();
       homeNavigationLinks?.classList.remove("is-open");
       homeNavToggle?.setAttribute("aria-expanded", "false");
@@ -3690,6 +3971,7 @@ initializeHomepageNavigation();
 initializeSidebarNavigation();
 initializePageLinks();
 initializeHelpChat();
+initializeFloatingPokeball();
 initializeRewardsSystem();
 applyCurrentView();
 loadPromotions();

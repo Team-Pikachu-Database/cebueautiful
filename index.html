@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CebuStays – Hotels and staycations in Cebu</title>
-  <link rel="stylesheet" href="style.css?v=20261030-amenities-button-blue">
+  <link rel="stylesheet" href="style.css?v=20261031-pokeball-launcher">
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -273,6 +273,11 @@
       <div class="container">CebuStays is a demo project. Not affiliated with Booking.com.</div>
     </footer>
   </div>
+
+  <button class="pokeball-launcher" id="pokeball-launcher" type="button" data-help-open aria-label="Open CebuStays Help Assistant" aria-haspopup="dialog" aria-controls="help-dialog">
+    <span class="pokeball-help-bubble" aria-live="polite">Need help?</span>
+    <img src="UI images/pokeball-transparent.png" alt="" draggable="false">
+  </button>
 
   <dialog class="account-dialog" id="account-dialog" aria-labelledby="account-title">
     <section class="account-panel">
@@ -684,6 +689,8 @@
   </dialog>
 
   <dialog class="account-dialog help-dialog" id="help-dialog" aria-labelledby="help-title">
+    <img class="help-modal-skin" src="UI images/Luxurious Navy Gold Chat Bubble Frame.png" alt="" aria-hidden="true">
+    <button class="account-close help-close" type="button" id="help-close" aria-label="Close help assistant">×</button>
     <section class="help-panel">
       <header class="help-header">
         <div class="help-heading-copy">
@@ -692,11 +699,9 @@
           <p>Ask about hotels, reservations, coupons, promotions, or using the website.</p>
         </div>
         <div class="help-header-actions">
-          <button class="help-new-chat" type="button" id="help-new-chat">New chat</button>
-          <button class="account-close" type="button" id="help-close" aria-label="Close help assistant">×</button>
+          <img class="help-mascot" src="UI images/nya-removebg.png" alt="" aria-hidden="true">
         </div>
       </header>
-      <p class="help-privacy-note">CebuStays does not save this chat. When AI is enabled, your question, short chat context, and selected public hotel details may be sent to OpenAI after common sensitive patterns are redacted. Never include passwords, payment credentials, or session tokens.</p>
       <div class="help-suggestions" id="help-suggestions" aria-label="Suggested questions">
         <details open>
           <summary>Hotel booking</summary>
@@ -822,6 +827,6 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""></script>
   <script defer src="map.js?v=hotel-directions-api-v3"></script>
-  <script defer src="script.js?v=20261030-mobile-sidebar-unblocked"></script>
+  <script defer src="script.js?v=20261031-floating-help-pokeball-roaming"></script>
 </body>
 </html>
