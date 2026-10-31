@@ -67,6 +67,10 @@ fs.copyFileSync(
   path.join(projectRoot, "UI images", "Electric Futuristic Dashboard Overlay.png"),
   path.join(heroImageDirectory, "Electric Futuristic Dashboard Overlay.png")
 );
+fs.copyFileSync(
+  path.join(projectRoot, "UI images", "Golden-Hour Tropical Resort Coastline.png"),
+  path.join(heroImageDirectory, "Golden-Hour Tropical Resort Coastline.png")
+);
 
 fs.cpSync(
   path.join(projectRoot, "logo_folder"),
