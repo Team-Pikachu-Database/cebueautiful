@@ -16,16 +16,14 @@ const DEFAULT_REWARD_CATALOG = [
 ];
 
 const SPIN_WHEEL_REWARDS = [
-  { id: "try-again", title: "Try again", weight: 70, color: "#e5e7eb", kind: "tryAgain" },
-  { id: "voucher-100", title: "₱50 café treat", weight: 12, color: "#fbbf24", kind: "reward", reward: DEFAULT_REWARD_CATALOG[0] },
-  { id: "market-voucher", title: "₱150 market voucher", weight: 7, color: "#f59e0b", kind: "reward", reward: DEFAULT_REWARD_CATALOG[1] },
-  { id: "spa-pack", title: "Spa & wellness pack", weight: 5, color: "#14b8a6", kind: "reward", reward: DEFAULT_REWARD_CATALOG[4] },
-  { id: "weekend-escape", title: "Weekend Cebu escape", weight: 4, color: "#8b5cf6", kind: "reward", reward: DEFAULT_REWARD_CATALOG[10] },
+  { id: "weekend-escape", title: "Weekend Cebu escape", weight: 4, kind: "reward", reward: DEFAULT_REWARD_CATALOG[10] },
+  { id: "spa-pack", title: "Spa & wellness pack", weight: 5, kind: "reward", reward: DEFAULT_REWARD_CATALOG[4] },
+  { id: "market-voucher", title: "₱150 market voucher", weight: 7, kind: "reward", reward: DEFAULT_REWARD_CATALOG[1] },
+  { id: "voucher-100", title: "₱50 café treat", weight: 12, kind: "reward", reward: DEFAULT_REWARD_CATALOG[0] },
   {
     id: "grand-prize",
     title: "1 whole week free vacation",
     weight: 2,
-    color: "#ffc107",
     kind: "reward",
     reward: {
       id: "grand-prize",
@@ -35,13 +33,15 @@ const SPIN_WHEEL_REWARDS = [
       code: "CB-GRAND-1-WEEK",
       description: "Seven nights at a hotel of your choice with all hotel amenities included. Subject to hotel availability and confirmation."
     }
-  }
+  },
+  { id: "try-again", title: "Try again", weight: 70, kind: "tryAgain" }
 ];
 
 const SPIN_WHEEL_TOTAL_WEIGHT = SPIN_WHEEL_REWARDS.reduce(
   (total, reward) => total + reward.weight,
   0
 );
+const SPIN_WHEEL_INITIAL_ROTATION = 30;
 
 function selectWheelReward(ticket) {
   if (!Number.isInteger(ticket) || ticket < 0 || ticket >= SPIN_WHEEL_TOTAL_WEIGHT) {
@@ -55,16 +55,6 @@ function selectWheelReward(ticket) {
   }
 
   throw new Error("The spin wheel could not select a reward.");
-}
-
-function buildWheelGradient() {
-  let angle = 0;
-  const stops = SPIN_WHEEL_REWARDS.map(reward => {
-    const start = angle;
-    angle += reward.weight / SPIN_WHEEL_TOTAL_WEIGHT * 360;
-    return `${reward.color} ${start}deg ${angle}deg`;
-  });
-  return `conic-gradient(${stops.join(", ")})`;
 }
 
 const configuredApiBaseUrl = typeof window.CEBUSTAYS_CONFIG?.apiBaseUrl === "string"
@@ -614,16 +604,12 @@ async function spinWheel() {
   if (spinCost) spinCost.textContent = `1 Cebu Point per spin · Balance: ${getCebuPointsBalance()} pts`;
 
   const winnerIndex = SPIN_WHEEL_REWARDS.findIndex(item => item.id === winner.id);
-  const winnerStart = SPIN_WHEEL_REWARDS
-    .slice(0, winnerIndex)
-    .reduce((angle, item) => angle + item.weight / SPIN_WHEEL_TOTAL_WEIGHT * 360, 0);
-  const winnerSize = winner.weight / SPIN_WHEEL_TOTAL_WEIGHT * 360;
-  const targetAngle = (360 - winnerStart - winnerSize / 2 + 360) % 360;
+  const wheelSectorSize = 360 / SPIN_WHEEL_REWARDS.length;
+  const targetAngle = (360 - winnerIndex * wheelSectorSize + 360) % 360;
   const currentRotation = Number(wheel.dataset.rotation || 0);
   const currentAngle = currentRotation % 360;
   const rotationDelta = 360 * 7 + (targetAngle - currentAngle + 360) % 360;
   const nextRotation = currentRotation + rotationDelta;
-  wheel.style.background = buildWheelGradient();
   wheel.dataset.rotation = String(nextRotation);
 
   result.textContent = "Spinning… good luck!";
@@ -802,7 +788,8 @@ async function claimSpinReward() {
 function initializeRewardsSystem() {
   const spinWheel = document.getElementById("spin-wheel");
   if (spinWheel) {
-    spinWheel.style.background = buildWheelGradient();
+    spinWheel.dataset.rotation = String(SPIN_WHEEL_INITIAL_ROTATION);
+    spinWheel.style.transform = `rotate(${SPIN_WHEEL_INITIAL_ROTATION}deg)`;
   }
 
   document.getElementById("sidebar-points")?.addEventListener("click", openCebuPointsDialog);
