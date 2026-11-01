@@ -1569,6 +1569,12 @@ img {
   color: #fff8df;
 }
 
+.sidebar-option-dialog .coupon-card.is-used {
+  border-color: rgba(255, 212, 71, 0.2);
+  border-left-color: rgba(255, 212, 71, 0.48);
+  background: linear-gradient(145deg, rgba(255, 248, 223, 0.055), rgba(255, 248, 223, 0.025));
+}
+
 .sidebar-option-dialog .points-entry .points-value.positive {
   color: #70d6b1;
 }
