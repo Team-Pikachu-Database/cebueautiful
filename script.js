@@ -3753,6 +3753,7 @@ function initializePageLinks() {
 function initializeHelpChat() {
   const dialog = document.getElementById("help-dialog");
   const pokeballLauncher = document.getElementById("pokeball-launcher");
+  const portalEffect = document.getElementById("help-portal-effect");
   const conversation = document.getElementById("help-conversation");
   const suggestions = document.getElementById("help-suggestions");
   const form = document.getElementById("help-form");
@@ -3907,9 +3908,13 @@ function initializeHelpChat() {
   document.getElementById("help-close")?.addEventListener("click", () => dialog.close());
   dialog.addEventListener("close", () => {
     window.clearTimeout(portalAnimationTimer);
-    dialog.dataset.portalAnimation = "";
-    const portalEffect = dialog.querySelector(".help-portal-effect");
-    if (portalEffect) portalEffect.hidden = true;
+    delete dialog.dataset.portalAnimation;
+    delete dialog.dataset.preparing;
+    delete dialog.dataset.entering;
+    if (portalEffect) {
+      portalEffect.hidden = true;
+      portalEffect.classList.remove("is-active");
+    }
     if (pokeballLauncher) pokeballLauncher.hidden = false;
   });
   dialog.addEventListener("click", event => {
@@ -3921,40 +3926,49 @@ function initializeHelpChat() {
   });
 
   const triggerHelpPortalAnimation = () => {
-    if (!pokeballLauncher) return;
+    if (!pokeballLauncher || !portalEffect) return;
     const mascot = dialog.querySelector(".help-mascot");
-    const portalEffect = dialog.querySelector(".help-portal-effect");
-    if (!mascot || !portalEffect) return;
+    const portalMascot = portalEffect.querySelector(".help-portal-mascot");
+    if (!mascot || !portalMascot) return;
 
     const launcherRect = pokeballLauncher.getBoundingClientRect();
     const mascotRect = mascot.getBoundingClientRect();
-    const dialogRect = dialog.getBoundingClientRect();
-    const startX = launcherRect.left + launcherRect.width / 2 - mascotRect.left - mascotRect.width / 2;
-    const startY = launcherRect.top + launcherRect.height / 2 - mascotRect.top - mascotRect.height / 2;
-    const startScale = Math.max(0.22, Math.min(0.9, launcherRect.width / Math.max(mascotRect.width, 1)));
+    const endX = mascotRect.left - launcherRect.left;
+    const endY = mascotRect.top - launcherRect.top;
+    const endScaleX = mascotRect.width / Math.max(launcherRect.width, 1);
+    const endScaleY = mascotRect.height / Math.max(launcherRect.height, 1);
 
-    mascot.style.setProperty("--portal-start-x", `${startX}px`);
-    mascot.style.setProperty("--portal-start-y", `${startY}px`);
-    mascot.style.setProperty("--portal-start-scale", startScale.toFixed(3));
-    portalEffect.style.left = `${launcherRect.left - dialogRect.left + (launcherRect.width - mascotRect.width * startScale) / 2}px`;
-    portalEffect.style.top = `${launcherRect.top - dialogRect.top + (launcherRect.height - mascotRect.height * startScale) / 2}px`;
+    portalMascot.style.setProperty("--portal-mid-x", `${endX * 0.55}px`);
+    portalMascot.style.setProperty("--portal-mid-y", `${endY * 0.55}px`);
+    portalMascot.style.setProperty("--portal-mid-scale-x", (1 + (endScaleX - 1) * 0.55).toFixed(3));
+    portalMascot.style.setProperty("--portal-mid-scale-y", (1 + (endScaleY - 1) * 0.55).toFixed(3));
+    portalMascot.style.setProperty("--portal-end-x", `${endX}px`);
+    portalMascot.style.setProperty("--portal-end-y", `${endY}px`);
+    portalMascot.style.setProperty("--portal-end-scale-x", endScaleX.toFixed(3));
+    portalMascot.style.setProperty("--portal-end-scale-y", endScaleY.toFixed(3));
+    portalEffect.style.left = `${launcherRect.left}px`;
+    portalEffect.style.top = `${launcherRect.top}px`;
     portalEffect.style.width = `${launcherRect.width}px`;
     portalEffect.style.height = `${launcherRect.height}px`;
     portalEffect.hidden = false;
-    dialog.dataset.portalAnimation = "true";
+    portalEffect.classList.remove("is-active");
     void portalEffect.offsetWidth;
+    portalEffect.classList.add("is-active");
 
     window.clearTimeout(portalAnimationTimer);
     portalAnimationTimer = window.setTimeout(() => {
-      dialog.dataset.portalAnimation = "";
       portalEffect.hidden = true;
+      portalEffect.classList.remove("is-active");
+      delete dialog.dataset.preparing;
+      dialog.dataset.entering = "true";
       portalAnimationTimer = 0;
-    }, 1540);
+    }, 1660);
   };
 
   document.querySelectorAll("[data-help-open]").forEach(button => {
     button.addEventListener("click", () => {
       selectedHelpHotelId = activeDetailHotel?.id ?? null;
+      if (button === pokeballLauncher) dialog.dataset.preparing = "true";
       dialog.showModal();
       if (button === pokeballLauncher) {
         triggerHelpPortalAnimation();
