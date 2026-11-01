@@ -43,8 +43,15 @@ const paymentReviewMessage = document.getElementById("payment-review-message");
 const paymentReviewReferenceField = document.getElementById("payment-review-reference-field");
 const paymentReviewReference = document.getElementById("payment-review-reference");
 const paymentReviewCheckLabel = document.getElementById("payment-review-check-label");
+const cancellationApprovalDialog = document.getElementById("cancellation-approval-dialog");
+const cancellationApprovalKicker = document.getElementById("cancellation-approval-kicker");
+const cancellationApprovalTitle = document.getElementById("cancellation-approval-title");
+const cancellationApprovalMessage = document.getElementById("cancellation-approval-message");
+const cancellationApprovalConfirm = document.getElementById("cancellation-approval-confirm");
+const cancellationApprovalCancel = document.getElementById("cancellation-approval-cancel");
 const retryButton = document.getElementById("developer-retry");
 let selectedReservation = null;
+let selectedCancellation = null;
 let pendingBookingsRefreshTimer = null;
 
 async function requestApi(path, options = {}) {
@@ -150,7 +157,7 @@ async function loadPendingBookings() {
       checkButton.textContent = isCancellation ? "Approve cancel" : "Check details";
       checkButton.addEventListener("click", () => {
         if (isCancellation) {
-          approveCancellation(reservation);
+          openCancellationApproval(reservation);
           return;
         }
         openPaymentReview(reservation);
@@ -247,20 +254,42 @@ async function confirmPayment() {
 
 async function approveCancellation(reservation) {
   if (!reservation || !reservation.reference) return;
-  const shouldApprove = window.confirm(
-    `Approve cancellation for ${reservation.reference}? This will cancel the pending reservation and release any held coupon.`
-  );
-  if (!shouldApprove) return;
 
+  cancellationApprovalConfirm.disabled = true;
+  cancellationApprovalCancel.disabled = true;
+  cancellationApprovalMessage.textContent = "Approving cancellation…";
   try {
     await requestApi(
       `/api/bookings/${encodeURIComponent(reservation.reference)}/approve-cancellation`,
       { method: "PATCH" }
     );
     await loadPendingBookings();
+    cancellationApprovalKicker.textContent = "RESERVATION UPDATED";
+    cancellationApprovalTitle.textContent = "Cancellation approved";
+    cancellationApprovalMessage.textContent =
+      `Reservation ${reservation.reference} has been cancelled and any held coupon has been released.`;
+    cancellationApprovalCancel.hidden = true;
+    cancellationApprovalConfirm.disabled = false;
+    cancellationApprovalConfirm.textContent = "Done";
   } catch (error) {
-    bookingsStatus.textContent = `${error.message} Try refreshing the list.`;
+    cancellationApprovalMessage.textContent = `${error.message} Try again or refresh the list.`;
+    cancellationApprovalConfirm.disabled = false;
+    cancellationApprovalCancel.disabled = false;
   }
+}
+
+function openCancellationApproval(reservation) {
+  selectedCancellation = reservation;
+  cancellationApprovalKicker.textContent = "REVIEW CANCELLATION";
+  cancellationApprovalTitle.textContent = "Approve cancellation?";
+  cancellationApprovalMessage.textContent =
+    `Approve cancellation for ${reservation.reference}? This will cancel the pending reservation and release any held coupon. ` +
+    `Guest reason: ${reservation.cancellationReason || "No reason supplied."}`;
+  cancellationApprovalCancel.hidden = false;
+  cancellationApprovalCancel.disabled = false;
+  cancellationApprovalConfirm.disabled = false;
+  cancellationApprovalConfirm.textContent = "Approve cancellation";
+  cancellationApprovalDialog.showModal();
 }
 
 async function checkDeveloperSession() {
@@ -295,6 +324,24 @@ document.getElementById("developer-bookings-refresh")
   .addEventListener("click", loadPendingBookings);
 document.getElementById("payment-review-close")
   .addEventListener("click", () => paymentReviewDialog.close());
+document.getElementById("cancellation-approval-close")
+  .addEventListener("click", () => cancellationApprovalDialog.close());
+cancellationApprovalCancel.addEventListener("click", () => cancellationApprovalDialog.close());
+cancellationApprovalConfirm.addEventListener("click", () => {
+  if (cancellationApprovalConfirm.textContent === "Done") {
+    cancellationApprovalDialog.close();
+    return;
+  }
+  approveCancellation(selectedCancellation);
+});
+cancellationApprovalDialog.addEventListener("click", event => {
+  if (event.target === cancellationApprovalDialog && !cancellationApprovalConfirm.disabled) {
+    cancellationApprovalDialog.close();
+  }
+});
+cancellationApprovalDialog.addEventListener("cancel", event => {
+  if (cancellationApprovalConfirm.disabled) event.preventDefault();
+});
 paymentReviewDialog.addEventListener("click", event => {
   if (event.target === paymentReviewDialog) paymentReviewDialog.close();
 });

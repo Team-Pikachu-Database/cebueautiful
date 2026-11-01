@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CebuStays – Hotels and staycations in Cebu</title>
-  <link rel="stylesheet" href="style.css?v=20261101-sidebar-modal-dark-theme-booking-thank-you">
+  <link rel="stylesheet" href="style.css?v=20261101-cancellation-dialogs">
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -501,6 +501,43 @@
     </section>
   </dialog>
 
+  <dialog class="account-dialog sidebar-option-dialog cancellation-dialog" id="cancellation-reason-dialog" aria-labelledby="cancellation-reason-title">
+    <section class="account-panel">
+      <div class="account-heading">
+        <div>
+          <span class="account-kicker">YOUR RESERVATION</span>
+          <h2 id="cancellation-reason-title">Request cancellation</h2>
+        </div>
+        <button type="button" class="account-close" data-dialog-close aria-label="Close cancellation request">×</button>
+      </div>
+      <p class="cancellation-dialog-intro">Tell us why you need to cancel. A staff member will review your request.</p>
+      <form class="account-form" id="cancellation-reason-form">
+        <label for="cancellation-reason-input">Reason for cancellation
+          <textarea id="cancellation-reason-input" name="reason" rows="4" maxlength="500" placeholder="Please enter at least 10 characters"></textarea>
+        </label>
+        <p class="account-message cancellation-dialog-message" id="cancellation-reason-message" aria-live="polite"></p>
+        <div class="cancellation-dialog-actions">
+          <button type="button" class="btn btn-ghost" data-dialog-close>Keep reservation</button>
+          <button type="submit" class="btn btn-primary" id="cancellation-reason-submit">Submit request</button>
+        </div>
+      </form>
+    </section>
+  </dialog>
+
+  <dialog class="account-dialog sidebar-option-dialog cancellation-dialog" id="cancellation-notice-dialog" aria-labelledby="cancellation-notice-title">
+    <section class="account-panel">
+      <div class="account-heading">
+        <div>
+          <span class="account-kicker">CEBUSTAYS UPDATE</span>
+          <h2 id="cancellation-notice-title">Request submitted</h2>
+        </div>
+        <button type="button" class="account-close" data-dialog-close aria-label="Close cancellation update">×</button>
+      </div>
+      <p class="cancellation-dialog-intro">Your cancellation request has been submitted and is waiting for staff approval.</p>
+      <button type="button" class="btn btn-primary cancellation-notice-done" data-dialog-close>Done</button>
+    </section>
+  </dialog>
+
   <!-- HOTEL DETAILS MODAL -->
   <div class="hotel-modal" id="hotel-modal" aria-hidden="true">
     <button
@@ -805,6 +842,6 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""></script>
   <script defer src="map.js?v=hotel-directions-api-v3"></script>
-  <script defer src="script.js?v=20261101-booking-thank-you"></script>
+  <script defer src="script.js?v=20261101-cancellation-dialogs"></script>
 </body>
 </html>

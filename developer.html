@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Developer workspace – CebuStays</title>
-  <link rel="stylesheet" href="style.css?v=20261030-electric-dashboard-bg-v4">
+  <link rel="stylesheet" href="style.css?v=20261101-cancellation-dialogs">
   <link rel="icon" type="image/png" href="logo_folder/cebustays-transparent.png?v=20261101-transparent-icon">
 </head>
 <body class="developer-page">
@@ -127,7 +127,31 @@
     </section>
   </dialog>
 
+  <dialog class="payment-review-dialog" id="cancellation-approval-dialog" aria-labelledby="cancellation-approval-title">
+    <section class="payment-review-panel">
+      <div class="developer-bookings-heading">
+        <div>
+          <span class="destination-kicker" id="cancellation-approval-kicker">REVIEW CANCELLATION</span>
+          <h2 id="cancellation-approval-title">Approve cancellation?</h2>
+        </div>
+        <button
+          class="btn payment-review-close"
+          type="button"
+          id="cancellation-approval-close"
+          aria-label="Close cancellation review"
+          title="Close">
+          ×
+        </button>
+      </div>
+      <p class="payment-review-message cancellation-approval-message" id="cancellation-approval-message" aria-live="polite"></p>
+      <div class="cancellation-approval-actions">
+        <button class="btn btn-ghost" type="button" id="cancellation-approval-cancel">Keep pending</button>
+        <button class="btn btn-primary" type="button" id="cancellation-approval-confirm">Approve cancellation</button>
+      </div>
+    </section>
+  </dialog>
+
   <script src="config.js"></script>
-  <script src="developer.js?v=20261030-counter-payment-verification"></script>
+  <script src="developer.js?v=20261101-cancellation-dialogs"></script>
 </body>
 </html>

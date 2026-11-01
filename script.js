@@ -1509,6 +1509,50 @@ function initializeAccountMenu() {
   });
 }
 
+function initializeCancellationDialogs() {
+  const reasonDialog = document.getElementById("cancellation-reason-dialog");
+  const reasonForm = document.getElementById("cancellation-reason-form");
+  const reasonInput = document.getElementById("cancellation-reason-input");
+  const reasonMessage = document.getElementById("cancellation-reason-message");
+  const reasonSubmit = document.getElementById("cancellation-reason-submit");
+  const noticeDialog = document.getElementById("cancellation-notice-dialog");
+
+  reasonForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    const reason = reasonInput.value.trim();
+    if (reason.length < 10 || reason.length > 500) {
+      reasonMessage.textContent = "Please enter a reason between 10 and 500 characters.";
+      reasonInput.focus();
+      return;
+    }
+
+    reasonSubmit.disabled = true;
+    reasonSubmit.textContent = "Submitting…";
+    reasonMessage.textContent = "";
+    try {
+      await requestApi(`/api/bookings/${encodeURIComponent(reasonDialog.dataset.reference)}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason })
+      });
+      reasonDialog.close();
+      await loadReservationHistory();
+      noticeDialog.showModal();
+    } catch (error) {
+      reasonMessage.textContent = error.message;
+    } finally {
+      reasonSubmit.disabled = false;
+      reasonSubmit.textContent = "Submit request";
+    }
+  });
+
+  [reasonDialog, noticeDialog].forEach(dialog => {
+    dialog.addEventListener("click", event => {
+      if (event.target === dialog) dialog.close();
+    });
+  });
+}
+
 function formatReservationDate(value) {
   return new Date(`${value}T00:00:00`).toLocaleDateString("en-PH", {
     month: "short",
@@ -1773,28 +1817,15 @@ async function loadReservationHistory() {
         cancelButton.type = "button";
         cancelButton.className = "btn btn-ghost reservation-cancel";
         cancelButton.textContent = "Request cancellation";
-        cancelButton.addEventListener("click", async () => {
-          const reason = window.prompt("Please tell us why you want to cancel this reservation.");
-          if (!reason || !reason.trim()) {
-            window.alert("Please enter a reason before submitting your cancellation request.");
-            return;
-          }
-          try {
-            cancelButton.disabled = true;
-            cancelButton.textContent = "Submitting…";
-            await requestApi(`/api/bookings/${encodeURIComponent(reservation.reference)}/cancel`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ reason: reason.trim() })
-            });
-            window.alert("Your cancellation request has been submitted and awaits staff approval.");
-            await loadReservationHistory();
-          } catch (error) {
-            window.alert(error.message);
-          } finally {
-            cancelButton.disabled = false;
-            cancelButton.textContent = "Request cancellation";
-          }
+        cancelButton.addEventListener("click", () => {
+          const reasonDialog = document.getElementById("cancellation-reason-dialog");
+          const reasonInput = document.getElementById("cancellation-reason-input");
+          const reasonMessage = document.getElementById("cancellation-reason-message");
+          reasonDialog.dataset.reference = reservation.reference;
+          reasonInput.value = "";
+          reasonMessage.textContent = "";
+          reasonDialog.showModal();
+          reasonInput.focus();
         });
         actionRow.append(cancelButton);
       }
@@ -4092,6 +4123,7 @@ initializeSpinButton();
 setDefaultDates();
 initializeBookingThankYou();
 initializeAccount();
+initializeCancellationDialogs();
 initializeReviewForm();
 initializeAccountMenu();
 initializeHomepageNavigation();
