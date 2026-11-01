@@ -160,9 +160,8 @@ const mobileSidebarToggle = document.getElementById("mobile-sidebar-toggle");
 const sidebarClose = document.getElementById("sidebar-close");
 const sidebarBackdrop = document.getElementById("sidebar-backdrop");
 
-const checkboxes = document.querySelectorAll(
-  'input[name="town"]'
-);
+const amenityFilters = document.querySelector(".filters fieldset");
+const MAX_AMENITY_FILTERS = 9;
 
 let hotels = [];
 let signedInAccount = null;
@@ -3149,31 +3148,16 @@ function renderFeaturedHotels() {
 
 function render() {
   if (title) {
-    const selectedFilters = [...checkboxes]
+    const selectedFilters = [...amenityFilters.querySelectorAll('input[name="amenity"]')]
       .filter(checkbox => checkbox.checked)
       .map(checkbox => checkbox.value.toLowerCase().trim());
 
     const filteredHotels = selectedFilters.length
       ? hotels.filter(hotel => {
-          const town = String(hotel.town || "")
-            .toLowerCase()
-            .trim();
-
-          const location = String(hotel.location || "")
-            .toLowerCase()
-            .trim();
-
-          const amenities = (
-            Array.isArray(hotel.amenities)
-              ? hotel.amenities
-              : []
-          ).map(item => String(item).toLowerCase().trim());
-
-          return selectedFilters.some(filter =>
-            town === filter ||
-            location === filter ||
-            amenities.includes(filter)
-          );
+          const amenities = (Array.isArray(hotel.amenities) ? hotel.amenities : [])
+            .map(normalizeAmenity)
+            .filter(Boolean);
+          return selectedFilters.some(filter => amenities.includes(filter));
         })
       : hotels;
 
@@ -3204,6 +3188,77 @@ function render() {
   renderFeaturedHotels();
 }
 
+function normalizeAmenity(value) {
+  const normalized = String(value || "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+  const aliases = {
+    "car rentals": "car rental",
+    restaurants: "restaurant"
+  };
+  return aliases[normalized] || normalized;
+}
+
+function renderAmenityFilters(hotelList) {
+  const legend = amenityFilters.querySelector("legend");
+  const counts = new Map();
+
+  hotelList.forEach(hotel => {
+    const amenities = Array.isArray(hotel.amenities) ? hotel.amenities : [];
+    const hotelAmenities = new Map();
+
+    amenities.forEach(amenity => {
+      if (typeof amenity !== "string") return;
+      const key = normalizeAmenity(amenity);
+      if (!key || key === "placeholder") return;
+      const labels = hotelAmenities.get(key) || new Map();
+      labels.set(amenity.trim(), (labels.get(amenity.trim()) || 0) + 1);
+      hotelAmenities.set(key, labels);
+    });
+
+    hotelAmenities.forEach((labels, key) => {
+      const entry = counts.get(key) || {
+        count: 0,
+        labels: new Map()
+      };
+      entry.count += 1;
+      labels.forEach((count, label) => {
+        entry.labels.set(label, (entry.labels.get(label) || 0) + count);
+      });
+      counts.set(key, entry);
+    });
+  });
+
+  const popularAmenities = [...counts]
+    .sort(([firstKey, first], [secondKey, second]) =>
+      second.count - first.count || firstKey.localeCompare(secondKey)
+    )
+    .slice(0, MAX_AMENITY_FILTERS);
+  const filterOptions = popularAmenities.map(([key, amenity]) => {
+    const label = [...amenity.labels]
+      .sort(([firstLabel, firstCount], [secondLabel, secondCount]) =>
+        secondCount - firstCount || firstLabel.localeCompare(secondLabel)
+      )[0][0]
+      .replace(/\bwi[\s-]*fi\b/i, "Wi-Fi");
+    const wrapper = el("label", "check");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.name = "amenity";
+    checkbox.value = key;
+    wrapper.append(checkbox, document.createTextNode(`${label} (${amenity.count})`));
+    return wrapper;
+  });
+
+  if (filterOptions.length === 0) {
+    filterOptions.push(el("p", "filter-loading", "No amenities are currently listed."));
+  }
+  amenityFilters.replaceChildren(...(legend ? [legend] : []), ...filterOptions);
+}
+
 /* ---------- LOAD HOTEL CATALOGUE ---------- */
 
 async function loadHotels() {
@@ -3230,6 +3285,7 @@ async function loadHotels() {
     }
 
     hotels = data.hotels;
+    renderAmenityFilters(hotels);
 
   } catch (error) {
     console.error(
@@ -3238,6 +3294,11 @@ async function loadHotels() {
     );
 
     title.textContent = "Properties could not be loaded";
+    const amenityLegend = amenityFilters.querySelector("legend");
+    amenityFilters.replaceChildren(
+      ...(amenityLegend ? [amenityLegend] : []),
+      el("p", "filter-loading", "Amenities could not be loaded.")
+    );
 
     feed.replaceChildren(
       el(
@@ -3334,16 +3395,14 @@ document
 
 /* ---------- FILTERS ---------- */
 
-checkboxes.forEach(checkbox => {
-  checkbox.addEventListener("change", render);
-});
+amenityFilters.addEventListener("change", render);
 
 /* ---------- CLEAR FILTERS ---------- */
 
 document
   .getElementById("clear-filters")
   .addEventListener("click", () => {
-    checkboxes.forEach(checkbox => {
+    amenityFilters.querySelectorAll('input[name="amenity"]').forEach(checkbox => {
       checkbox.checked = false;
     });
 
