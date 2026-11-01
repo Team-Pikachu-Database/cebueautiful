@@ -3409,8 +3409,8 @@ img {
       "location location"
       "amenities amenities"
       "score price"
-      "title cta"
-      "locate locate";
+      "title title"
+      "cta cta";
     gap: 7px 10px;
     padding: 10px;
   }
@@ -3437,12 +3437,12 @@ img {
 
   .card .info .clickable-hotel-title {
     grid-area: title;
-    align-self: center;
+    align-self: stretch;
     min-width: 0;
-    overflow: hidden;
+    overflow-wrap: anywhere;
     font-size: 0.92rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1.3;
+    white-space: normal;
   }
 
   .card .info .location {
@@ -3516,19 +3516,22 @@ img {
   }
 
   .card .side .hotel-locate {
-    grid-area: locate;
-    min-height: 36px;
-    margin: 0;
-    padding: 7px 10px;
-    font-size: 0.74rem;
+    display: none;
   }
 
   .card .side .btn:not(.hotel-locate) {
     grid-area: cta;
-    align-self: center;
+    align-self: stretch;
     min-height: 40px;
     padding: 8px 10px;
     font-size: 0.76rem;
+  }
+
+  .booking-panel .detail-locate {
+    display: block;
+    width: 100%;
+    min-height: 40px;
+    margin-top: 8px;
   }
 
   .side {
@@ -3944,9 +3947,14 @@ img {
   margin-top: 0;
 }
 
+.detail-locate {
+  display: none;
+}
+
 .card .side .hotel-locate,
 .card .side .btn-primary,
-#detail-availability {
+#detail-availability,
+#detail-locate {
   border: 1px solid rgba(255, 212, 71, 0.62);
   color: #fff3c4;
   background: #0a192f;
@@ -3955,7 +3963,8 @@ img {
 
 .card .side .hotel-locate:hover,
 .card .side .btn-primary:hover,
-#detail-availability:hover {
+#detail-availability:hover,
+#detail-locate:hover {
   border-color: #ffd447;
   color: #fff8df;
   background: #12345a;
