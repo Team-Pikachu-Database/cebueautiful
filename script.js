@@ -1916,6 +1916,7 @@ function openHotelDetails(hotel, photoIndex = 1) {
   lastFocusedElement = document.activeElement;
   const bookingForm = document.getElementById("booking-form");
   bookingForm.reset();
+  updateBookingPaymentNote();
   bookingForm.hidden = true;
   document.getElementById("booking-coupon-status").textContent = "";
   document.getElementById("booking-coupon").replaceChildren(
@@ -2415,7 +2416,28 @@ function updateBookingPaymentNote() {
     : "Reserve and pay online";
   document.getElementById("booking-payment-note").textContent = paymentMethod === "counter"
     ? "Pay at the hotel counter. Rooms are held for 30 minutes; the reservation expires if staff does not confirm payment before then."
-    : "Pay securely through PayMongo. After payment, show the payment reference in Reservation History at the counter; staff must verify it before the reservation is marked paid. Rooms are held for 30 minutes.";
+    : "Continue to PayMongo's secure checkout and choose GCash for app payment or QRPh to scan a QR. Rooms are held for 30 minutes; payment is confirmed only after provider verification.";
+}
+
+function showBookingPaymentDialog(booking, checkoutUrl) {
+  if (typeof checkoutUrl !== "string") {
+    throw new Error("The secure payment link was invalid. Check Reservation History before trying again.");
+  }
+  const paymentUrl = new URL(checkoutUrl);
+  if (
+    paymentUrl.origin !== "https://checkout.paymongo.com" ||
+    paymentUrl.username ||
+    paymentUrl.password
+  ) {
+    throw new Error("The secure payment link was invalid. Check Reservation History before trying again.");
+  }
+
+  document.getElementById("booking-payment-reference").textContent =
+    `Reservation reference: ${booking.reference}`;
+  document.getElementById("booking-payment-total").textContent =
+    `Total due: ${pesoExact.format(booking.totalPrice)}`;
+  document.getElementById("booking-payment-continue").href = paymentUrl.toString();
+  document.getElementById("booking-payment-dialog").showModal();
 }
 
 document.getElementById("booking-form").addEventListener("submit", async event => {
@@ -2467,7 +2489,7 @@ document.getElementById("booking-form").addEventListener("submit", async event =
     } else {
       form.hidden = true;
       if (paymentMethod === "online") {
-        status.textContent = "Opening PayMongo's secure checkout…";
+        status.textContent = "Preparing your secure GCash / QRPh checkout…";
         const checkout = await requestApi(
           `/api/bookings/${encodeURIComponent(booking.reference)}/checkout`,
           {
@@ -2478,13 +2500,9 @@ document.getElementById("booking-form").addEventListener("submit", async event =
             })
           }
         );
-        window.location.assign(checkout.checkout.checkoutUrl);
+        showBookingPaymentDialog(booking, checkout.checkout.checkoutUrl);
         status.textContent =
-          `Reservation ${booking.reference} is held for 30 minutes. ` +
-          `${booking.couponDiscount
-            ? `Voucher discount: ${pesoExact.format(booking.couponDiscount)}. `
-            : ""}` +
-          `Total due: ${pesoExact.format(booking.totalPrice)}.`;
+          `Reservation ${booking.reference} is held for 30 minutes. Continue to secure checkout to pay by GCash or QRPh.`;
       } else {
         status.textContent =
           `Reservation ${booking.reference} is held for 30 minutes. ` +

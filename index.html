@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CebuStays – Hotels and staycations in Cebu</title>
-  <link rel="stylesheet" href="style.css?v=20261102-deep-blue-filter-listings-gold-cta">
+  <link rel="stylesheet" href="style.css?v=20261102-deep-blue-filter-listings-gold-cta-gcash-checkout">
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -252,6 +252,23 @@
       <p id="booking-thank-you-message">We appreciate you choosing CebuStays. Your reservation details are available in Reservation History.</p>
       <small id="booking-thank-you-reference"></small>
       <button class="booking-thank-you-close" type="button" autofocus>Continue</button>
+    </section>
+  </dialog>
+
+  <dialog class="account-dialog sidebar-option-dialog booking-payment-dialog" id="booking-payment-dialog" aria-labelledby="booking-payment-title">
+    <section class="account-panel">
+      <div class="account-heading">
+        <div>
+          <span class="account-kicker">SECURE CHECKOUT</span>
+          <h2 id="booking-payment-title">Continue with GCash</h2>
+        </div>
+        <button type="button" class="account-close" data-dialog-close aria-label="Close payment options">×</button>
+      </div>
+      <p class="booking-payment-dialog-copy">Your room is held for 30 minutes. Continue to PayMongo's secure checkout to choose GCash or QRPh.</p>
+      <p class="booking-payment-dialog-reference" id="booking-payment-reference"></p>
+      <p class="booking-payment-dialog-total" id="booking-payment-total"></p>
+      <p class="booking-payment-dialog-note">On mobile, choose GCash on the secure checkout page to continue in the app if available. To pay by QR, choose QRPh and scan the QR code shown there. PayMongo verifies online payments, but staff must verify it before the reservation is marked paid.</p>
+      <a class="btn btn-primary booking-payment-continue" id="booking-payment-continue" href="" target="_blank" rel="noopener noreferrer">Continue to GCash / QRPh</a>
     </section>
   </dialog>
 
@@ -664,8 +681,8 @@
           <label class="booking-payment-method-field">
             Mode of payment
             <select id="booking-payment-method" name="paymentMethod" required>
-              <option value="online">Online payment</option>
-              <option value="counter">Pay at hotel counter</option>
+              <option value="counter" selected>Pay at hotel counter</option>
+              <option value="online">Online payment · GCash / QRPh</option>
             </select>
           </label>
           <p class="booking-total" id="booking-total"></p>
@@ -677,8 +694,8 @@
             </select>
           </label>
           <p class="booking-coupon-status" id="booking-coupon-status" aria-live="polite"></p>
-          <button class="btn btn-primary booking-submit" id="booking-submit" type="submit">Reserve and pay online</button>
-          <small class="booking-payment-note" id="booking-payment-note">Pay securely through PayMongo. After payment, show the payment reference in Reservation History at the counter; staff must verify it before the reservation is marked paid. Rooms are held for 30 minutes.</small>
+          <button class="btn btn-primary booking-submit" id="booking-submit" type="submit">Reserve and pay at counter</button>
+          <small class="booking-payment-note" id="booking-payment-note">Pay at the hotel counter. Rooms are held for 30 minutes; the reservation expires if staff does not confirm payment before then.</small>
         </form>
 
         <p class="detail-note">
