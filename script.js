@@ -2775,13 +2775,6 @@ function buildCard(hotel) {
     )
   );
 
-  let reviewSection = null;
-  if (hotelComments(hotel).length) {
-    reviewSection = el("section", "hotel-review-preview");
-    reviewSection.setAttribute("aria-label", `Guest reviews for ${hotel.name}`);
-    renderHotelCommentPreview(reviewSection, hotel, "No guest comments yet.");
-  }
-
   /* Price */
 
   const stayNights = nights();
@@ -2831,7 +2824,6 @@ function buildCard(hotel) {
   side.append(score, bottom, locate, cta);
 
   card.append(gallery, info, side);
-  if (reviewSection) card.appendChild(reviewSection);
 
   return card;
 }

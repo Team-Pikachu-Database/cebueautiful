@@ -1611,15 +1611,6 @@ img {
   gap: 8px;
 }
 
-.hotel-review-preview {
-  grid-column: 1 / -1;
-  display: grid;
-  gap: 10px;
-  padding: 12px 16px 14px;
-  border-top: 1px solid var(--line);
-  background: rgba(248, 250, 252, 0.62);
-}
-
 .hotel-detail-reviews {
   display: grid;
   align-content: start;
