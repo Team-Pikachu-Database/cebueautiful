@@ -1479,6 +1479,48 @@ img {
   font-size: 1.5rem;
 }
 
+.sidebar-option-dialog {
+  border: 1px solid rgba(255, 183, 3, 0.58);
+  border-top: 4px solid var(--gold);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(255, 250, 235, 0.94));
+  box-shadow: 0 30px 70px rgba(10, 25, 47, 0.3), inset 0 1px 0 #fff;
+}
+
+.sidebar-option-dialog .account-panel {
+  padding: clamp(20px, 4vw, 30px);
+}
+
+.sidebar-option-dialog .account-heading {
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(10, 25, 47, 0.12);
+}
+
+.sidebar-option-dialog .account-kicker {
+  display: inline-flex;
+  padding: 4px 9px;
+  border: 1px solid rgba(255, 183, 3, 0.35);
+  border-radius: 999px;
+  color: #765300;
+  background: rgba(255, 183, 3, 0.14);
+  letter-spacing: 0.075em;
+}
+
+.sidebar-option-dialog .account-close {
+  border: 1px solid rgba(10, 25, 47, 0.1);
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.sidebar-option-dialog .account-close:hover {
+  border-color: rgba(255, 183, 3, 0.6);
+  color: #302006;
+  background: linear-gradient(145deg, #ffe878, #ffc629);
+  transform: rotate(90deg);
+}
+
+.sidebar-option-dialog .events-disclaimer {
+  color: var(--muted);
+}
+
 .account-message {
   min-height: 1.5em;
   margin: 0 0 12px;
@@ -4454,15 +4496,11 @@ img {
   width: min(780px, calc(100% - 24px));
 }
 
-.points-panel,
-.rewards-panel,
-  .site-header,
-  .main-content-wrap {
-    margin-left: 0;
+.points-label {
   margin: 0 0 8px;
-
   color: var(--muted);
   font-size: 0.75rem;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -5124,6 +5162,7 @@ img {
     padding: 11px;
   }
 
+  .sidebar-option-dialog .account-panel,
   .coupon-wallet-panel,
   .event-detail-dialog .account-panel {
     padding: 18px;
