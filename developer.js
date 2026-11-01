@@ -42,6 +42,7 @@ const paymentReviewConfirm = document.getElementById("payment-review-confirm");
 const paymentReviewMessage = document.getElementById("payment-review-message");
 const paymentReviewReferenceField = document.getElementById("payment-review-reference-field");
 const paymentReviewReference = document.getElementById("payment-review-reference");
+const paymentReviewVerification = document.getElementById("payment-review-verification");
 const paymentReviewCheckLabel = document.getElementById("payment-review-check-label");
 const cancellationApprovalDialog = document.getElementById("cancellation-approval-dialog");
 const cancellationApprovalKicker = document.getElementById("cancellation-approval-kicker");
@@ -140,11 +141,14 @@ async function loadPendingBookings() {
       paymentStatus.textContent = isCancellation
         ? "Cancellation"
         : reservation.paymentMethod === "online"
-          ? "Online payment — verify reference"
+          ? reservation.onlinePaymentVerified
+            ? "Online payment received — verify reference"
+            : "Online payment — waiting for provider"
           : "Counter payment — verify receipt";
-      if (reservation.paymentReference) {
+      if (reservation.onlinePaymentVerified && reservation.paymentReference) {
         const paymentReference = document.createElement("small");
-        paymentReference.textContent = `Xendit reference ${reservation.paymentReference}`;
+        paymentReference.textContent =
+          `${reservation.paymentProvider === "paymongo" ? "PayMongo" : "Xendit"} verified reference: ${reservation.paymentReference}`;
         payment.append(amount, paymentStatus, paymentReference);
       } else {
         payment.append(amount, paymentStatus);
@@ -191,10 +195,12 @@ function openPaymentReview(reservation) {
   ];
   details.push([
     "Payment method",
-    reservation.paymentMethod === "online" ? "Xendit online payment" : "Pay at counter"
+    reservation.paymentMethod === "online"
+      ? `${reservation.paymentProvider === "paymongo" ? "PayMongo" : "Xendit"} online payment`
+      : "Pay at counter"
   ]);
-  if (reservation.paymentReference) {
-    details.push(["Verified Xendit reference", reservation.paymentReference]);
+  if (reservation.onlinePaymentVerified && reservation.paymentReference) {
+    details.push(["Provider-verified payment reference", reservation.paymentReference]);
   }
   if (reservation.cancellationStatus === "requested") {
     details.push(["Cancellation reason", reservation.cancellationReason || "No reason supplied."]);
@@ -210,21 +216,32 @@ function openPaymentReview(reservation) {
 
   paymentReviewChecked.checked = false;
   const isOnlinePayment = reservation.paymentMethod === "online";
+  const isOnlinePaymentVerified = reservation.onlinePaymentVerified === true &&
+    typeof reservation.paymentReference === "string" &&
+    reservation.paymentReference.length > 0;
   paymentReviewReferenceField.hidden = !isOnlinePayment;
   paymentReviewReference.required = isOnlinePayment;
   paymentReviewReference.value = "";
   paymentReviewCheckLabel.textContent = isOnlinePayment
-    ? "I matched the reference shown by the customer to the Xendit-verified reference above."
+    ? "I matched the reference shown by the customer to the provider-verified reference above."
     : "I received and verified the payment at the hotel counter.";
+  paymentReviewVerification.hidden = !isOnlinePayment;
+  paymentReviewVerification.classList.toggle("is-verified", isOnlinePaymentVerified);
+  paymentReviewVerification.textContent = isOnlinePaymentVerified
+    ? `Payment provider confirmed this payment. Match the customer's reference to the verified ${reservation.paymentProvider === "paymongo" ? "PayMongo" : "Xendit"} reference above; then confirm below.`
+    : "Waiting for payment provider confirmation. This reservation cannot be marked paid yet.";
   updatePaymentReviewConfirmation();
   paymentReviewMessage.textContent = "";
   paymentReviewDialog.showModal();
 }
 
 function updatePaymentReviewConfirmation() {
-  const needsReference = selectedReservation?.paymentMethod === "online";
+  const selectedOnline = selectedReservation?.paymentMethod === "online";
+  const referenceMatches = selectedReservation?.onlinePaymentVerified === true &&
+    typeof selectedReservation.paymentReference === "string" &&
+    paymentReviewReference.value.trim() === selectedReservation.paymentReference;
   paymentReviewConfirm.disabled = !paymentReviewChecked.checked ||
-    (needsReference && !paymentReviewReference.value.trim());
+    (selectedOnline && !referenceMatches);
 }
 
 async function confirmPayment() {

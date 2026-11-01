@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Developer workspace – CebuStays</title>
-  <link rel="stylesheet" href="style.css?v=20261101-sidebar-backdrop-coupon-contrast">
+  <link rel="stylesheet" href="style.css?v=20261102-dashboard-xendit-verification">
   <link rel="icon" type="image/png" href="logo_folder/cebustays-transparent.png?v=20261101-transparent-icon">
 </head>
 <body class="developer-page">
@@ -112,7 +112,8 @@
           ×
         </button>
       </div>
-      <p class="developer-bookings-note">For online payments, compare the reference shown by the guest with the Xendit-verified reference below. For counter payments, verify the actual received payment before confirming.</p>
+      <p class="developer-bookings-note">Online reservations appear here after the payment provider confirms payment. Match the reference shown by the guest with the verified reference before marking it paid. For counter payments, verify the payment was received.</p>
+      <p class="payment-review-verification" id="payment-review-verification" hidden></p>
       <dl class="payment-review-details" id="payment-review-details"></dl>
       <label class="payment-review-reference-field" id="payment-review-reference-field" hidden>
         Reference shown by customer
@@ -152,6 +153,6 @@
   </dialog>
 
   <script src="config.js"></script>
-  <script src="developer.js?v=20261102-xendit-payment-review"></script>
+  <script src="developer.js?v=20261102-dashboard-xendit-verification"></script>
 </body>
 </html>

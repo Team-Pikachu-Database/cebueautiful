@@ -2399,6 +2399,23 @@ img {
   background: rgba(4, 7, 11, 0.82);
 }
 
+.payment-review-verification {
+  margin: 0;
+  padding: 11px 12px;
+  border: 1px solid rgba(255, 190, 35, 0.3);
+  border-radius: 9px;
+  color: #ffe6a1;
+  background: rgba(255, 190, 35, 0.08);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.payment-review-verification.is-verified {
+  border-color: rgba(82, 205, 151, 0.42);
+  color: #d6ffeb;
+  background: rgba(39, 146, 97, 0.16);
+}
+
 .payment-review-check {
   display: flex;
   align-items: flex-start;
