@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CebuStays – Hotels and staycations in Cebu</title>
-  <link rel="stylesheet" href="style.css?v=20261101-sidebar-modal-dark-theme">
+  <link rel="stylesheet" href="style.css?v=20261101-sidebar-modal-dark-theme-booking-thank-you">
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -243,6 +243,17 @@
     <span class="help-portal-lightning help-portal-lightning-two"></span>
   </div>
   <audio id="pikachu-scream" src="UI images/UI sounds/pikachu_scream.mp3" preload="auto"></audio>
+
+  <dialog class="booking-thank-you" id="booking-thank-you" aria-labelledby="booking-thank-you-title" aria-describedby="booking-thank-you-message">
+    <section class="booking-thank-you-card">
+      <span class="booking-thank-you-icon" aria-hidden="true">✓</span>
+      <span class="booking-thank-you-kicker">CEBUSTAYS</span>
+      <h2 id="booking-thank-you-title">Thank you for your patronage!</h2>
+      <p id="booking-thank-you-message">We appreciate you choosing CebuStays. Your reservation details are available in Reservation History.</p>
+      <small id="booking-thank-you-reference"></small>
+      <button class="booking-thank-you-close" type="button" autofocus>Continue</button>
+    </section>
+  </dialog>
 
   <dialog class="account-dialog sidebar-option-dialog" id="account-dialog" aria-labelledby="account-title">
     <section class="account-panel">
@@ -794,6 +805,6 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""></script>
   <script defer src="map.js?v=hotel-directions-api-v3"></script>
-  <script defer src="script.js?v=20261101-prize-wheel-image"></script>
+  <script defer src="script.js?v=20261101-booking-thank-you"></script>
 </body>
 </html>

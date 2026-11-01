@@ -1236,13 +1236,58 @@ async function handlePaymentReturn() {
     }
   }
 
-  window.alert(message);
   const reservationsDialog = document.getElementById("reservation-history-dialog");
   if (reservationsDialog && signedInAccount) {
     reservationsDialog.showModal();
     startReservationHistoryRefresh();
     await loadReservationHistory();
   }
+  showBookingThankYou(reference, message);
+}
+
+let bookingThankYouDismissTimer = 0;
+let bookingThankYouCloseTimer = 0;
+
+function dismissBookingThankYou() {
+  const dialog = document.getElementById("booking-thank-you");
+  if (!dialog?.open) return;
+
+  window.clearTimeout(bookingThankYouDismissTimer);
+  window.clearTimeout(bookingThankYouCloseTimer);
+  dialog.classList.remove("is-visible");
+  bookingThankYouCloseTimer = window.setTimeout(() => {
+    if (dialog.open && !dialog.classList.contains("is-visible")) dialog.close();
+  }, 400);
+}
+
+function showBookingThankYou(
+  reference,
+  details = "We appreciate you choosing CebuStays. Your reservation details are available in Reservation History."
+) {
+  const dialog = document.getElementById("booking-thank-you");
+  if (!dialog) return;
+
+  window.clearTimeout(bookingThankYouDismissTimer);
+  window.clearTimeout(bookingThankYouCloseTimer);
+  document.getElementById("booking-thank-you-message").textContent = details;
+  const referenceMessage = document.getElementById("booking-thank-you-reference");
+  referenceMessage.textContent = reference ? `Reservation reference: ${reference}` : "";
+  if (!dialog.open) dialog.show();
+  dialog.classList.remove("is-visible");
+  void dialog.offsetWidth;
+  dialog.classList.add("is-visible");
+  bookingThankYouDismissTimer = window.setTimeout(dismissBookingThankYou, 10_000);
+}
+
+function initializeBookingThankYou() {
+  const dialog = document.getElementById("booking-thank-you");
+  dialog.addEventListener("pointerdown", dismissBookingThankYou);
+  dialog.addEventListener("cancel", event => {
+    event.preventDefault();
+    dismissBookingThankYou();
+  });
+  dialog.querySelector(".booking-thank-you-close")
+    .addEventListener("click", dismissBookingThankYou);
 }
 
 function initializeAccount() {
@@ -2426,6 +2471,7 @@ document.getElementById("booking-form").addEventListener("submit", async event =
             ? `Voucher discount: ${pesoExact.format(booking.couponDiscount)}. `
             : ""}` +
           "Pay at the hotel counter before the hold expires.";
+        showBookingThankYou(booking.reference);
       }
     }
     recordPaidBookingPoints(booking).catch(error => {
@@ -4044,6 +4090,7 @@ function initializeHelpChat() {
 
 initializeSpinButton();
 setDefaultDates();
+initializeBookingThankYou();
 initializeAccount();
 initializeReviewForm();
 initializeAccountMenu();
