@@ -1227,9 +1227,9 @@ async function handlePaymentReturn() {
         `/api/bookings/${encodeURIComponent(reference)}/payment-status`
       );
       message = data.payment.paymentReference
-        ? `Xendit verified the payment for ${reference}. Show payment reference ${data.payment.paymentReference} at the counter; staff must verify it before the reservation is marked paid.`
+        ? `Xendit verified the payment for ${reference}. Payment reference: ${data.payment.paymentReference}. Your reservation is pending staff approval; you do not need to pay again.`
         : data.payment.paymentStatus === "paid"
-          ? `Payment confirmed for ${reference}. Total paid: ${pesoExact.format(data.payment.totalPrice)}.`
+          ? `Your reservation ${reference} was accepted and payment is confirmed. Total paid: ${pesoExact.format(data.payment.totalPrice)}.`
           : "Xendit has not confirmed this payment yet. Check Reservation History before retrying; after provider confirmation, show the payment reference at the counter.";
     } catch (error) {
       message = `We couldn't verify the payment status yet: ${error.message} Check Reservation History before trying to pay again.`;
@@ -1721,9 +1721,11 @@ async function loadReservationHistory() {
         : isCancellationRequested
           ? "Cancellation requested"
           : isPaid
-            ? "Paid"
+            ? reservation.paymentMethod === "online"
+              ? "Accepted — paid"
+              : "Paid"
             : reservation.paymentCheckoutStatus === "paid"
-              ? "Verify payment at counter"
+              ? "Paid online — awaiting staff approval"
               : "Pending payment";
       heading.append(hotelName, status);
 
@@ -1742,7 +1744,11 @@ async function loadReservationHistory() {
         const paymentReference = document.createElement("small");
         paymentReference.className = "reservation-payment-reference";
         paymentReference.textContent =
-          `Xendit reference ${reservation.paymentReference} — show this at the counter for verification.`;
+          `${reservation.paymentProvider === "paymongo" ? "PayMongo" : "Xendit"} verified payment reference: ${reservation.paymentReference}. ${
+            isPaid
+              ? "Your reservation has been accepted."
+              : "Your reservation is pending staff approval; you do not need to pay again."
+          }`;
         actionRow.append(paymentReference);
       } else if (
         reservation.paymentMethod === "online" &&
@@ -1752,7 +1758,7 @@ async function loadReservationHistory() {
         const paymentVerification = document.createElement("small");
         paymentVerification.className = "reservation-payment-reference";
         paymentVerification.textContent =
-          "Xendit received the payment. Your reservation stays pending until staff verifies your payment reference at the counter.";
+          "The payment provider confirmed your payment. Your reservation is pending staff approval; you do not need to pay again.";
         actionRow.append(paymentVerification);
       }
 

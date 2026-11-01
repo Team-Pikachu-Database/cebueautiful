@@ -45,7 +45,7 @@
             </svg>
           </button>
         </div>
-        <p class="developer-bookings-note">Confirm payment only after verifying that the property received it.</p>
+        <p class="developer-bookings-note">Online reservations enter this queue after provider confirmation. Match the verified reference, then accept the reservation; room availability is updated only after acceptance. For counter payments, confirm only after receiving payment.</p>
         <p class="developer-bookings-status" id="developer-bookings-status" aria-live="polite"></p>
         <div class="developer-bookings-table-wrap">
           <table class="developer-bookings-table">
@@ -112,7 +112,7 @@
           ×
         </button>
       </div>
-      <p class="developer-bookings-note">Online reservations appear here after the payment provider confirms payment. Match the reference shown by the guest with the verified reference before marking it paid. For counter payments, verify the payment was received.</p>
+      <p class="developer-bookings-note">Online reservations appear here after the payment provider confirms payment. Match the reference shown by the guest with the verified reference, then accept the reservation. Room availability is updated only after acceptance. For counter payments, verify the payment was received.</p>
       <p class="payment-review-verification" id="payment-review-verification" hidden></p>
       <dl class="payment-review-details" id="payment-review-details"></dl>
       <label class="payment-review-reference-field" id="payment-review-reference-field" hidden>
@@ -124,7 +124,7 @@
         <span id="payment-review-check-label">I verified the payment against this reservation.</span>
       </label>
       <p class="payment-review-message" id="payment-review-message" aria-live="polite"></p>
-      <button class="btn btn-primary" type="button" id="payment-review-confirm" disabled>Mark as paid</button>
+      <button class="btn btn-primary" type="button" id="payment-review-confirm" disabled>Accept reservation &amp; mark paid</button>
     </section>
   </dialog>
 
@@ -153,6 +153,6 @@
   </dialog>
 
   <script src="config.js"></script>
-  <script src="developer.js?v=20261102-dashboard-xendit-verification"></script>
+  <script src="developer.js?v=20261102-staff-approval"></script>
 </body>
 </html>

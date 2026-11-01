@@ -142,7 +142,7 @@ async function loadPendingBookings() {
         ? "Cancellation"
         : reservation.paymentMethod === "online"
           ? reservation.onlinePaymentVerified
-            ? "Online payment received — verify reference"
+            ? "Online payment received — awaiting approval"
             : "Online payment — waiting for provider"
           : "Counter payment — verify receipt";
       if (reservation.onlinePaymentVerified && reservation.paymentReference) {
@@ -223,12 +223,15 @@ function openPaymentReview(reservation) {
   paymentReviewReference.required = isOnlinePayment;
   paymentReviewReference.value = "";
   paymentReviewCheckLabel.textContent = isOnlinePayment
-    ? "I matched the reference shown by the customer to the provider-verified reference above."
+    ? "I matched the customer's reference to the provider-verified reference and accept this reservation."
     : "I received and verified the payment at the hotel counter.";
+  paymentReviewConfirm.textContent = isOnlinePayment
+    ? "Accept reservation & mark paid"
+    : "Mark as paid";
   paymentReviewVerification.hidden = !isOnlinePayment;
   paymentReviewVerification.classList.toggle("is-verified", isOnlinePaymentVerified);
   paymentReviewVerification.textContent = isOnlinePaymentVerified
-    ? `Payment provider confirmed this payment. Match the customer's reference to the verified ${reservation.paymentProvider === "paymongo" ? "PayMongo" : "Xendit"} reference above; then confirm below.`
+    ? `Payment provider confirmed this payment. Match the customer's reference to the verified ${reservation.paymentProvider === "paymongo" ? "PayMongo" : "Xendit"} reference above, then accept the reservation. Room availability will update after acceptance.`
     : "Waiting for payment provider confirmation. This reservation cannot be marked paid yet.";
   updatePaymentReviewConfirmation();
   paymentReviewMessage.textContent = "";
