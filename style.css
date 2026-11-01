@@ -2939,12 +2939,12 @@ img {
 ========================================= */
 
 .site-footer {
-  background: #f1f5f9;
+  background: #0a192f;
   padding: 24px 0;
-  color: var(--muted);
+  color: #ffd447;
   font-size: 0.85rem;
   text-align: center;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid rgba(255, 212, 71, 0.34);
 }
 
 /* =========================================
