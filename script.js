@@ -3754,6 +3754,7 @@ function initializeHelpChat() {
   const dialog = document.getElementById("help-dialog");
   const pokeballLauncher = document.getElementById("pokeball-launcher");
   const portalEffect = document.getElementById("help-portal-effect");
+  const pokeballScream = document.getElementById("pikachu-scream");
   const conversation = document.getElementById("help-conversation");
   const suggestions = document.getElementById("help-suggestions");
   const form = document.getElementById("help-form");
@@ -3908,6 +3909,10 @@ function initializeHelpChat() {
   document.getElementById("help-close")?.addEventListener("click", () => dialog.close());
   dialog.addEventListener("close", () => {
     window.clearTimeout(portalAnimationTimer);
+    if (pokeballScream) {
+      pokeballScream.pause();
+      pokeballScream.currentTime = 0;
+    }
     delete dialog.dataset.portalAnimation;
     delete dialog.dataset.preparing;
     delete dialog.dataset.entering;
@@ -3954,6 +3959,11 @@ function initializeHelpChat() {
     portalEffect.classList.remove("is-active");
     void portalEffect.offsetWidth;
     portalEffect.classList.add("is-active");
+    if (pokeballScream) {
+      pokeballScream.pause();
+      pokeballScream.currentTime = 0;
+      pokeballScream.play()?.catch(() => {});
+    }
 
     window.clearTimeout(portalAnimationTimer);
     portalAnimationTimer = window.setTimeout(() => {
