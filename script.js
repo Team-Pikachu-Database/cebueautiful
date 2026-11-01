@@ -2311,7 +2311,12 @@ document.getElementById("detail-locate").addEventListener("click", event => {
     window.alert("The map is not available right now. Please try again later.");
     return;
   }
-  window.CebuStaysMap.open(activeDetailHotel, event.currentTarget);
+  const hotel = activeDetailHotel;
+  const returnFocus = lastFocusedElement?.isConnected
+    ? lastFocusedElement
+    : event.currentTarget;
+  closeHotelDetails();
+  window.CebuStaysMap.open(hotel, returnFocus);
 });
 
 document.getElementById("booking-sign-in").addEventListener("click", () => {
