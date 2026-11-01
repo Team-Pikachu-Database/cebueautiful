@@ -1429,6 +1429,10 @@ img {
   transition: opacity 0.35s ease;
 }
 
+.account-dialog[open]::backdrop {
+  opacity: 1;
+}
+
 .account-dialog[open] {
   opacity: 1;
   transform: scale(1) translateY(0);
