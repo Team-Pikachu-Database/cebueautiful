@@ -980,6 +980,11 @@ img {
     padding-left: 0;
   }
 
+  .sidebar-backdrop[hidden] {
+    display: none !important;
+    pointer-events: none;
+  }
+
   .site-sidebar {
     transform: translateX(calc(-100% + 18px));
     width: min(84vw, 280px);
@@ -987,6 +992,7 @@ img {
 
   .site-sidebar:not(.is-open) {
     transform: translateX(calc(-100% + 18px));
+    pointer-events: none;
   }
 
   .site-sidebar:not(.is-open)::after {
@@ -1004,6 +1010,7 @@ img {
 
   .site-sidebar.is-open {
     transform: translateX(0);
+    pointer-events: auto;
   }
 
   .site-sidebar.is-open .sidebar-brand-label,
@@ -1024,6 +1031,10 @@ img {
   .site-header,
   .main-content-wrap {
     margin-left: 0;
+  }
+
+  .site-header {
+    padding-bottom: 12px;
   }
 
   .mobile-sidebar-toggle {
@@ -1063,6 +1074,10 @@ img {
     background: rgba(10, 25, 47, 0.4);
   }
 
+  .sidebar-backdrop:not([hidden]) {
+    pointer-events: auto;
+  }
+
   .sidebar-toggle,
   .sidebar-close {
     display: grid;
@@ -1077,7 +1092,72 @@ img {
   }
 
   .search-bar {
-    margin-top: 16px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    gap: 6px;
+    margin-top: 10px;
+    padding: 7px;
+  }
+
+  .search-bar .field {
+    padding: 7px 8px;
+  }
+
+  .search-bar .field-label {
+    font-size: 0.64rem;
+  }
+
+  .search-bar .field input {
+    font-size: 0.76rem;
+  }
+
+  .search-bar .btn-search {
+    min-width: 64px;
+    padding: 8px 10px;
+    font-size: 0.8rem;
+  }
+
+  .layout {
+    gap: 12px;
+    padding: 12px 0 28px;
+  }
+
+  .filters {
+    padding: 11px 12px;
+  }
+
+  .filters h2 {
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+  }
+
+  .filters fieldset {
+    display: flex;
+    gap: 7px;
+    overflow-x: auto;
+    padding: 1px 1px 5px;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .filters .check {
+    flex: 0 0 auto;
+    gap: 6px;
+    padding: 7px 9px;
+    border: 1px solid rgba(255, 212, 71, 0.24);
+    border-radius: 999px;
+    font-size: 0.74rem;
+    white-space: nowrap;
+  }
+
+  .filters .check input {
+    width: 15px;
+    height: 15px;
+  }
+
+  .results h1 {
+    margin-bottom: 9px;
+    font-size: 1.05rem;
   }
 }
 
@@ -3321,14 +3401,136 @@ img {
   .filters {
     position: static;
   }
-  .filters fieldset {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0 10px;
-  }
   .card {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(76px, 25%) minmax(0, 1fr);
+    grid-template-areas:
+      "gallery desc"
+      "gallery more"
+      "location location"
+      "amenities amenities"
+      "score price"
+      "title cta"
+      "locate locate";
+    gap: 7px 10px;
+    padding: 10px;
   }
+
+  .card .hotel-gallery {
+    grid-area: gallery;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    width: 100%;
+    height: 100%;
+    min-height: 100px;
+    align-self: stretch;
+    border-radius: 7px;
+  }
+
+  .card .hotel-gallery .gallery-photo:not(:first-child) {
+    display: none;
+  }
+
+  .card .info,
+  .card .side {
+    display: contents;
+  }
+
+  .card .info .clickable-hotel-title {
+    grid-area: title;
+    align-self: center;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 0.92rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .card .info .location {
+    grid-area: location;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 0.72rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .card .info .desc {
+    grid-area: desc;
+    align-self: end;
+    min-width: 0;
+    font-size: 0.76rem;
+    line-height: 1.4;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+
+  .card .info .see-more-btn {
+    grid-area: more;
+    align-self: start;
+    font-size: 0.74rem;
+  }
+
+  .card .info .amenities {
+    grid-area: amenities;
+    max-height: 42px;
+    overflow: hidden;
+  }
+
+  .card .info .amenities li {
+    padding: 2px 6px;
+    font-size: 0.66rem;
+  }
+
+  .card .side .score {
+    grid-area: score;
+    align-self: center;
+    min-width: 0;
+  }
+
+  .card .side .score-label {
+    font-size: 0.72rem;
+  }
+
+  .card .side .score-label small {
+    font-size: 0.64rem;
+  }
+
+  .card .side .score-badge {
+    padding: 4px 6px;
+    font-size: 0.78rem;
+  }
+
+  .card .side .price-container {
+    grid-area: price;
+    align-self: center;
+    align-items: flex-end;
+    min-width: 0;
+  }
+
+  .card .side .price small {
+    font-size: 0.64rem;
+  }
+
+  .card .side .price strong {
+    font-size: 1rem;
+  }
+
+  .card .side .hotel-locate {
+    grid-area: locate;
+    min-height: 36px;
+    margin: 0;
+    padding: 7px 10px;
+    font-size: 0.74rem;
+  }
+
+  .card .side .btn:not(.hotel-locate) {
+    grid-area: cta;
+    align-self: center;
+    min-height: 40px;
+    padding: 8px 10px;
+    font-size: 0.76rem;
+  }
+
   .side {
     flex-direction: row;
     align-items: center;
