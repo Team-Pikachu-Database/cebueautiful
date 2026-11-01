@@ -1227,10 +1227,10 @@ async function handlePaymentReturn() {
         `/api/bookings/${encodeURIComponent(reference)}/payment-status`
       );
       message = data.payment.paymentReference
-        ? `PayMongo verified the payment for ${reference}. Show payment reference ${data.payment.paymentReference} at the counter; staff must verify it before the reservation is marked paid.`
+        ? `Xendit verified the payment for ${reference}. Show payment reference ${data.payment.paymentReference} at the counter; staff must verify it before the reservation is marked paid.`
         : data.payment.paymentStatus === "paid"
           ? `Payment confirmed for ${reference}. Total paid: ${pesoExact.format(data.payment.totalPrice)}.`
-          : "PayMongo has not confirmed this payment yet. Check Reservation History before retrying; after provider confirmation, show the payment reference at the counter.";
+          : "Xendit has not confirmed this payment yet. Check Reservation History before retrying; after provider confirmation, show the payment reference at the counter.";
     } catch (error) {
       message = `We couldn't verify the payment status yet: ${error.message} Check Reservation History before trying to pay again.`;
     }
@@ -1742,7 +1742,7 @@ async function loadReservationHistory() {
         const paymentReference = document.createElement("small");
         paymentReference.className = "reservation-payment-reference";
         paymentReference.textContent =
-          `PayMongo reference ${reservation.paymentReference} — show this at the counter for verification.`;
+          `Xendit reference ${reservation.paymentReference} — show this at the counter for verification.`;
         actionRow.append(paymentReference);
       } else if (
         reservation.paymentMethod === "online" &&
@@ -1752,7 +1752,7 @@ async function loadReservationHistory() {
         const paymentVerification = document.createElement("small");
         paymentVerification.className = "reservation-payment-reference";
         paymentVerification.textContent =
-          "PayMongo received the payment. Your reservation stays pending until staff verifies your payment reference at the counter.";
+          "Xendit received the payment. Your reservation stays pending until staff verifies your payment reference at the counter.";
         actionRow.append(paymentVerification);
       }
 
@@ -2416,7 +2416,7 @@ function updateBookingPaymentNote() {
     : "Reserve and pay online";
   document.getElementById("booking-payment-note").textContent = paymentMethod === "counter"
     ? "Pay at the hotel counter. Rooms are held for 30 minutes; the reservation expires if staff does not confirm payment before then."
-    : "Continue to PayMongo's secure checkout and choose GCash for app payment or QRPh to scan a QR. Rooms are held for 30 minutes; payment is confirmed only after provider verification.";
+    : "Continue to Xendit's secure checkout and choose GCash for app payment or QRPh to scan a QR. Rooms are held for 30 minutes; payment is confirmed only after provider verification.";
 }
 
 function showBookingPaymentDialog(booking, checkoutUrl) {
@@ -2425,7 +2425,8 @@ function showBookingPaymentDialog(booking, checkoutUrl) {
   }
   const paymentUrl = new URL(checkoutUrl);
   if (
-    paymentUrl.origin !== "https://checkout.paymongo.com" ||
+    !paymentUrl.hostname.endsWith(".xendit.co") ||
+    paymentUrl.protocol !== "https:" ||
     paymentUrl.username ||
     paymentUrl.password
   ) {
@@ -2489,7 +2490,7 @@ document.getElementById("booking-form").addEventListener("submit", async event =
     } else {
       form.hidden = true;
       if (paymentMethod === "online") {
-        status.textContent = "Preparing your secure GCash / QRPh checkout…";
+        status.textContent = "Preparing your secure Xendit GCash / QRPh checkout…";
         const checkout = await requestApi(
           `/api/bookings/${encodeURIComponent(booking.reference)}/checkout`,
           {

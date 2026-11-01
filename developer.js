@@ -144,7 +144,7 @@ async function loadPendingBookings() {
           : "Counter payment — verify receipt";
       if (reservation.paymentReference) {
         const paymentReference = document.createElement("small");
-        paymentReference.textContent = `PayMongo reference ${reservation.paymentReference}`;
+        paymentReference.textContent = `Xendit reference ${reservation.paymentReference}`;
         payment.append(amount, paymentStatus, paymentReference);
       } else {
         payment.append(amount, paymentStatus);
@@ -191,10 +191,10 @@ function openPaymentReview(reservation) {
   ];
   details.push([
     "Payment method",
-    reservation.paymentMethod === "online" ? "PayMongo online payment" : "Pay at counter"
+    reservation.paymentMethod === "online" ? "Xendit online payment" : "Pay at counter"
   ]);
   if (reservation.paymentReference) {
-    details.push(["Verified PayMongo reference", reservation.paymentReference]);
+    details.push(["Verified Xendit reference", reservation.paymentReference]);
   }
   if (reservation.cancellationStatus === "requested") {
     details.push(["Cancellation reason", reservation.cancellationReason || "No reason supplied."]);
@@ -214,7 +214,7 @@ function openPaymentReview(reservation) {
   paymentReviewReference.required = isOnlinePayment;
   paymentReviewReference.value = "";
   paymentReviewCheckLabel.textContent = isOnlinePayment
-    ? "I matched the reference shown by the customer to the PayMongo-verified reference above."
+    ? "I matched the reference shown by the customer to the Xendit-verified reference above."
     : "I received and verified the payment at the hotel counter.";
   updatePaymentReviewConfirmation();
   paymentReviewMessage.textContent = "";
