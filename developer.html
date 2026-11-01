@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Developer workspace – CebuStays</title>
-  <link rel="stylesheet" href="style.css?v=20261102-dashboard-xendit-verification">
+  <link rel="stylesheet" href="style.css?v=20261102-staff-approval-reference-checkbox">
   <link rel="icon" type="image/png" href="logo_folder/cebustays-transparent.png?v=20261101-transparent-icon">
 </head>
 <body class="developer-page">
@@ -115,16 +115,13 @@
       <p class="developer-bookings-note">Online reservations appear here after the payment provider confirms payment. Match the reference shown by the guest with the verified reference, then accept the reservation. Room availability is updated only after acceptance. For counter payments, verify the payment was received.</p>
       <p class="payment-review-verification" id="payment-review-verification" hidden></p>
       <dl class="payment-review-details" id="payment-review-details"></dl>
-      <label class="payment-review-reference-field" id="payment-review-reference-field" hidden>
-        Reference shown by customer
-        <input type="text" id="payment-review-reference" maxlength="64" autocomplete="off">
-      </label>
       <label class="payment-review-check">
         <input type="checkbox" id="payment-review-checked">
         <span id="payment-review-check-label">I verified the payment against this reservation.</span>
       </label>
       <p class="payment-review-message" id="payment-review-message" aria-live="polite"></p>
-      <button class="btn btn-primary" type="button" id="payment-review-confirm" disabled>Accept reservation &amp; mark paid</button>
+      <p class="payment-review-guidance" id="payment-review-guidance" aria-live="polite"></p>
+      <button class="btn btn-primary" type="button" id="payment-review-confirm" aria-describedby="payment-review-guidance payment-review-message" disabled>Accept reservation &amp; mark paid</button>
     </section>
   </dialog>
 
@@ -153,6 +150,6 @@
   </dialog>
 
   <script src="config.js"></script>
-  <script src="developer.js?v=20261102-staff-approval"></script>
+  <script src="developer.js?v=20261102-staff-approval-reference-checkbox"></script>
 </body>
 </html>

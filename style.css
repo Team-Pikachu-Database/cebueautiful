@@ -2383,22 +2383,6 @@ img {
   overflow-wrap: anywhere;
 }
 
-.payment-review-reference-field:not([hidden]) {
-  display: grid;
-  gap: 6px;
-  color: #fffaf0;
-  font-size: 0.86rem;
-}
-
-.payment-review-reference-field input {
-  min-height: 40px;
-  padding: 8px 9px;
-  border: 1px solid rgba(255, 190, 35, 0.35);
-  border-radius: 8px;
-  color: #fffaf0;
-  background: rgba(4, 7, 11, 0.82);
-}
-
 .payment-review-verification {
   margin: 0;
   padding: 11px 12px;
@@ -2434,6 +2418,13 @@ img {
   margin: 0;
   color: #ffd35a;
   font-size: 0.85rem;
+}
+
+.payment-review-guidance {
+  min-height: 1.4em;
+  margin: 0;
+  color: #c8d3e2;
+  font-size: 0.82rem;
 }
 
 .cancellation-approval-actions {

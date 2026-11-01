@@ -40,8 +40,7 @@ const paymentReviewDetails = document.getElementById("payment-review-details");
 const paymentReviewChecked = document.getElementById("payment-review-checked");
 const paymentReviewConfirm = document.getElementById("payment-review-confirm");
 const paymentReviewMessage = document.getElementById("payment-review-message");
-const paymentReviewReferenceField = document.getElementById("payment-review-reference-field");
-const paymentReviewReference = document.getElementById("payment-review-reference");
+const paymentReviewGuidance = document.getElementById("payment-review-guidance");
 const paymentReviewVerification = document.getElementById("payment-review-verification");
 const paymentReviewCheckLabel = document.getElementById("payment-review-check-label");
 const cancellationApprovalDialog = document.getElementById("cancellation-approval-dialog");
@@ -219,11 +218,8 @@ function openPaymentReview(reservation) {
   const isOnlinePaymentVerified = reservation.onlinePaymentVerified === true &&
     typeof reservation.paymentReference === "string" &&
     reservation.paymentReference.length > 0;
-  paymentReviewReferenceField.hidden = !isOnlinePayment;
-  paymentReviewReference.required = isOnlinePayment;
-  paymentReviewReference.value = "";
   paymentReviewCheckLabel.textContent = isOnlinePayment
-    ? "I matched the customer's reference to the provider-verified reference and accept this reservation."
+    ? "I matched the provider-verified reference with the reference shown by the user, and accept this reservation."
     : "I received and verified the payment at the hotel counter.";
   paymentReviewConfirm.textContent = isOnlinePayment
     ? "Accept reservation & mark paid"
@@ -240,15 +236,34 @@ function openPaymentReview(reservation) {
 
 function updatePaymentReviewConfirmation() {
   const selectedOnline = selectedReservation?.paymentMethod === "online";
-  const referenceMatches = selectedReservation?.onlinePaymentVerified === true &&
-    typeof selectedReservation.paymentReference === "string" &&
-    paymentReviewReference.value.trim() === selectedReservation.paymentReference;
-  paymentReviewConfirm.disabled = !paymentReviewChecked.checked ||
-    (selectedOnline && !referenceMatches);
+  const isProviderVerified = selectedReservation?.onlinePaymentVerified === true;
+  const isReady = paymentReviewChecked.checked &&
+    (!selectedOnline || isProviderVerified);
+
+  if (selectedOnline && !isProviderVerified) {
+    paymentReviewGuidance.textContent =
+      "Acceptance is disabled until the payment provider confirms this payment.";
+  } else if (!paymentReviewChecked.checked) {
+    paymentReviewGuidance.textContent = selectedOnline
+      ? "Check the box above after matching the verified reference with the reference shown by the user."
+      : "Check the box above after verifying receipt to enable confirmation.";
+  } else {
+    paymentReviewGuidance.textContent = selectedOnline
+      ? "Reference confirmed. You can now accept this reservation."
+      : "Payment verified. You can now mark this reservation as paid.";
+  }
+
+  paymentReviewConfirm.disabled = !isReady;
 }
 
 async function confirmPayment() {
   if (!selectedReservation || !paymentReviewChecked.checked) return;
+  if (
+    selectedReservation.paymentMethod === "online" &&
+    (selectedReservation.onlinePaymentVerified !== true || !selectedReservation.paymentReference)
+  ) {
+    return;
+  }
 
   paymentReviewConfirm.disabled = true;
   paymentReviewMessage.textContent = "Recording payment confirmation…";
@@ -260,7 +275,7 @@ async function confirmPayment() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          paymentReference: paymentReviewReference.value.trim()
+          paymentReference: selectedReservation.paymentReference || ""
         })
       }
     );
@@ -366,9 +381,9 @@ paymentReviewDialog.addEventListener("click", event => {
   if (event.target === paymentReviewDialog) paymentReviewDialog.close();
 });
 paymentReviewChecked.addEventListener("change", () => {
+  paymentReviewMessage.textContent = "";
   updatePaymentReviewConfirmation();
 });
-paymentReviewReference.addEventListener("input", updatePaymentReviewConfirmation);
 paymentReviewConfirm.addEventListener("click", confirmPayment);
 
 document.getElementById("developer-logout").addEventListener("click", async event => {
