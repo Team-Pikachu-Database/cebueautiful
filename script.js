@@ -898,12 +898,6 @@ function updateAccountDisplay(user) {
     pendingSpinRewardOwner = null;
   }
   const isSignedIn = Boolean(user);
-  if (isSignedIn && getCurrentView() === "home") {
-    const nextUrl = new URL(window.location.href);
-    nextUrl.searchParams.set("view", "hotels");
-    window.history.replaceState({}, "", nextUrl);
-    applyCurrentView("hotels");
-  }
 
   const developerProjectLink = document.getElementById("developer-project-link");
   const sidebarGuestActions = document.getElementById("sidebar-guest-actions");
@@ -914,6 +908,12 @@ function updateAccountDisplay(user) {
 
   if (accountEntry) accountEntry.hidden = isSignedIn;
   if (signedInPanel) signedInPanel.hidden = !isSignedIn;
+  const homeAccountActions = document.querySelector(".home-account-actions");
+  if (homeAccountActions) homeAccountActions.hidden = isSignedIn;
+  const homeBrowseLabel = document.getElementById("home-browse-label");
+  if (homeBrowseLabel) {
+    homeBrowseLabel.textContent = isSignedIn ? "Browse using your account" : "Browse as guest";
+  }
   if (sidebarGuestActions) sidebarGuestActions.hidden = isSignedIn;
   if (sidebarUserActions) sidebarUserActions.hidden = !isSignedIn;
   if (developerProjectLink) developerProjectLink.hidden = user?.role !== "developer";
@@ -3731,14 +3731,6 @@ function initializePageLinks() {
   document.querySelectorAll("[data-page-link]").forEach(link => {
     link.addEventListener("click", event => {
       const target = link.dataset.pageLink || "home";
-      if (signedInAccount && target === "home") {
-        event.preventDefault();
-        const nextUrl = new URL(window.location.href);
-        nextUrl.searchParams.set("view", "hotels");
-        window.history.pushState({}, "", nextUrl);
-        applyCurrentView("hotels");
-        return;
-      }
       const nextUrl = new URL(window.location.href);
       if (target === "home") {
         nextUrl.searchParams.delete("view");

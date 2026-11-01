@@ -208,6 +208,10 @@ img {
   margin-left: 8px;
 }
 
+.home-account-actions[hidden] {
+  display: none;
+}
+
 .home-navigation-links .home-sign-in,
 .home-navigation-links .home-sign-up {
   min-height: 36px;
