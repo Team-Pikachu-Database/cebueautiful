@@ -3762,6 +3762,7 @@ function initializeHelpChat() {
   if (!dialog || !conversation || !form || !input || !sendButton || !modeStatus) return;
 
   const typingId = "help-typing-indicator";
+  let portalAnimationTimer = 0;
 
   const appendHelpMessage = (role, text, options = {}) => {
     const message = el("article", `help-message is-${role}${options.isError ? " is-error" : ""}`);
@@ -3905,6 +3906,10 @@ function initializeHelpChat() {
 
   document.getElementById("help-close")?.addEventListener("click", () => dialog.close());
   dialog.addEventListener("close", () => {
+    window.clearTimeout(portalAnimationTimer);
+    dialog.dataset.portalAnimation = "";
+    const portalEffect = dialog.querySelector(".help-portal-effect");
+    if (portalEffect) portalEffect.hidden = true;
     if (pokeballLauncher) pokeballLauncher.hidden = false;
   });
   dialog.addEventListener("click", event => {
@@ -3918,10 +3923,12 @@ function initializeHelpChat() {
   const triggerHelpPortalAnimation = () => {
     if (!pokeballLauncher) return;
     const mascot = dialog.querySelector(".help-mascot");
-    if (!mascot) return;
+    const portalEffect = dialog.querySelector(".help-portal-effect");
+    if (!mascot || !portalEffect) return;
 
     const launcherRect = pokeballLauncher.getBoundingClientRect();
     const mascotRect = mascot.getBoundingClientRect();
+    const dialogRect = dialog.getBoundingClientRect();
     const startX = launcherRect.left + launcherRect.width / 2 - mascotRect.left - mascotRect.width / 2;
     const startY = launcherRect.top + launcherRect.height / 2 - mascotRect.top - mascotRect.height / 2;
     const startScale = Math.max(0.22, Math.min(0.9, launcherRect.width / Math.max(mascotRect.width, 1)));
@@ -3929,15 +3936,20 @@ function initializeHelpChat() {
     mascot.style.setProperty("--portal-start-x", `${startX}px`);
     mascot.style.setProperty("--portal-start-y", `${startY}px`);
     mascot.style.setProperty("--portal-start-scale", startScale.toFixed(3));
+    portalEffect.style.left = `${launcherRect.left - dialogRect.left + (launcherRect.width - mascotRect.width * startScale) / 2}px`;
+    portalEffect.style.top = `${launcherRect.top - dialogRect.top + (launcherRect.height - mascotRect.height * startScale) / 2}px`;
+    portalEffect.style.width = `${launcherRect.width}px`;
+    portalEffect.style.height = `${launcherRect.height}px`;
+    portalEffect.hidden = false;
     dialog.dataset.portalAnimation = "true";
-    mascot.classList.remove("portal-animate");
-    void mascot.offsetWidth;
-    mascot.classList.add("portal-animate");
+    void portalEffect.offsetWidth;
 
-    window.setTimeout(() => {
+    window.clearTimeout(portalAnimationTimer);
+    portalAnimationTimer = window.setTimeout(() => {
       dialog.dataset.portalAnimation = "";
-      mascot.classList.remove("portal-animate");
-    }, 760);
+      portalEffect.hidden = true;
+      portalAnimationTimer = 0;
+    }, 1540);
   };
 
   document.querySelectorAll("[data-help-open]").forEach(button => {
