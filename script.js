@@ -1308,12 +1308,6 @@ function initializeAccount() {
     button.addEventListener("click", () => button.closest("dialog").close());
   });
 
-  if (accountDialog) {
-    accountDialog.addEventListener("click", event => {
-      if (event.target === accountDialog) accountDialog.close();
-    });
-  }
-
   document.querySelectorAll("[data-account-view]").forEach(tab => {
     tab.addEventListener("click", () => setAccountView(tab.dataset.accountView));
   });
@@ -1498,14 +1492,16 @@ function initializeAccountMenu() {
     }
   });
 
-  [settingsDialog, reservationsDialog].forEach(dialog => {
+  reservationsDialog.addEventListener("close", () => {
+    stopReservationHistoryRefresh();
+  });
+}
+
+function initializeSidebarDialogBackdropDismissal() {
+  document.querySelectorAll("dialog.sidebar-option-dialog").forEach(dialog => {
     dialog.addEventListener("click", event => {
       if (event.target === dialog) dialog.close();
     });
-  });
-
-  reservationsDialog.addEventListener("close", () => {
-    stopReservationHistoryRefresh();
   });
 }
 
@@ -1544,12 +1540,6 @@ function initializeCancellationDialogs() {
       reasonSubmit.disabled = false;
       reasonSubmit.textContent = "Submit request";
     }
-  });
-
-  [reasonDialog, noticeDialog].forEach(dialog => {
-    dialog.addEventListener("click", event => {
-      if (event.target === dialog) dialog.close();
-    });
   });
 }
 
@@ -4123,6 +4113,7 @@ initializeSpinButton();
 setDefaultDates();
 initializeBookingThankYou();
 initializeAccount();
+initializeSidebarDialogBackdropDismissal();
 initializeCancellationDialogs();
 initializeReviewForm();
 initializeAccountMenu();
