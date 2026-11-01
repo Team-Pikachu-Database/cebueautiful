@@ -3035,14 +3035,6 @@ img {
   transition: color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
 }
 
-#account-tab-developer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  line-height: 1.05;
-}
-
 #account-dialog .account-tabs button:hover {
   color: #fff8df;
   background: rgba(255, 248, 223, 0.08);
