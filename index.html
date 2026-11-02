@@ -500,6 +500,37 @@
     </section>
   </dialog>
 
+  <dialog class="account-dialog sidebar-option-dialog payment-receipt-dialog" id="payment-receipt-dialog" aria-labelledby="payment-receipt-title">
+    <section class="account-panel">
+      <div class="account-heading">
+        <div>
+          <span class="account-kicker">CEBUSTAYS PAYMENT</span>
+          <h2 id="payment-receipt-title">Payment receipt</h2>
+        </div>
+        <button type="button" class="account-close" data-dialog-close aria-label="Close payment receipt">×</button>
+      </div>
+      <div class="payment-receipt-sheet">
+        <div class="payment-receipt-status"><span aria-hidden="true">✓</span> Payment verified</div>
+        <p class="payment-receipt-label">Amount paid</p>
+        <p class="payment-receipt-total" id="payment-receipt-total">₱0.00</p>
+        <dl class="payment-receipt-details">
+          <div><dt>Hotel</dt><dd id="payment-receipt-hotel"></dd></div>
+          <div><dt>Guest</dt><dd id="payment-receipt-guest"></dd></div>
+          <div><dt>Stay</dt><dd id="payment-receipt-stay"></dd></div>
+          <div><dt>Payment method</dt><dd id="payment-receipt-method"></dd></div>
+          <div><dt>Date paid</dt><dd id="payment-receipt-paid-at"></dd></div>
+          <div><dt>Provider payment reference</dt><dd id="payment-receipt-reference"></dd></div>
+          <div><dt>Reservation reference</dt><dd id="payment-receipt-reservation"></dd></div>
+        </dl>
+        <p class="payment-receipt-note">Present this payment confirmation with your reservation at the hotel counter. Staff can verify the details in CebuStays.</p>
+      </div>
+      <div class="payment-receipt-actions">
+        <button type="button" class="btn btn-primary" id="payment-receipt-download">Download your receipt</button>
+        <button type="button" class="btn btn-ghost" data-dialog-close>Close</button>
+      </div>
+    </section>
+  </dialog>
+
   <dialog class="account-dialog review-dialog" id="hotel-review-dialog" aria-labelledby="hotel-review-title">
     <section class="account-panel">
       <div class="account-heading">
@@ -883,6 +914,6 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""></script>
   <script defer src="map.js?v=hotel-directions-api-v3"></script>
-  <script defer src="script.js?v=20261102-spin-music-v2"></script>
+  <script defer src="script.js?v=20261102-payment-receipt-v1"></script>
 </body>
 </html>

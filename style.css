@@ -1798,6 +1798,96 @@ img {
   width: min(620px, calc(100% - 24px));
 }
 
+.payment-receipt-dialog {
+  width: min(560px, calc(100% - 24px));
+}
+
+.payment-receipt-sheet {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.payment-receipt-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: #176246;
+  background: #e4f4ed;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.payment-receipt-status span {
+  display: grid;
+  width: 18px;
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #176246;
+}
+
+.payment-receipt-label {
+  margin: 20px 0 2px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.payment-receipt-total {
+  margin: 0 0 16px;
+  color: var(--navy);
+  font-size: 2rem;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.payment-receipt-details {
+  margin: 0;
+  border-top: 1px solid var(--line);
+}
+
+.payment-receipt-details div {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.7fr) minmax(0, 1.3fr);
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.payment-receipt-details dt {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.payment-receipt-details dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.payment-receipt-note {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.payment-receipt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
 .reservation-message {
   min-height: 1.5em;
   margin: 0 0 14px;

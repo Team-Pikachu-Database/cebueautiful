@@ -1429,6 +1429,7 @@ async function handlePaymentReturn() {
 
   let message;
   let paymentVerified = false;
+  let paymentDetails = null;
   if (outcome === "cancelled") {
     message = "Checkout was closed. The return page does not determine payment status; check Reservation History before retrying while the room hold is active.";
   } else {
@@ -1436,7 +1437,8 @@ async function handlePaymentReturn() {
       const data = await requestApi(
         `/api/bookings/${encodeURIComponent(reference)}/payment-status`
       );
-      paymentVerified = data.payment.paymentStatus === "paid";
+      paymentDetails = data.payment;
+      paymentVerified = data.payment.paymentStatus === "paid" || data.payment.onlinePaymentVerified === true;
       message = data.payment.paymentReference
         ? `Xendit verified the payment for ${reference}. Payment reference: ${data.payment.paymentReference}. Your reservation is pending staff approval; you do not need to pay again.`
         : data.payment.paymentStatus === "paid"
@@ -1448,18 +1450,26 @@ async function handlePaymentReturn() {
   }
 
   const reservationsDialog = document.getElementById("reservation-history-dialog");
+  let reservations = [];
   if (reservationsDialog && signedInAccount && !paymentVerified) {
     reservationsDialog.showModal();
     startReservationHistoryRefresh();
-    await loadReservationHistory();
+    reservations = await loadReservationHistory();
   } else if (signedInAccount) {
-    await loadReservationHistory();
+    reservations = await loadReservationHistory();
   }
   if (paymentVerified) {
-    showBookingThankYou(
-      reference,
-      "Your reservation is staff-approved. Bring two valid IDs to the hotel counter. Staff will check them and then your unique QR Keycard will appear under My QR Keycard in the side panel."
-    );
+    const reservation = reservations.find(entry => entry.reference === reference) || {};
+    openPaymentReceipt({
+      ...reservation,
+      ...paymentDetails,
+      reference: paymentDetails.reference || reference,
+      paymentCheckoutStatus: paymentDetails.checkoutStatus || reservation.paymentCheckoutStatus,
+      paymentMethod: paymentDetails.paymentMethod || reservation.paymentMethod,
+      paymentReference: paymentDetails.paymentReference || reservation.paymentReference,
+      totalPrice: Number(paymentDetails.totalPrice ?? reservation.totalPrice),
+      paidAt: paymentDetails.paidAt || reservation.paidAt
+    });
   } else {
     showBookingThankYou(reference, message);
   }
@@ -1772,6 +1782,154 @@ function formatReservationDate(value) {
   });
 }
 
+function isReceiptAvailable(reservation) {
+  return reservation?.paymentStatus === "paid" || (
+    reservation?.paymentMethod === "online" &&
+    reservation?.paymentCheckoutStatus === "paid" &&
+    Boolean(reservation?.paymentReference)
+  );
+}
+
+function formatReceiptPaidAt(value) {
+  if (!value) return "Not provided";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not provided";
+  return new Intl.DateTimeFormat("en-PH", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Manila"
+  }).format(date);
+}
+
+let activePaymentReceipt = null;
+
+function openPaymentReceipt(receipt) {
+  if (!isReceiptAvailable(receipt)) return;
+  activePaymentReceipt = receipt;
+  document.getElementById("payment-receipt-hotel").textContent = receipt.hotelName || "CebuStays reservation";
+  document.getElementById("payment-receipt-guest").textContent =
+    receipt.guestName || signedInAccount?.displayName || signedInAccount?.email || "Guest";
+  document.getElementById("payment-receipt-stay").textContent = receipt.checkIn && receipt.checkOut
+    ? `${formatReservationDate(receipt.checkIn)} – ${formatReservationDate(receipt.checkOut)}`
+    : "Reservation stay";
+  document.getElementById("payment-receipt-method").textContent = receipt.paymentMethod === "online"
+    ? `Online payment${receipt.paymentProvider ? ` · ${receipt.paymentProvider}` : ""}`
+    : "Paid at hotel counter";
+  document.getElementById("payment-receipt-paid-at").textContent = formatReceiptPaidAt(receipt.paidAt);
+  document.getElementById("payment-receipt-reference").textContent = receipt.paymentReference || "Not provided";
+  document.getElementById("payment-receipt-reservation").textContent = receipt.reference || "Not provided";
+  document.getElementById("payment-receipt-total").textContent = pesoExact.format(Number(receipt.totalPrice || 0));
+  document.getElementById("payment-receipt-dialog").showModal();
+}
+
+function downloadPaymentReceipt(receipt) {
+  if (!isReceiptAvailable(receipt)) return;
+  const canvas = document.createElement("canvas");
+  canvas.width = 960;
+  canvas.height = 1180;
+  const context = canvas.getContext("2d");
+  if (!context) return;
+
+  context.fillStyle = "#eef3f1";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "#ffffff";
+  context.fillRect(40, 40, 880, 1100);
+  context.fillStyle = "#173a35";
+  context.fillRect(40, 40, 880, 190);
+  context.fillStyle = "#ffffff";
+  context.font = "700 30px Georgia, serif";
+  context.fillText("CEBUSTAYS", 88, 104);
+  context.font = "500 20px Arial, sans-serif";
+  context.fillStyle = "#d8e6e1";
+  context.fillText("PAYMENT RECEIPT", 88, 150);
+  context.fillStyle = "#dff4e8";
+  context.fillRect(700, 76, 168, 48);
+  context.fillStyle = "#176246";
+  context.font = "700 16px Arial, sans-serif";
+  context.fillText("PAYMENT VERIFIED", 716, 106);
+
+  context.fillStyle = "#51645f";
+  context.font = "600 18px Arial, sans-serif";
+  context.fillText("AMOUNT PAID", 88, 292);
+  context.fillStyle = "#173a35";
+  context.font = "700 48px Arial, sans-serif";
+  context.fillText(pesoExact.format(Number(receipt.totalPrice || 0)), 88, 354);
+
+  const method = receipt.paymentMethod === "online"
+    ? `Online payment${receipt.paymentProvider ? ` · ${receipt.paymentProvider}` : ""}`
+    : "Paid at hotel counter";
+  const stay = receipt.checkIn && receipt.checkOut
+    ? `${formatReservationDate(receipt.checkIn)} – ${formatReservationDate(receipt.checkOut)}`
+    : "Reservation stay";
+  const rows = [
+    ["Hotel", receipt.hotelName || "CebuStays reservation"],
+    ["Guest", receipt.guestName || signedInAccount?.displayName || signedInAccount?.email || "Guest"],
+    ["Stay", stay],
+    ["Payment method", method],
+    ["Date paid", formatReceiptPaidAt(receipt.paidAt)],
+    ["Provider payment reference", receipt.paymentReference || "Not provided"],
+    ["Reservation reference", receipt.reference || "Not provided"]
+  ];
+  let y = 430;
+  rows.forEach(([label, value]) => {
+    context.strokeStyle = "#e2e9e6";
+    context.beginPath();
+    context.moveTo(88, y - 28);
+    context.lineTo(872, y - 28);
+    context.stroke();
+    context.fillStyle = "#61716d";
+    context.font = "500 17px Arial, sans-serif";
+    context.fillText(label.toUpperCase(), 88, y + 8);
+    context.fillStyle = "#1c302c";
+    context.font = "600 21px Arial, sans-serif";
+    context.fillText(String(value), 88, y + 42, 780);
+    y += 88;
+  });
+  context.fillStyle = "#61716d";
+  context.font = "500 16px Arial, sans-serif";
+  context.fillText("Present this payment confirmation with your reservation at the hotel counter.", 88, 1060, 780);
+  context.fillText("Verify payment details with CebuStays staff.", 88, 1092);
+
+  canvas.toBlob(blob => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `cebustays-receipt-${receipt.reference || "reservation"}.png`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, "image/png");
+}
+
+async function downloadVerifiedReservationReceipt(reservation) {
+  const data = await requestApi(
+    `/api/bookings/${encodeURIComponent(reservation.reference)}/payment-status`
+  );
+  const payment = data.payment;
+  if (payment.paymentStatus !== "paid" && payment.onlinePaymentVerified !== true) {
+    throw new Error("Payment is not verified yet. Check Reservation History before downloading a receipt.");
+  }
+  downloadPaymentReceipt({
+    ...reservation,
+    ...payment,
+    reference: payment.reference || reservation.reference,
+    paymentCheckoutStatus: payment.checkoutStatus || reservation.paymentCheckoutStatus,
+    paymentMethod: payment.paymentMethod || reservation.paymentMethod,
+    paymentReference: payment.paymentReference || reservation.paymentReference,
+    totalPrice: Number(payment.totalPrice ?? reservation.totalPrice),
+    paidAt: payment.paidAt || reservation.paidAt
+  });
+}
+
+function initializePaymentReceipt() {
+  document.getElementById("payment-receipt-download")
+    .addEventListener("click", () => {
+      if (activePaymentReceipt) downloadPaymentReceipt(activePaymentReceipt);
+    });
+}
+
 let activeReviewReservation = null;
 
 function setReviewRating(rating) {
@@ -1916,7 +2074,7 @@ async function loadReservationHistory() {
     const data = await requestApi("/api/bookings/mine");
     if (!data.reservations.length) {
       message.textContent = "No active reservations.";
-      return;
+      return [];
     }
 
     message.textContent = `${data.reservations.length} reservation${data.reservations.length === 1 ? "" : "s"}`;
@@ -1961,6 +2119,25 @@ async function loadReservationHistory() {
 
       const actionRow = document.createElement("div");
       actionRow.className = "reservation-item-actions";
+      if (isReceiptAvailable(reservation)) {
+        const receiptButton = document.createElement("button");
+        receiptButton.type = "button";
+        receiptButton.className = "btn btn-ghost reservation-rate reservation-receipt";
+        receiptButton.textContent = "Download your receipt";
+        receiptButton.addEventListener("click", async () => {
+          receiptButton.disabled = true;
+          receiptButton.textContent = "Preparing receipt…";
+          try {
+            await downloadVerifiedReservationReceipt(reservation);
+          } catch (error) {
+            window.alert(error.message);
+          } finally {
+            receiptButton.disabled = false;
+            receiptButton.textContent = "Download your receipt";
+          }
+        });
+        actionRow.append(receiptButton);
+      }
       if (reservation.paymentReference) {
         const paymentReference = document.createElement("small");
         paymentReference.className = "reservation-payment-reference";
@@ -2087,8 +2264,10 @@ async function loadReservationHistory() {
       item.append(heading, dates, details, reference, actionRow);
       list.append(item);
     });
+    return data.reservations;
   } catch (error) {
     message.textContent = error.message;
+    return [];
   } finally {
     reservationHistoryLoading = false;
   }
@@ -4418,6 +4597,7 @@ function initializeHelpChat() {
 initializeSpinButton();
 setDefaultDates();
 initializeBookingThankYou();
+initializePaymentReceipt();
 initializeAccount();
 initializeIdentityExperience();
 initializeSidebarDialogBackdropDismissal();
