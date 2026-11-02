@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CebuStays – Hotels and staycations in Cebu</title>
-  <link rel="stylesheet" href="style.css?v=20261102-xendit-gcash-checkout">
+  <link rel="stylesheet" href="style.css?v=20261102-counter-qr-v1">
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -166,6 +166,9 @@
           <button class="sidebar-link" type="button" id="sidebar-reservations" title="My reservations" aria-label="My reservations">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18m-13 4h3m-3 3h7"></path></svg><span>My reservations</span>
           </button>
+          <button class="sidebar-link" type="button" id="sidebar-qr-codes" title="My QR Keycard" aria-label="My QR Keycard">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM19 14h2m-7 5v2m4-4v4"></path><path d="M5.5 5.5h2v2h-2zm11 0h2v2h-2zm-11 11h2v2h-2z"></path></svg><span>My QR Keycard</span>
+          </button>
           <button class="sidebar-link" type="button" id="sidebar-points" title="My Cebu Points" aria-label="My Cebu Points">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 7.5v3.2l2.4 2.4M7 5.5h10"></path></svg><span>My Cebu Points</span>
           </button>
@@ -184,6 +187,9 @@
           <a class="sidebar-link" id="developer-project-link" href="developer.html" title="Developer dashboard" aria-label="Developer dashboard" hidden>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8-4 4 4 4m8-8 4 4-4 4m-3-11-2 14"></path></svg><span>Developer dashboard</span>
           </a>
+          <button class="sidebar-link" type="button" id="sidebar-identity-reviews" title="Counter ID checks" aria-label="Counter ID checks" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8" cy="11" r="2"></circle><path d="M5.5 16a3 3 0 0 1 5 0m3-5h5m-5 4h5"></path></svg><span>Counter ID checks</span>
+          </button>
           <button class="sidebar-link sidebar-sign-out" type="button" id="sidebar-logout" title="Sign out" aria-label="Sign out">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5m5 5H3m9-9h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"></path></svg><span>Sign out</span>
           </button>
@@ -269,6 +275,44 @@
       <p class="booking-payment-dialog-total" id="booking-payment-total"></p>
       <p class="booking-payment-dialog-note">On mobile, choose GCash on the secure checkout page to continue in the app if available. To pay by QR, choose QRPh and scan the QR code shown there. Once Xendit verifies payment, your room is reserved while staff reviews and approves the reservation in the project dashboard. Unpaid checkout holds expire after 30 minutes.</p>
       <a class="btn btn-primary booking-payment-continue" id="booking-payment-continue" href="" target="_blank" rel="noopener noreferrer">Continue to GCash / QRPh</a>
+    </section>
+  </dialog>
+
+  <dialog class="account-dialog sidebar-option-dialog identity-dialog" id="my-qr-dialog" aria-labelledby="my-qr-title">
+    <section class="account-panel identity-panel identity-dashboard-panel">
+      <div class="account-heading">
+        <div><span class="account-kicker">YOUR DIGITAL ROOM ACCESS</span><h2 id="my-qr-title">My QR Keycard</h2></div>
+        <button type="button" class="account-close" data-dialog-close aria-label="Close My QR Keycard">×</button>
+      </div>
+      <p class="identity-message" id="my-qr-message" aria-live="polite">Your QR Keycard appears here after staff approval and the counter ID check.</p>
+      <div class="identity-qr-categories" id="my-qr-categories"></div>
+      <div class="identity-qr-list" id="my-qr-list"></div>
+    </section>
+  </dialog>
+
+  <dialog class="account-dialog sidebar-option-dialog identity-dialog" id="qr-view-dialog" aria-labelledby="qr-view-title">
+    <section class="account-panel identity-panel qr-view-panel">
+      <div class="account-heading"><div><span class="account-kicker">DIGITAL KEYCARD</span><h2 id="qr-view-title">My QR Keycard</h2></div><button type="button" class="account-close" data-dialog-close aria-label="Close QR Keycard">×</button></div>
+      <img id="qr-view-image" alt="Unique QR Keycard for room access">
+      <p id="qr-view-details"></p>
+      <a class="btn btn-primary" id="qr-view-download" download="cebustays-qr-keycard.png">Download QR Keycard</a>
+    </section>
+  </dialog>
+
+  <dialog class="account-dialog sidebar-option-dialog identity-dialog" id="staff-verification-dialog" aria-labelledby="staff-verification-title">
+    <section class="account-panel identity-panel identity-dashboard-panel">
+      <div class="account-heading">
+        <div><span class="account-kicker">STAFF DASHBOARD</span><h2 id="staff-verification-title">Counter ID checks</h2></div>
+        <button type="button" class="account-close" data-dialog-close aria-label="Close counter ID checks">×</button>
+      </div>
+      <p class="identity-message" id="staff-verification-message" aria-live="polite">Loading staff-approved reservations…</p>
+      <p>Only use the confirmation button after physically checking two valid IDs at the hotel counter. It generates one unique QR Keycard for the approved reservation.</p>
+      <form class="identity-qr-validation-form" id="identity-qr-validation-form">
+        <label for="identity-qr-token">Validate a QR Keycard token</label>
+        <div><input id="identity-qr-token" name="token" autocomplete="off" placeholder="CSQR1.…" required><button class="btn btn-primary" type="submit">Validate</button></div>
+        <p class="identity-message" id="identity-qr-validation-message" aria-live="polite"></p>
+      </form>
+      <div class="identity-staff-list" id="staff-verification-list"></div>
     </section>
   </dialog>
 
@@ -859,6 +903,6 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""></script>
   <script defer src="map.js?v=hotel-directions-api-v3"></script>
-  <script defer src="script.js?v=20261102-paid-room-reservation"></script>
+  <script defer src="script.js?v=20261102-counter-qr-v1"></script>
 </body>
 </html>

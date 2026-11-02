@@ -6262,3 +6262,276 @@ img {
     animation: none;
   }
 }
+
+.identity-dialog {
+  width: min(760px, calc(100vw - 28px));
+  max-width: 760px;
+  max-height: min(88dvh, 900px);
+  overflow: auto;
+  border: 1px solid rgba(0, 53, 128, 0.1);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 24px 80px rgba(0, 27, 67, 0.28);
+}
+
+.identity-dialog::backdrop {
+  background: rgba(3, 21, 48, 0.62);
+  backdrop-filter: blur(4px);
+  animation: identity-backdrop-in 180ms ease-out both;
+}
+
+.identity-dialog[open] {
+  animation: identity-dialog-in 240ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+
+.identity-panel {
+  display: grid;
+  gap: 18px;
+  padding: clamp(20px, 4vw, 34px);
+  color: #233247;
+}
+
+.identity-panel > p {
+  margin: 0;
+  line-height: 1.65;
+}
+
+.identity-panel .account-heading {
+  align-items: flex-start;
+  margin: 0;
+}
+
+.identity-panel .account-heading h2 {
+  margin: 6px 0 0;
+  color: #003580;
+  font-size: clamp(1.35rem, 3vw, 1.85rem);
+  line-height: 1.2;
+}
+
+.identity-message {
+  min-height: 1.3em;
+  margin: 0;
+  color: #42566f;
+  line-height: 1.5;
+}
+
+.identity-dashboard-panel {
+  min-height: 300px;
+}
+
+.identity-qr-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.identity-qr-categories button {
+  padding: 8px 12px;
+  border: 1px solid #d5dfeb;
+  border-radius: 999px;
+  color: #25415f;
+  background: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.identity-qr-categories button[aria-pressed="true"] {
+  border-color: #003580;
+  color: #fff;
+  background: #003580;
+}
+
+.identity-qr-list,
+.identity-staff-list {
+  display: grid;
+  gap: 13px;
+}
+
+.identity-qr-card,
+.identity-staff-card {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 15px;
+  border: 1px solid #dce5ef;
+  border-radius: 15px;
+  background: #fff;
+}
+
+.identity-qr-card img {
+  width: 140px;
+  height: 140px;
+  border: 1px solid #e4e9f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.identity-qr-copy h3,
+.identity-staff-card h3 {
+  margin: 0 0 8px;
+  color: #003580;
+  font-size: 1.05rem;
+}
+
+.identity-qr-copy p,
+.identity-staff-card p {
+  margin: 5px 0;
+  color: #4a5d73;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.identity-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.identity-card-actions button,
+.identity-card-actions a {
+  min-height: 36px;
+  padding: 8px 11px;
+  border: 1px solid #cbd8e8;
+  border-radius: 8px;
+  color: #003580;
+  background: #fff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.identity-status {
+  display: inline-flex;
+  margin-top: 5px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: #154e2b;
+  background: #e6f7ed;
+  font-size: 0.77rem;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.identity-status.is-pending,
+.identity-status.is-pending_payment {
+  color: #694d00;
+  background: #fff4d2;
+}
+
+.identity-status.is-cancelled_invalid {
+  color: #872d35;
+  background: #ffeaec;
+}
+
+.identity-staff-card {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.identity-staff-card button {
+  min-height: 40px;
+}
+
+.identity-qr-validation-form {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid #dce5ef;
+  border-radius: 12px;
+  background: #f7faff;
+  color: #263d58;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.identity-qr-validation-form > div {
+  display: flex;
+  gap: 8px;
+}
+
+.identity-qr-validation-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 11px;
+  border: 1px solid #cbd7e5;
+  border-radius: 9px;
+  font: inherit;
+}
+
+.identity-qr-validation-form .identity-message {
+  font-weight: 400;
+}
+
+.qr-view-panel {
+  justify-items: center;
+  text-align: center;
+}
+
+.qr-view-panel .account-heading {
+  width: 100%;
+  text-align: left;
+}
+
+.qr-view-panel > img {
+  width: min(300px, 75vw);
+  border: 1px solid #e0e6ee;
+  border-radius: 14px;
+}
+
+@keyframes identity-dialog-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes identity-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 680px) {
+  .identity-dialog {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+    border-radius: 17px;
+  }
+
+  .identity-qr-card {
+    grid-template-columns: 94px minmax(0, 1fr);
+    gap: 12px;
+    padding: 11px;
+  }
+
+  .identity-qr-card img {
+    width: 94px;
+    height: 94px;
+  }
+
+  .identity-staff-card {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 460px) {
+  .identity-qr-card {
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 9px;
+  }
+
+  .identity-qr-card img {
+    width: 72px;
+    height: 72px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .identity-dialog[open],
+  .identity-dialog::backdrop {
+    animation: none;
+    transition: none;
+  }
+}

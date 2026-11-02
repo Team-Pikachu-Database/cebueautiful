@@ -903,6 +903,8 @@ function updateAccountDisplay(user) {
   if (sidebarGuestActions) sidebarGuestActions.hidden = isSignedIn;
   if (sidebarUserActions) sidebarUserActions.hidden = !isSignedIn;
   if (developerProjectLink) developerProjectLink.hidden = user?.role !== "developer";
+  const identityReviewsButton = document.getElementById("sidebar-identity-reviews");
+  if (identityReviewsButton) identityReviewsButton.hidden = user?.role !== "developer";
   const bookingForm = document.getElementById("booking-form");
   const bookingSignIn = document.getElementById("booking-sign-in");
   if (bookingSignIn) bookingSignIn.hidden = isSignedIn;
@@ -973,6 +975,238 @@ async function requestApi(path, options = {}) {
   }
 
   return data;
+}
+
+let myQrCategories = {};
+
+function closeIdentityDialogs(except = null) {
+  document.querySelectorAll(".identity-dialog[open]").forEach(dialog => {
+    if (dialog !== except) dialog.close();
+  });
+}
+
+function formatIdentityDate(value) {
+  if (!value) return "Not available";
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+function renderMyQrCategory(category) {
+  const list = document.getElementById("my-qr-list");
+  const categories = document.getElementById("my-qr-categories");
+  categories.querySelectorAll("button").forEach(button => {
+    button.setAttribute("aria-pressed", String(button.dataset.qrCategory === category));
+  });
+  list.replaceChildren();
+  const entries = myQrCategories[category] ?? [];
+  if (!entries.length) {
+    const empty = document.createElement("p");
+    empty.className = "identity-message";
+    empty.textContent = category === "active"
+      ? "Your QR Keycard will appear here after staff approves the reservation and confirms two valid IDs at the hotel counter."
+      : "There are no reservations or QR keycards in this category.";
+    list.append(empty);
+    return;
+  }
+
+  entries.forEach(entry => {
+    const card = document.createElement("article");
+    card.className = "identity-qr-card";
+    if (entry.qrImage) {
+      const image = document.createElement("img");
+      image.src = entry.qrImage;
+      image.alt = `Unique QR keycard for reservation ${entry.reference}`;
+      card.append(image);
+    }
+
+    const copy = document.createElement("div");
+    copy.className = "identity-qr-copy";
+    const heading = document.createElement("h3");
+    heading.textContent = `${entry.hotelName} — ${entry.qrImage ? "My QR Keycard" : "Reservation status"}`;
+    const reservation = document.createElement("p");
+    reservation.textContent = `Reservation ID: ${entry.reference}`;
+    const stay = document.createElement("p");
+    stay.textContent = `Stay: ${formatIdentityDate(entry.checkIn)} – ${formatIdentityDate(entry.checkOut)}`;
+    copy.append(heading, reservation, stay);
+
+    if (entry.qrImage) {
+      const status = document.createElement("span");
+      status.className = `identity-status is-${entry.status}`;
+      status.textContent = `QR: ${entry.status.replaceAll("_", " ")}`;
+      const actions = document.createElement("div");
+      actions.className = "identity-card-actions";
+      const viewButton = document.createElement("button");
+      viewButton.type = "button";
+      viewButton.textContent = "View QR Keycard";
+      viewButton.addEventListener("click", () => {
+        closeIdentityDialogs();
+        document.getElementById("qr-view-title").textContent =
+          `${entry.hotelName} — My QR Keycard`;
+        document.getElementById("qr-view-image").src = entry.qrImage;
+        document.getElementById("qr-view-details").textContent =
+          `Reservation ${entry.reference} · ${formatIdentityDate(entry.checkIn)} – ${formatIdentityDate(entry.checkOut)}`;
+        const download = document.getElementById("qr-view-download");
+        download.href = entry.qrImage;
+        download.download = `cebustays-${entry.reference}-qr-keycard.png`;
+        document.getElementById("qr-view-dialog").showModal();
+      });
+      const download = document.createElement("a");
+      download.href = entry.qrImage;
+      download.download = `cebustays-${entry.reference}-qr-keycard.png`;
+      download.textContent = "Download QR Keycard";
+      actions.append(viewButton, download);
+      copy.append(status, actions);
+    } else {
+      const status = document.createElement("span");
+      status.className = "identity-status is-pending";
+      status.textContent = entry.status.replaceAll("_", " ");
+      const nextStep = document.createElement("p");
+      nextStep.textContent = entry.status === "awaiting_counter_ids"
+        ? "Reservation approved. Show two valid IDs at the hotel counter; staff will confirm them and make your QR Keycard available here."
+        : entry.status === "awaiting_staff_approval"
+          ? "Your online payment is confirmed. Your reservation is still waiting for staff approval."
+          : "Complete payment or check your reservation details to continue.";
+      copy.append(status, nextStep);
+    }
+    card.append(copy);
+    list.append(card);
+  });
+}
+
+async function openMyQrDashboard() {
+  if (!signedInAccount) {
+    setAccountView("login");
+    accountDialog.showModal();
+    return;
+  }
+  closeIdentityDialogs();
+  const dialog = document.getElementById("my-qr-dialog");
+  const message = document.getElementById("my-qr-message");
+  const list = document.getElementById("my-qr-list");
+  const tabs = document.getElementById("my-qr-categories");
+  dialog.showModal();
+  message.textContent = "Loading your QR Keycards…";
+  list.replaceChildren();
+  tabs.replaceChildren();
+  try {
+    const data = await requestApi("/api/qr-cards/mine");
+    myQrCategories = data.categories;
+    const labels = [
+      ["active", "My QR Keycard"],
+      ["pendingVerification", "Reservation status"],
+      ["completed", "Past stays"],
+      ["cancelled", "Cancelled / invalid"]
+    ];
+    labels.forEach(([category, label]) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.qrCategory = category;
+      button.textContent = `${label} (${myQrCategories[category]?.length ?? 0})`;
+      button.setAttribute("aria-pressed", String(category === "active"));
+      button.addEventListener("click", () => renderMyQrCategory(category));
+      tabs.append(button);
+    });
+    message.textContent = "Your unique QR Keycard appears here after staff approves your reservation and confirms two valid IDs at the hotel counter.";
+    renderMyQrCategory("active");
+  } catch (error) {
+    message.textContent = error.message;
+  }
+}
+
+async function loadStaffCounterChecks() {
+  const message = document.getElementById("staff-verification-message");
+  const list = document.getElementById("staff-verification-list");
+  message.textContent = "Loading staff-approved reservations…";
+  list.replaceChildren();
+  try {
+    const data = await requestApi("/api/staff/counter-id-checks/pending");
+    if (!data.reservations.length) {
+      message.textContent = "No staff-approved reservations are waiting for the counter ID check.";
+      return true;
+    }
+    message.textContent = `${data.reservations.length} approved reservation${data.reservations.length === 1 ? "" : "s"} waiting for two valid IDs at the counter.`;
+    data.reservations.forEach(reservation => {
+      const card = document.createElement("article");
+      card.className = "identity-staff-card";
+      const copy = document.createElement("div");
+      const title = document.createElement("h3");
+      title.textContent = `${reservation.guestName} · ${reservation.hotelName}`;
+      const meta = document.createElement("p");
+      meta.textContent = `Reservation ${reservation.reference} · ${formatIdentityDate(reservation.checkIn)} – ${formatIdentityDate(reservation.checkOut)} · approved and paid (${reservation.paymentMethod})`;
+      const instruction = document.createElement("p");
+      instruction.textContent = "Only confirm after staff has physically checked two valid IDs at the hotel counter.";
+      const confirmButton = document.createElement("button");
+      confirmButton.type = "button";
+      confirmButton.className = "btn btn-primary";
+      confirmButton.textContent = "Confirm 2 IDs & Generate QR";
+      confirmButton.addEventListener("click", () => {
+        void confirmCounterIds(reservation.reference, confirmButton);
+      });
+      copy.append(title, meta, instruction);
+      card.append(copy, confirmButton);
+      list.append(card);
+    });
+    return true;
+  } catch (error) {
+    message.textContent = error.message;
+    return false;
+  }
+}
+
+async function confirmCounterIds(reference, button) {
+  if (!window.confirm(`Confirm that staff checked two valid IDs in person for reservation ${reference} and generate its QR Keycard?`)) {
+    return;
+  }
+  const message = document.getElementById("staff-verification-message");
+  button.disabled = true;
+  message.textContent = `Generating the unique QR Keycard for ${reference}…`;
+  try {
+    const data = await requestApi(
+      `/api/staff/bookings/${encodeURIComponent(reference)}/confirm-ids`,
+      { method: "POST" }
+    );
+    const refreshed = await loadStaffCounterChecks();
+    message.textContent = `${data.confirmation.message} Tell the guest to open My QR Keycard in the side panel.` +
+      (refreshed ? "" : " The staff queue could not refresh; reopen it to check the latest list.");
+  } catch (error) {
+    message.textContent = error.message;
+    button.disabled = false;
+  }
+}
+
+function initializeIdentityExperience() {
+  document.getElementById("sidebar-qr-codes").addEventListener("click", () => {
+    void openMyQrDashboard();
+  });
+  document.getElementById("sidebar-identity-reviews").addEventListener("click", () => {
+    closeIdentityDialogs();
+    document.getElementById("staff-verification-dialog").showModal();
+    void loadStaffCounterChecks();
+  });
+  document.getElementById("identity-qr-validation-form").addEventListener("submit", async event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector('button[type="submit"]');
+    const message = document.getElementById("identity-qr-validation-message");
+    button.disabled = true;
+    message.textContent = "Validating token with the server…";
+    try {
+      const data = await requestApi("/api/qr/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: form.elements.namedItem("token").value.trim() })
+      });
+      message.textContent = data.result.valid
+        ? `Valid for ${data.result.hotelName}, reservation ${data.result.reference}.`
+        : `This key card is not currently valid (${data.result.status.replaceAll("_", " ")}).`;
+    } catch (error) {
+      message.textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
 }
 
 async function requestAccountApi(path, options = {}) {
@@ -4142,6 +4376,7 @@ initializeSpinButton();
 setDefaultDates();
 initializeBookingThankYou();
 initializeAccount();
+initializeIdentityExperience();
 initializeSidebarDialogBackdropDismissal();
 initializeCancellationDialogs();
 initializeReviewForm();
