@@ -270,7 +270,7 @@
       <p class="booking-payment-dialog-copy">Your room is held while you complete checkout. After payment is verified, it stays reserved while staff reviews your reservation.</p>
       <p class="booking-payment-dialog-reference" id="booking-payment-reference"></p>
       <p class="booking-payment-dialog-total" id="booking-payment-total"></p>
-      <p class="booking-payment-dialog-note">On mobile, choose GCash on the secure checkout page to continue in the app if available. To pay by QR, choose QRPh and scan the QR code shown there. Once Xendit verifies payment, your room is reserved while staff reviews and approves the reservation in the project dashboard. Unpaid checkout holds expire after 30 minutes.</p>
+      <p class="booking-payment-dialog-note">On mobile, choose GCash on the secure checkout page to continue in the app if available. To pay by QR, choose QRPh and scan the QR code shown there. Once Xendit verifies payment, your room is reserved while staff reviews and approves the reservation in the project dashboard. Pay within 36 hours of submitting your reservation; unpaid requests are automatically cancelled.</p>
       <a class="btn btn-primary booking-payment-continue" id="booking-payment-continue" href="" target="_blank" rel="noopener noreferrer">Continue to GCash / QRPh</a>
     </section>
   </dialog>
@@ -719,7 +719,7 @@
           </label>
           <p class="booking-coupon-status" id="booking-coupon-status" aria-live="polite"></p>
           <button class="btn btn-primary booking-submit" id="booking-submit" type="submit">Reserve and pay at counter</button>
-          <small class="booking-payment-note" id="booking-payment-note">Pay at the hotel counter. Rooms are held for 30 minutes; the reservation expires if staff does not confirm payment before then.</small>
+          <small class="booking-payment-note" id="booking-payment-note">Pay at the hotel counter within 36 hours of submitting your reservation. Unpaid reservations are automatically cancelled after that.</small>
         </form>
 
         <p class="detail-note">
@@ -883,6 +883,6 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""></script>
   <script defer src="map.js?v=hotel-directions-api-v3"></script>
-  <script defer src="script.js?v=20261102-qr-dashboard-v2"></script>
+  <script defer src="script.js?v=20261102-unpaid-expiry-36h"></script>
 </body>
 </html>

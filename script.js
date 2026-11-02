@@ -1384,7 +1384,7 @@ async function handlePaymentReturn() {
         ? `Reservation ${reference} approved and payment confirmed. Total paid: ${pesoExact.format(data.payment.totalPrice)}.`
         : data.payment.paymentReference
           ? `Xendit verified your payment for ${reference}. Your room is reserved while staff reviews the reservation in the project dashboard. Payment reference: ${data.payment.paymentReference}.`
-          : "Xendit has not confirmed this payment yet. Check Reservation History before retrying. Unpaid room holds expire after 30 minutes.";
+          : "Xendit has not confirmed this payment yet. Check Reservation History before retrying. Unpaid reservations are cancelled after 36 hours.";
     } catch (error) {
       message = `We couldn't verify the payment status yet: ${error.message} Check Reservation History before trying to pay again.`;
     }
@@ -1925,7 +1925,7 @@ async function loadReservationHistory() {
         if (reservation.paymentMethod === "counter") {
           const counterPayment = document.createElement("small");
           counterPayment.className = "reservation-payment-reference";
-          counterPayment.textContent = "Pay at the hotel counter before the 30-minute reservation hold expires.";
+          counterPayment.textContent = "Pay at the hotel counter within 36 hours of submitting your reservation.";
           actionRow.append(counterPayment);
         } else {
           const payButton = document.createElement("button");
@@ -2575,8 +2575,8 @@ function updateBookingPaymentNote() {
     ? "Reserve and pay at counter"
     : "Reserve and pay online";
   document.getElementById("booking-payment-note").textContent = paymentMethod === "counter"
-    ? "Pay at the hotel counter. Rooms are held for 30 minutes; the reservation expires if staff does not confirm payment before then."
-    : "Continue to Xendit's secure checkout with GCash or QRPh. Once payment is verified, your room is reserved while staff reviews the reservation in the project dashboard. Unpaid checkout holds expire after 30 minutes.";
+    ? "Pay at the hotel counter within 36 hours of submitting your reservation. Unpaid reservations are automatically cancelled after that."
+    : "Continue to Xendit's secure checkout with GCash or QRPh. Once payment is verified, your room is reserved while staff reviews the reservation in the project dashboard. Pay within 36 hours; unpaid reservations are automatically cancelled.";
 }
 
 function showBookingPaymentDialog(booking, checkoutUrl) {
@@ -2670,7 +2670,7 @@ document.getElementById("booking-form").addEventListener("submit", async event =
           `Total due: ${pesoExact.format(booking.totalPrice)}.`;
       } else {
         status.textContent =
-          `Reservation ${booking.reference} is held for 30 minutes. ` +
+          `Reservation ${booking.reference} is held for 36 hours. ` +
           `${booking.couponDiscount
             ? `Voucher discount: ${pesoExact.format(booking.couponDiscount)}. `
             : ""}` +
