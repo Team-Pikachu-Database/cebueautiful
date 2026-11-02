@@ -816,16 +816,19 @@ function initializeRewardsSystem() {
   const startSpinMusic = () => {
     const request = ++spinMusicRequest;
     spinMusic.pause();
-    const playClip = () => {
+    const seekToClipStart = () => {
       if (request !== spinMusicRequest || !spinDialog?.open) return;
       spinMusic.currentTime = 90;
-      spinMusic.play().catch(() => {});
     };
     if (spinMusic.readyState >= HTMLMediaElement.HAVE_METADATA) {
-      playClip();
+      seekToClipStart();
     } else {
-      spinMusic.addEventListener("loadedmetadata", playClip, { once: true });
+      spinMusic.addEventListener("loadedmetadata", seekToClipStart, { once: true });
+      try {
+        spinMusic.currentTime = 90;
+      } catch {}
     }
+    spinMusic.play().catch(() => {});
   };
   spinMusic.addEventListener("timeupdate", () => {
     if (spinDialog?.open && spinMusic.currentTime >= 130) spinMusic.currentTime = 90;
