@@ -79,6 +79,10 @@ fs.copyFileSync(
   path.join(heroImageDirectory, "Luxurious Navy Gold Chat Bubble Frame.png")
 );
 fs.copyFileSync(
+  path.join(projectRoot, "UI images", "Elegant Blue and Gold Wave Background.png"),
+  path.join(heroImageDirectory, "Elegant Blue and Gold Wave Background.png")
+);
+fs.copyFileSync(
   path.join(projectRoot, "UI images", "nya-removebg.png"),
   path.join(heroImageDirectory, "nya-removebg.png")
 );
