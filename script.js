@@ -16,14 +16,16 @@ const DEFAULT_REWARD_CATALOG = [
 ];
 
 const SPIN_WHEEL_REWARDS = [
-  { id: "weekend-escape", title: "Weekend Cebu escape", weight: 4, kind: "reward", reward: DEFAULT_REWARD_CATALOG[10] },
-  { id: "spa-pack", title: "Spa & wellness pack", weight: 5, kind: "reward", reward: DEFAULT_REWARD_CATALOG[4] },
-  { id: "market-voucher", title: "₱150 market voucher", weight: 7, kind: "reward", reward: DEFAULT_REWARD_CATALOG[1] },
-  { id: "voucher-100", title: "₱50 café treat", weight: 12, kind: "reward", reward: DEFAULT_REWARD_CATALOG[0] },
+  { id: "try-again", title: "Try again", weight: 70, color: "#e5e7eb", kind: "tryAgain" },
+  { id: "voucher-100", title: "₱50 café treat", weight: 12, color: "#fbbf24", kind: "reward", reward: DEFAULT_REWARD_CATALOG[0] },
+  { id: "market-voucher", title: "₱150 market voucher", weight: 7, color: "#f59e0b", kind: "reward", reward: DEFAULT_REWARD_CATALOG[1] },
+  { id: "spa-pack", title: "Spa & wellness pack", weight: 5, color: "#14b8a6", kind: "reward", reward: DEFAULT_REWARD_CATALOG[4] },
+  { id: "weekend-escape", title: "Weekend Cebu escape", weight: 4, color: "#8b5cf6", kind: "reward", reward: DEFAULT_REWARD_CATALOG[10] },
   {
     id: "grand-prize",
     title: "1 whole week free vacation",
     weight: 2,
+    color: "#ffc107",
     kind: "reward",
     reward: {
       id: "grand-prize",
@@ -33,15 +35,13 @@ const SPIN_WHEEL_REWARDS = [
       code: "CB-GRAND-1-WEEK",
       description: "Seven nights at a hotel of your choice with all hotel amenities included. Subject to hotel availability and confirmation."
     }
-  },
-  { id: "try-again", title: "Try again", weight: 70, kind: "tryAgain" }
+  }
 ];
 
 const SPIN_WHEEL_TOTAL_WEIGHT = SPIN_WHEEL_REWARDS.reduce(
   (total, reward) => total + reward.weight,
   0
 );
-const SPIN_WHEEL_INITIAL_ROTATION = 30;
 
 function selectWheelReward(ticket) {
   if (!Number.isInteger(ticket) || ticket < 0 || ticket >= SPIN_WHEEL_TOTAL_WEIGHT) {
@@ -55,6 +55,16 @@ function selectWheelReward(ticket) {
   }
 
   throw new Error("The spin wheel could not select a reward.");
+}
+
+function buildWheelGradient() {
+  let angle = 0;
+  const stops = SPIN_WHEEL_REWARDS.map(reward => {
+    const start = angle;
+    angle += reward.weight / SPIN_WHEEL_TOTAL_WEIGHT * 360;
+    return `${reward.color} ${start}deg ${angle}deg`;
+  });
+  return `conic-gradient(${stops.join(", ")})`;
 }
 
 const configuredApiBaseUrl = typeof window.CEBUSTAYS_CONFIG?.apiBaseUrl === "string"
@@ -604,12 +614,16 @@ async function spinWheel() {
   if (spinCost) spinCost.textContent = `1 Cebu Point per spin · Balance: ${getCebuPointsBalance()} pts`;
 
   const winnerIndex = SPIN_WHEEL_REWARDS.findIndex(item => item.id === winner.id);
-  const wheelSectorSize = 360 / SPIN_WHEEL_REWARDS.length;
-  const targetAngle = (360 - winnerIndex * wheelSectorSize + 360) % 360;
+  const winnerStart = SPIN_WHEEL_REWARDS
+    .slice(0, winnerIndex)
+    .reduce((angle, item) => angle + item.weight / SPIN_WHEEL_TOTAL_WEIGHT * 360, 0);
+  const winnerSize = winner.weight / SPIN_WHEEL_TOTAL_WEIGHT * 360;
+  const targetAngle = (360 - winnerStart - winnerSize / 2 + 360) % 360;
   const currentRotation = Number(wheel.dataset.rotation || 0);
   const currentAngle = currentRotation % 360;
   const rotationDelta = 360 * 7 + (targetAngle - currentAngle + 360) % 360;
   const nextRotation = currentRotation + rotationDelta;
+  wheel.style.background = buildWheelGradient();
   wheel.dataset.rotation = String(nextRotation);
 
   result.textContent = "Spinning… good luck!";
@@ -788,8 +802,7 @@ async function claimSpinReward() {
 function initializeRewardsSystem() {
   const spinWheel = document.getElementById("spin-wheel");
   if (spinWheel) {
-    spinWheel.dataset.rotation = String(SPIN_WHEEL_INITIAL_ROTATION);
-    spinWheel.style.transform = `rotate(${SPIN_WHEEL_INITIAL_ROTATION}deg)`;
+    spinWheel.style.background = buildWheelGradient();
   }
 
   document.getElementById("sidebar-points")?.addEventListener("click", openCebuPointsDialog);
@@ -1373,6 +1386,7 @@ async function handlePaymentReturn() {
   window.history.replaceState(null, "", cleanUrl);
 
   let message;
+  let paymentVerified = false;
   if (outcome === "cancelled") {
     message = "Checkout was closed. The return page does not determine payment status; check Reservation History before retrying while the room hold is active.";
   } else {
@@ -1380,10 +1394,11 @@ async function handlePaymentReturn() {
       const data = await requestApi(
         `/api/bookings/${encodeURIComponent(reference)}/payment-status`
       );
-      message = data.payment.paymentStatus === "paid"
-        ? `Reservation ${reference} approved and payment confirmed. Total paid: ${pesoExact.format(data.payment.totalPrice)}.`
-        : data.payment.paymentReference
-          ? `Xendit verified your payment for ${reference}. Your room is reserved while staff reviews the reservation in the project dashboard. Payment reference: ${data.payment.paymentReference}.`
+      paymentVerified = data.payment.paymentStatus === "paid";
+      message = data.payment.paymentReference
+        ? `Xendit verified the payment for ${reference}. Payment reference: ${data.payment.paymentReference}. Your reservation is pending staff approval; you do not need to pay again.`
+        : data.payment.paymentStatus === "paid"
+          ? `Your reservation ${reference} was accepted and payment is confirmed. Total paid: ${pesoExact.format(data.payment.totalPrice)}.`
           : "Xendit has not confirmed this payment yet. Check Reservation History before retrying. Unpaid reservations are cancelled after 36 hours.";
     } catch (error) {
       message = `We couldn't verify the payment status yet: ${error.message} Check Reservation History before trying to pay again.`;
@@ -1391,12 +1406,21 @@ async function handlePaymentReturn() {
   }
 
   const reservationsDialog = document.getElementById("reservation-history-dialog");
-  if (reservationsDialog && signedInAccount) {
+  if (reservationsDialog && signedInAccount && !paymentVerified) {
     reservationsDialog.showModal();
     startReservationHistoryRefresh();
     await loadReservationHistory();
+  } else if (signedInAccount) {
+    await loadReservationHistory();
   }
-  showBookingThankYou(reference, message);
+  if (paymentVerified) {
+    showBookingThankYou(
+      reference,
+      "Your reservation is staff-approved. Bring two valid IDs to the hotel counter. Staff will check them and then your unique QR Keycard will appear under My QR Keycard in the side panel."
+    );
+  } else {
+    showBookingThankYou(reference, message);
+  }
 }
 
 let bookingThankYouDismissTimer = 0;
@@ -1695,6 +1719,7 @@ function initializeCancellationDialogs() {
       reasonSubmit.textContent = "Submit request";
     }
   });
+
 }
 
 function formatReservationDate(value) {
@@ -1848,7 +1873,7 @@ async function loadReservationHistory() {
   try {
     const data = await requestApi("/api/bookings/mine");
     if (!data.reservations.length) {
-      message.textContent = "No reservations yet.";
+      message.textContent = "No active reservations.";
       return;
     }
 
@@ -1901,7 +1926,7 @@ async function loadReservationHistory() {
           `${reservation.paymentProvider === "paymongo" ? "PayMongo" : "Xendit"} verified payment reference: ${reservation.paymentReference}. ${
             isPaid
               ? "Your reservation has been accepted."
-              : "Your room is reserved while staff approval is pending; you do not need to pay again."
+              : "Your reservation is pending staff approval; you do not need to pay again."
           }`;
         actionRow.append(paymentReference);
       } else if (
@@ -1912,7 +1937,7 @@ async function loadReservationHistory() {
         const paymentVerification = document.createElement("small");
         paymentVerification.className = "reservation-payment-reference";
         paymentVerification.textContent =
-          "The payment provider verified your payment. Your room is reserved while staff approval is pending; you do not need to pay again.";
+          "The payment provider confirmed your payment. Your reservation is pending staff approval; you do not need to pay again.";
         actionRow.append(paymentVerification);
       }
 
@@ -2001,6 +2026,20 @@ async function loadReservationHistory() {
         reason.textContent = `Reason: ${reservation.cancellationReason}`;
         reason.className = "reservation-cancel-reason";
         actionRow.append(reason);
+      }
+
+      if (
+        !reservation.cancelledAt &&
+        reservation.cancellationStatus !== "requested" &&
+        (
+          reservation.paymentStatus === "paid"
+        )
+      ) {
+        const keycardNote = document.createElement("small");
+        keycardNote.className = "reservation-payment-reference";
+        keycardNote.textContent =
+          "Bring two valid IDs to the hotel counter. After staff checks them, your QR Keycard will be available from My QR Keycard in the side panel.";
+        actionRow.append(keycardNote);
       }
 
       item.append(heading, dates, details, reference, actionRow);
@@ -2576,7 +2615,7 @@ function updateBookingPaymentNote() {
     : "Reserve and pay online";
   document.getElementById("booking-payment-note").textContent = paymentMethod === "counter"
     ? "Pay at the hotel counter within 36 hours of submitting your reservation. Unpaid reservations are automatically cancelled after that."
-    : "Continue to Xendit's secure checkout with GCash or QRPh. Once payment is verified, your room is reserved while staff reviews the reservation in the project dashboard. Pay within 36 hours; unpaid reservations are automatically cancelled.";
+    : "Continue to Xendit's secure checkout and choose GCash for app payment or QRPh to scan a QR. Pay within 36 hours; payment is confirmed only after provider verification.";
 }
 
 function showBookingPaymentDialog(booking, checkoutUrl) {
@@ -2663,11 +2702,7 @@ document.getElementById("booking-form").addEventListener("submit", async event =
         );
         showBookingPaymentDialog(booking, checkout.checkout.checkoutUrl);
         status.textContent =
-          `Reservation ${booking.reference} is held while you complete checkout. Once payment is verified, the room stays reserved while staff reviews it in the project dashboard. ` +
-          `${booking.couponDiscount
-            ? `Voucher discount: ${pesoExact.format(booking.couponDiscount)}. `
-            : ""}` +
-          `Total due: ${pesoExact.format(booking.totalPrice)}.`;
+          `Reservation ${booking.reference} is held for 36 hours. Continue to secure checkout to pay by GCash or QRPh.`;
       } else {
         status.textContent =
           `Reservation ${booking.reference} is held for 36 hours. ` +
@@ -2675,7 +2710,10 @@ document.getElementById("booking-form").addEventListener("submit", async event =
             ? `Voucher discount: ${pesoExact.format(booking.couponDiscount)}. `
             : ""}` +
           "Pay at the hotel counter before the hold expires.";
-        showBookingThankYou(booking.reference);
+        showBookingThankYou(
+          booking.reference,
+          "Your reservation is submitted and waiting for staff approval and payment confirmation. After approval, show two valid IDs at the hotel counter to receive your QR Keycard."
+        );
       }
     }
     recordPaidBookingPoints(booking).catch(error => {
@@ -3458,10 +3496,7 @@ function renderAmenityFilters(hotelList) {
     });
 
     hotelAmenities.forEach((labels, key) => {
-      const entry = counts.get(key) || {
-        count: 0,
-        labels: new Map()
-      };
+      const entry = counts.get(key) || { count: 0, labels: new Map() };
       entry.count += 1;
       labels.forEach((count, label) => {
         entry.labels.set(label, (entry.labels.get(label) || 0) + count);
@@ -3498,30 +3533,70 @@ function renderAmenityFilters(hotelList) {
 
 /* ---------- LOAD HOTEL CATALOGUE ---------- */
 
+const HOTEL_CATALOGUE_REQUEST_TIMEOUT_MS = 25_000;
+const HOTEL_CATALOGUE_RETRY_DELAYS_MS = [1_000, 2_500];
+
+function wait(milliseconds) {
+  return new Promise(resolve => window.setTimeout(resolve, milliseconds));
+}
+
+async function requestHotelCatalogue() {
+  let lastError;
+
+  for (let attempt = 0; attempt <= HOTEL_CATALOGUE_RETRY_DELAYS_MS.length; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(
+      () => controller.abort(),
+      HOTEL_CATALOGUE_REQUEST_TIMEOUT_MS
+    );
+
+    try {
+      const response = await fetch(API_URL, {
+        credentials: "include",
+        signal: controller.signal,
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        const error = new Error(`The property API returned HTTP ${response.status}.`);
+        error.retryable = response.status === 429 || response.status >= 500;
+        throw error;
+      }
+
+      const data = await response.json();
+      if (!Array.isArray(data.hotels)) {
+        throw new Error("Hotel API returned an invalid response.");
+      }
+      return data.hotels;
+    } catch (error) {
+      lastError = error;
+      const isRetryable = error.retryable ||
+        error.name === "AbortError" ||
+        error.name === "TimeoutError" ||
+        error instanceof TypeError;
+      if (!isRetryable || attempt === HOTEL_CATALOGUE_RETRY_DELAYS_MS.length) {
+        break;
+      }
+
+      title.textContent = `Reconnecting to the property service… (attempt ${attempt + 2} of 3)`;
+      await wait(HOTEL_CATALOGUE_RETRY_DELAYS_MS[attempt]);
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  }
+
+  throw lastError;
+}
+
 async function loadHotels() {
   feed.replaceChildren(
     el("div", "skeleton"),
     el("div", "skeleton")
   );
+  title.textContent = "Connecting to CebuStays properties…";
 
   try {
-    const response = await fetch(API_URL, {
-      credentials: "include"
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    if (!Array.isArray(data.hotels)) {
-      throw new Error(
-        "Hotel API returned an invalid response."
-      );
-    }
-
-    hotels = data.hotels;
+    hotels = await requestHotelCatalogue();
     renderAmenityFilters(hotels);
 
   } catch (error) {
@@ -3537,13 +3612,17 @@ async function loadHotels() {
       el("p", "filter-loading", "Amenities could not be loaded.")
     );
 
-    feed.replaceChildren(
-      el(
-        "div",
-        "error",
-        "Unable to load properties. Please check your API connection and try again."
-      )
+    const errorMessage = el(
+      "div",
+      "error",
+      "Unable to connect to the property service after several attempts. Please try again."
     );
+    const retryButton = el("button", "btn btn-primary", "Try again");
+    retryButton.type = "button";
+    retryButton.addEventListener("click", () => {
+      void loadHotels();
+    });
+    feed.replaceChildren(errorMessage, retryButton);
 
     return;
   }
@@ -3710,7 +3789,7 @@ function initializeFloatingPokeball() {
     setPosition(bounds.left, bounds.top);
   };
 
-  const isVisible = () => !launcher.hidden;
+  const isVisible = () => document.body.classList.contains("home-view") && !launcher.hidden;
 
   const stopMotion = () => {
     if (!animationFrame) return;
@@ -4259,6 +4338,7 @@ function initializeHelpChat() {
       pokeballScream.play()?.catch(() => {});
     }
 
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.clearTimeout(portalAnimationTimer);
     portalAnimationTimer = window.setTimeout(() => {
       portalEffect.hidden = true;
@@ -4266,7 +4346,7 @@ function initializeHelpChat() {
       delete dialog.dataset.preparing;
       dialog.dataset.entering = "true";
       portalAnimationTimer = 0;
-    }, 1660);
+    }, reducedMotion ? 1 : 1660);
   };
 
   document.querySelectorAll("[data-help-open]").forEach(button => {

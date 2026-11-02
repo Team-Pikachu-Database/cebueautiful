@@ -44,15 +44,47 @@ for (const file of ["index.html", "developer.html", "script.js", "developer.js",
   fs.copyFileSync(path.join(projectRoot, file), path.join(outputDirectory, file));
 }
 
-fs.copyFileSync(path.join(projectRoot, "plane.png"), path.join(outputDirectory, "plane.png"));
+fs.copyFileSync(
+  path.join(projectRoot, "logo_folder", "cebustays.jpeg"),
+  path.join(outputDirectory, "cebustays.jpeg")
+);
 fs.copyFileSync(
   path.join(projectRoot, "dashboard-background.png"),
   path.join(outputDirectory, "dashboard-background.png")
 );
-fs.cpSync(
-  path.join(projectRoot, "UI images"),
-  path.join(outputDirectory, "UI images"),
-  { recursive: true }
+const heroImageDirectory = path.join(outputDirectory, "UI images");
+fs.mkdirSync(heroImageDirectory, { recursive: true });
+fs.copyFileSync(
+  path.join(projectRoot, "UI images", "Luxury Lightning Lobby at Sunset.png"),
+  path.join(heroImageDirectory, "Luxury Lightning Lobby at Sunset.png")
+);
+fs.copyFileSync(
+  path.join(projectRoot, "UI images", "Golden Pikachu-Inspired Sunset Lounge.png"),
+  path.join(heroImageDirectory, "Golden Pikachu-Inspired Sunset Lounge.png")
+);
+fs.copyFileSync(
+  path.join(projectRoot, "UI images", "Pikachu-Inspired Geometric Dark Wallpaper (1).png"),
+  path.join(heroImageDirectory, "Pikachu-Inspired Geometric Dark Wallpaper (1).png")
+);
+fs.copyFileSync(
+  path.join(projectRoot, "UI images", "Electric Futuristic Dashboard Overlay.png"),
+  path.join(heroImageDirectory, "Electric Futuristic Dashboard Overlay.png")
+);
+fs.copyFileSync(
+  path.join(projectRoot, "UI images", "Golden-Hour Tropical Resort Coastline.png"),
+  path.join(heroImageDirectory, "Golden-Hour Tropical Resort Coastline.png")
+);
+fs.copyFileSync(
+  path.join(projectRoot, "UI images", "Luxurious Navy Gold Chat Bubble Frame.png"),
+  path.join(heroImageDirectory, "Luxurious Navy Gold Chat Bubble Frame.png")
+);
+fs.copyFileSync(
+  path.join(projectRoot, "UI images", "nya-removebg.png"),
+  path.join(heroImageDirectory, "nya-removebg.png")
+);
+fs.copyFileSync(
+  path.join(projectRoot, "UI images", "pokeball-transparent.png"),
+  path.join(heroImageDirectory, "pokeball-transparent.png")
 );
 
 fs.cpSync(

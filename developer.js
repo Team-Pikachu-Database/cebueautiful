@@ -39,6 +39,13 @@ const counterChecksSection = document.getElementById("developer-counter-checks")
 const counterDialog = document.getElementById("developer-counter-dialog");
 const counterStatus = document.getElementById("developer-counter-status");
 const counterList = document.getElementById("developer-counter-list");
+const qrCameraStart = document.getElementById("developer-qr-camera-start");
+const qrCameraStop = document.getElementById("developer-qr-camera-stop");
+const qrCameraStatus = document.getElementById("developer-qr-camera-status");
+const qrCameraVideo = document.getElementById("developer-qr-camera");
+const qrResult = document.getElementById("developer-qr-result");
+const qrResultTitle = document.getElementById("developer-qr-result-title");
+const qrResultDetail = document.getElementById("developer-qr-result-detail");
 const paymentReviewDialog = document.getElementById("payment-review-dialog");
 const paymentReviewDetails = document.getElementById("payment-review-details");
 const paymentReviewChecked = document.getElementById("payment-review-checked");
@@ -57,6 +64,10 @@ const retryButton = document.getElementById("developer-retry");
 let selectedReservation = null;
 let selectedCancellation = null;
 let pendingBookingsRefreshTimer = null;
+let qrCameraStream = null;
+let qrDetector = null;
+let qrScanFrame = null;
+let qrValidationInProgress = false;
 
 function formatCounterDate(value) {
   if (!value) return "Not available";
@@ -72,12 +83,12 @@ async function loadCounterChecks() {
   try {
     const data = await requestApi("/api/staff/counter-id-checks/pending");
     if (!data.reservations.length) {
-      counterStatus.textContent = "No approved reservations are waiting for an in-person ID check.";
+      counterStatus.textContent = "No approved reservations need an ID check or room assignment.";
       return;
     }
 
     counterStatus.textContent =
-      `${data.reservations.length} reservation${data.reservations.length === 1 ? "" : "s"} waiting for two valid IDs.`;
+      `${data.reservations.length} approved reservation${data.reservations.length === 1 ? "" : "s"} need an ID check or room assignment.`;
     data.reservations.forEach(reservation => {
       const card = document.createElement("article");
       card.className = "developer-counter-card";
@@ -88,41 +99,75 @@ async function loadCounterChecks() {
       meta.textContent =
         `${reservation.reference} · ${formatCounterDate(reservation.checkIn)} – ${formatCounterDate(reservation.checkOut)} · approved and paid`;
       const instruction = document.createElement("p");
-      instruction.textContent = "Verify two valid IDs in person before issuing keycards.";
-      const attestation = document.createElement("label");
-      attestation.className = "developer-counter-attestation";
-      const checked = document.createElement("input");
-      checked.type = "checkbox";
-      const attestationText = document.createElement("span");
-      attestationText.textContent = "I checked two valid IDs in person";
-      attestation.append(checked, attestationText);
-      const selectLabel = document.createElement("label");
-      selectLabel.className = "developer-counter-count-label";
-      selectLabel.textContent = "QR Keycards";
-      const select = document.createElement("select");
-      select.setAttribute("aria-label", `QR Keycards for ${reservation.reference}`);
-      for (let count = 1; count <= 4; count += 1) {
-        const option = document.createElement("option");
-        option.value = String(count);
-        option.textContent = `${count} QR${count === 1 ? "" : "s"}`;
-        select.append(option);
+      instruction.textContent = reservation.idsConfirmed
+        ? "Two IDs are already confirmed. Assign the room(s) for the existing keycards."
+        : "Verify two valid IDs in person, then assign the room(s) before issuing keycards.";
+      let checked;
+      if (!reservation.idsConfirmed) {
+        const attestation = document.createElement("label");
+        attestation.className = "developer-counter-attestation";
+        checked = document.createElement("input");
+        checked.type = "checkbox";
+        const attestationText = document.createElement("span");
+        attestationText.textContent = "I checked two valid IDs in person";
+        attestation.append(checked, attestationText);
+        details.append(attestation);
       }
-      selectLabel.append(select);
+      const roomLabel = document.createElement("label");
+      roomLabel.className = "developer-counter-room-label";
+      roomLabel.textContent = `Booked room number${reservation.rooms === 1 ? "" : "s"}`;
+      const roomInput = document.createElement("input");
+      roomInput.type = "text";
+      roomInput.required = true;
+      roomInput.autocomplete = "off";
+      roomInput.placeholder = reservation.rooms === 1 ? "e.g. 109" : "e.g. 109, 110";
+      roomInput.setAttribute("aria-label", `Booked room numbers for ${reservation.reference}`);
+      roomInput.value = reservation.roomNumbers.join(", ");
+      roomLabel.append(roomInput);
+      const roomHelp = document.createElement("small");
+      roomHelp.textContent = `Enter exactly ${reservation.rooms} room number${reservation.rooms === 1 ? "" : "s"}, separated by commas.`;
+      roomLabel.append(roomHelp);
+      let select;
+      let selectLabel;
+      if (!reservation.idsConfirmed) {
+        selectLabel = document.createElement("label");
+        selectLabel.className = "developer-counter-count-label";
+        selectLabel.textContent = "QR Keycards";
+        select = document.createElement("select");
+        select.setAttribute("aria-label", `QR Keycards for ${reservation.reference}`);
+        for (let count = 1; count <= 4; count += 1) {
+          const option = document.createElement("option");
+          option.value = String(count);
+          option.textContent = `${count} QR${count === 1 ? "" : "s"}`;
+          select.append(option);
+        }
+        selectLabel.append(select);
+      }
       const confirm = document.createElement("button");
       confirm.className = "btn btn-primary";
       confirm.type = "button";
-      confirm.textContent = "Confirm IDs & Generate";
-      confirm.disabled = true;
-      checked.addEventListener("change", () => {
+      confirm.textContent = reservation.idsConfirmed
+        ? "Assign room(s) to existing QR"
+        : "Confirm IDs & Generate";
+      confirm.disabled = !reservation.idsConfirmed;
+      checked?.addEventListener("change", () => {
         confirm.disabled = !checked.checked;
       });
       confirm.addEventListener("click", () => {
-        void confirmCounterIds(reservation.reference, Number(select.value), confirm);
+        const roomNumbers = roomInput.value.split(",").map(room => room.trim());
+        void confirmCounterIds(
+          reservation.reference,
+          select ? Number(select.value) : 1,
+          roomNumbers,
+          confirm
+        );
       });
-      details.append(title, meta, instruction, attestation);
+      details.prepend(title, meta, instruction);
       const actions = document.createElement("div");
       actions.className = "developer-counter-card-actions";
-      actions.append(selectLabel, confirm);
+      actions.append(roomLabel);
+      if (selectLabel) actions.append(selectLabel);
+      actions.append(confirm);
       card.append(details, actions);
       counterList.append(card);
     });
@@ -131,16 +176,16 @@ async function loadCounterChecks() {
   }
 }
 
-async function confirmCounterIds(reference, qrCount, button) {
+async function confirmCounterIds(reference, qrCount, roomNumbers, button) {
   button.disabled = true;
-  counterStatus.textContent = `Generating ${qrCount} QR Keycard${qrCount === 1 ? "" : "s"}…`;
+  counterStatus.textContent = "Assigning room(s) and preparing the keycard…";
   try {
     const data = await requestApi(
       `/api/staff/bookings/${encodeURIComponent(reference)}/confirm-ids`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ qrCount })
+        body: JSON.stringify({ qrCount, roomNumbers })
       }
     );
     await loadCounterChecks();
@@ -156,22 +201,126 @@ async function validateDeveloperQr(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const button = form.querySelector('button[type="submit"]');
-  const message = document.getElementById("developer-qr-validation-message");
+  const token = document.getElementById("developer-qr-token").value.trim();
   button.disabled = true;
-  message.textContent = "Validating with the server…";
+  try {
+    await validateQrToken(token);
+  } catch (error) {
+    showQrResult("is-error", "SCAN ERROR", error.message);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function showQrResult(resultClass, title, detail) {
+  qrResult.className = `developer-qr-result ${resultClass}`;
+  qrResultTitle.textContent = title;
+  qrResultDetail.textContent = detail;
+}
+
+function displayQrValidation(result) {
+  if (result.valid) {
+    const rooms = result.roomNumbers.map(room => `Room ${room}`).join(", ");
+    showQrResult(
+      "is-success",
+      "ACCESS GRANTED · DEMO ONLY",
+      `${rooms} · ${result.hotelName} · ${result.reference}. No physical door was unlocked.`
+    );
+    return;
+  }
+
+  const failureDetails = {
+    invalid: ["ACCESS DENIED · INVALID QR", "This keycard was not found or is not valid."],
+    completed: ["ACCESS DENIED · EXPIRED", "The booked stay has ended; this keycard is expired."],
+    not_yet_active: ["ACCESS DENIED · NOT ACTIVE", "The booking's check-in date has not started yet."],
+    cancelled_invalid: ["ACCESS DENIED · CANCELLED", "The reservation or keycard was cancelled or revoked."],
+    pending_payment: ["ACCESS DENIED · NOT APPROVED", "The reservation is not approved and paid."],
+    ids_not_confirmed: ["ACCESS DENIED · ID CHECK REQUIRED", "Two valid IDs have not been confirmed at the counter."],
+    room_unassigned: ["ACCESS DENIED · ROOM UNASSIGNED", "A developer must assign the booked room number before this keycard can be used."]
+  };
+  const [title, detail] = failureDetails[result.status] ??
+    ["ACCESS DENIED", "This keycard is not valid for access."];
+  showQrResult("is-failure", title, detail);
+}
+
+async function validateQrToken(token) {
+  qrValidationInProgress = true;
+  showQrResult("is-checking", "CHECKING KEYCARD", "Verifying the token and booking dates with CebuStays.");
   try {
     const data = await requestApi("/api/qr/validate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: form.elements.namedItem("token").value.trim() })
+      body: JSON.stringify({ token })
     });
-    message.textContent = data.result.valid
-      ? `Valid for ${data.result.hotelName}, reservation ${data.result.reference}.`
-      : `This keycard is not currently valid (${data.result.status.replaceAll("_", " ")}).`;
+    displayQrValidation(data.result);
   } catch (error) {
-    message.textContent = error.message;
+    showQrResult("is-error", "SCAN ERROR", error.message);
+    throw error;
   } finally {
-    button.disabled = false;
+    qrValidationInProgress = false;
+  }
+}
+
+function stopQrCamera() {
+  if (qrScanFrame !== null) {
+    cancelAnimationFrame(qrScanFrame);
+    qrScanFrame = null;
+  }
+  qrCameraStream?.getTracks().forEach(track => track.stop());
+  qrCameraStream = null;
+  qrCameraVideo.srcObject = null;
+  qrCameraVideo.hidden = true;
+  qrCameraStart.hidden = false;
+  qrCameraStop.hidden = true;
+}
+
+async function scanQrCameraFrame() {
+  if (!qrCameraStream || qrValidationInProgress) return;
+  try {
+    if (qrCameraVideo.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      const detected = await qrDetector.detect(qrCameraVideo);
+      const token = detected[0]?.rawValue?.trim();
+      if (token) {
+        await validateQrToken(token);
+        stopQrCamera();
+        return;
+      }
+    }
+  } catch (error) {
+    qrCameraStatus.textContent = `Camera scan stopped: ${error.message}`;
+    stopQrCamera();
+    return;
+  }
+  qrScanFrame = requestAnimationFrame(scanQrCameraFrame);
+}
+
+async function startQrCamera() {
+  if (typeof window.BarcodeDetector !== "function") {
+    qrCameraStatus.textContent =
+      "Camera QR scanning is not supported by this browser. Use the token field below instead.";
+    return;
+  }
+  if (!navigator.mediaDevices?.getUserMedia) {
+    qrCameraStatus.textContent =
+      "Camera access requires HTTPS and a supported browser. Use the token field below instead.";
+    return;
+  }
+  try {
+    qrDetector = new window.BarcodeDetector({ formats: ["qr_code"] });
+    qrCameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: "environment" } },
+      audio: false
+    });
+    qrCameraVideo.srcObject = qrCameraStream;
+    qrCameraVideo.hidden = false;
+    await qrCameraVideo.play();
+    qrCameraStart.hidden = true;
+    qrCameraStop.hidden = false;
+    qrCameraStatus.textContent = "Camera is on. Hold one QR keycard inside the camera frame.";
+    qrScanFrame = requestAnimationFrame(scanQrCameraFrame);
+  } catch (error) {
+    stopQrCamera();
+    qrCameraStatus.textContent = `Camera could not start: ${error.message}`;
   }
 }
 
@@ -487,9 +636,16 @@ document.getElementById("developer-counter-open").addEventListener("click", () =
 document.getElementById("developer-counter-refresh").addEventListener("click", loadCounterChecks);
 document.getElementById("developer-counter-close")
   .addEventListener("click", () => counterDialog.close());
+qrCameraStart.addEventListener("click", startQrCamera);
+qrCameraStop.addEventListener("click", () => {
+  stopQrCamera();
+  qrCameraStatus.textContent = "Camera scanner stopped.";
+});
+counterDialog.addEventListener("close", stopQrCamera);
 counterDialog.addEventListener("click", event => {
   if (event.target === counterDialog) counterDialog.close();
 });
+window.addEventListener("pagehide", stopQrCamera);
 document.getElementById("developer-qr-validation-form")
   .addEventListener("submit", validateDeveloperQr);
 document.getElementById("payment-review-close")

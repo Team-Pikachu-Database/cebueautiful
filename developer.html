@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Developer workspace – CebuStays</title>
   <link rel="stylesheet" href="style.css?v=20261102-qr-dashboard-v2">
-  <link rel="icon" type="image/png" href="logo_folder/cebustays-transparent.png?v=20261101-transparent-icon">
 </head>
 <body class="developer-page">
   <img
@@ -123,7 +122,7 @@
           ×
         </button>
       </div>
-      <p class="developer-bookings-note">A provider-verified online payment already reserves the room while this review is pending. Compare the guest's reference with the provider-verified reference below, then approve the reservation. For counter payments, verify the payment was received.</p>
+      <p class="developer-bookings-note">Online reservations appear here after the payment provider confirms payment. Match the reference shown by the guest with the verified reference before marking it paid. For counter payments, verify the payment was received.</p>
       <p class="payment-review-verification" id="payment-review-verification" hidden></p>
       <dl class="payment-review-details" id="payment-review-details"></dl>
       <label class="payment-review-check">
@@ -150,14 +149,30 @@
           <button class="btn payment-review-close" type="button" id="developer-counter-close" aria-label="Close counter ID checks" title="Close">×</button>
         </div>
       </div>
-      <p class="developer-bookings-note">Confirm only after physically checking two valid IDs at the hotel counter. Choose 1–4 QR Keycards for each reservation.</p>
+      <p class="developer-bookings-note">Confirm only after physically checking two valid IDs at the hotel counter. Assign the booked room number(s) before issuing 1–4 QR Keycards. Previously issued cards without room assignments can be assigned here without generating duplicates.</p>
       <p class="payment-review-message" id="developer-counter-status" aria-live="polite">Loading approved reservations…</p>
       <div class="developer-counter-list" id="developer-counter-list"></div>
-      <form class="identity-qr-validation-form" id="developer-qr-validation-form">
-        <label for="developer-qr-token">Validate a QR Keycard</label>
-        <div><input id="developer-qr-token" name="token" autocomplete="off" placeholder="Scan or enter token" required><button class="btn btn-primary" type="submit">Validate</button></div>
-        <p class="payment-review-message" id="developer-qr-validation-message" aria-live="polite"></p>
-      </form>
+      <section class="developer-door-scanner" aria-labelledby="developer-qr-scanner-title">
+        <div class="developer-door-scanner-heading">
+          <span class="destination-kicker">DEMO ONLY · NO LOCK HARDWARE</span>
+          <h3 id="developer-qr-scanner-title">Door QR scanner</h3>
+          <p>Scan a guest keycard to test its booking dates and assigned room. A successful result is a simulation; this page does not unlock a physical door.</p>
+        </div>
+        <div class="developer-door-scanner-actions">
+          <button class="btn btn-primary" type="button" id="developer-qr-camera-start">Start camera scanner</button>
+          <button class="btn btn-ghost" type="button" id="developer-qr-camera-stop" hidden>Stop camera</button>
+          <p id="developer-qr-camera-status" aria-live="polite">Camera scanning requires HTTPS and browser camera permission.</p>
+        </div>
+        <video id="developer-qr-camera" playsinline muted hidden aria-label="Camera QR scanner preview"></video>
+        <form class="identity-qr-validation-form" id="developer-qr-validation-form">
+          <label for="developer-qr-token">Or enter a QR token</label>
+          <div><input id="developer-qr-token" name="token" autocomplete="off" placeholder="Paste or scan token" required><button class="btn btn-primary" type="submit">Check keycard</button></div>
+        </form>
+        <div class="developer-qr-result is-idle" id="developer-qr-result" role="status" aria-live="polite">
+          <strong id="developer-qr-result-title">Ready to scan</strong>
+          <span id="developer-qr-result-detail">Scan or enter a keycard to see its access result.</span>
+        </div>
+      </section>
     </section>
   </dialog>
 
@@ -186,6 +201,6 @@
   </dialog>
 
   <script src="config.js"></script>
-  <script src="developer.js?v=20261102-qr-dashboard-v2"></script>
+  <script src="developer.js?v=20261102-door-scanner-v1"></script>
 </body>
 </html>
