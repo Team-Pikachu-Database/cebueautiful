@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CebuStays – Hotels and staycations in Cebu</title>
-  <link rel="stylesheet" href="style.css?v=20261102-wheel-label-removed-v1">
+  <link rel="stylesheet" href="style.css?v=20261102-pokeball-portal-v1">
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -237,14 +237,6 @@
     <span class="pokeball-help-bubble" aria-live="polite">Need help?</span>
     <img src="UI images/pokeball-transparent.png" alt="" draggable="false">
   </button>
-  <div class="help-portal-effect" id="help-portal-effect" aria-hidden="true" hidden>
-    <img class="help-portal-shell-half help-portal-shell-top" src="UI images/pokeball-transparent.png" alt="">
-    <img class="help-portal-shell-half help-portal-shell-bottom" src="UI images/pokeball-transparent.png" alt="">
-    <img class="help-portal-mascot" src="UI images/nya-removebg.png" alt="">
-    <span class="help-portal-flash"></span>
-    <span class="help-portal-lightning help-portal-lightning-one"></span>
-    <span class="help-portal-lightning help-portal-lightning-two"></span>
-  </div>
   <audio id="pikachu-scream" src="UI images/UI sounds/pikachu_scream.mp3" preload="auto"></audio>
 
   <dialog class="booking-thank-you" id="booking-thank-you" aria-labelledby="booking-thank-you-title" aria-describedby="booking-thank-you-message">
@@ -745,6 +737,14 @@
   </dialog>
 
   <dialog class="account-dialog help-dialog" id="help-dialog" aria-labelledby="help-title">
+    <div class="help-portal-effect" id="help-portal-effect" aria-hidden="true" hidden>
+      <img class="help-portal-shell-half help-portal-shell-top" src="UI images/pokeball-transparent.png" alt="">
+      <img class="help-portal-shell-half help-portal-shell-bottom" src="UI images/pokeball-transparent.png" alt="">
+      <img class="help-portal-mascot" src="UI images/nya-removebg.png" alt="">
+      <span class="help-portal-flash"></span>
+      <span class="help-portal-lightning help-portal-lightning-one"></span>
+      <span class="help-portal-lightning help-portal-lightning-two"></span>
+    </div>
     <img class="help-modal-skin" src="UI images/Luxurious Navy Gold Chat Bubble Frame.png" alt="" aria-hidden="true">
     <button class="account-close help-close" type="button" id="help-close" aria-label="Close help assistant">×</button>
     <section class="help-panel">
@@ -883,6 +883,6 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""></script>
   <script defer src="map.js?v=hotel-directions-api-v3"></script>
-  <script defer src="script.js?v=20261102-wheel-label-removed-v1"></script>
+  <script defer src="script.js?v=20261102-pokeball-portal-v1"></script>
 </body>
 </html>

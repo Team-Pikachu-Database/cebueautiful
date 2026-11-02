@@ -94,6 +94,11 @@ fs.copyFileSync(
   path.join(projectRoot, "UI images", "pokeball-transparent.png"),
   path.join(heroImageDirectory, "pokeball-transparent.png")
 );
+fs.cpSync(
+  path.join(projectRoot, "UI images", "UI sounds"),
+  path.join(heroImageDirectory, "UI sounds"),
+  { recursive: true }
+);
 
 fs.cpSync(
   path.join(projectRoot, "logo_folder"),

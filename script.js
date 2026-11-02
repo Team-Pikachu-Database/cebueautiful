@@ -4314,6 +4314,7 @@ function initializeHelpChat() {
     if (!mascot || !portalMascot) return;
 
     const launcherRect = pokeballLauncher.getBoundingClientRect();
+    const dialogRect = dialog.getBoundingClientRect();
     const mascotRect = mascot.getBoundingClientRect();
     const endX = mascotRect.left - launcherRect.left;
     const endY = mascotRect.top - launcherRect.top;
@@ -4328,8 +4329,8 @@ function initializeHelpChat() {
     portalMascot.style.setProperty("--portal-end-y", `${endY}px`);
     portalMascot.style.setProperty("--portal-end-scale-x", endScaleX.toFixed(3));
     portalMascot.style.setProperty("--portal-end-scale-y", endScaleY.toFixed(3));
-    portalEffect.style.left = `${launcherRect.left}px`;
-    portalEffect.style.top = `${launcherRect.top}px`;
+    portalEffect.style.left = `${launcherRect.left - dialogRect.left}px`;
+    portalEffect.style.top = `${launcherRect.top - dialogRect.top}px`;
     portalEffect.style.width = `${launcherRect.width}px`;
     portalEffect.style.height = `${launcherRect.height}px`;
     portalEffect.hidden = false;

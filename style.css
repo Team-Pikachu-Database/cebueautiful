@@ -5946,174 +5946,181 @@ body.home-view .pokeball-launcher {
     font-size: 0.9rem;
     line-height: 1.6;
   }
+}
 
-  .help-dialog[open][data-preparing="true"] {
-    animation: none;
-    opacity: 0;
-    transform: scale(0.94);
+.help-dialog[open][data-preparing="true"] {
+  animation: none;
+  overflow: visible;
+}
+
+.help-dialog[data-preparing="true"] .help-modal-skin,
+.help-dialog[data-preparing="true"] .help-panel,
+.help-dialog[data-preparing="true"] .help-close {
+  visibility: hidden;
+}
+
+.help-dialog[open][data-entering="true"] {
+  animation: help-dialog-portal-enter 420ms ease-out both;
+}
+
+.help-portal-effect {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  filter: drop-shadow(0 0 10px rgba(255, 202, 71, 0.68));
+}
+
+.help-portal-effect[hidden] {
+  display: none !important;
+}
+
+.help-portal-shell-half,
+.help-portal-mascot {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.help-portal-shell-half {
+  z-index: 1;
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.8));
+}
+
+.help-portal-mascot {
+  z-index: 2;
+  object-fit: cover;
+  object-position: center 32%;
+  opacity: 0;
+  transform-origin: top left;
+  filter: drop-shadow(0 0 12px rgba(255, 231, 139, 0.95));
+}
+
+.help-portal-shell-top {
+  clip-path: inset(0 0 50% 0);
+}
+
+.help-portal-shell-bottom {
+  clip-path: inset(50% 0 0 0);
+}
+
+.help-portal-effect.is-active .help-portal-shell-top {
+  animation: help-portal-shell-top 1180ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+
+.help-portal-effect.is-active .help-portal-shell-bottom {
+  animation: help-portal-shell-bottom 1180ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+
+.help-portal-flash {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 12px 7px #fff, 0 0 30px 16px #ffd65c, 0 0 52px 25px rgba(72, 190, 255, 0.82);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0);
+}
+
+.help-portal-effect.is-active .help-portal-flash {
+  animation: help-portal-flash 660ms ease-out 180ms both;
+}
+
+.help-portal-lightning {
+  position: absolute;
+  z-index: 4;
+  top: 50%;
+  left: 50%;
+  width: 27px;
+  height: 48px;
+  background: #fff9d8;
+  clip-path: polygon(59% 0, 17% 53%, 45% 53%, 29% 100%, 84% 39%, 55% 39%);
+  filter: drop-shadow(0 0 5px #fff) drop-shadow(0 0 11px #ffd447);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.2) rotate(24deg);
+}
+
+.help-portal-lightning-two {
+  width: 18px;
+  height: 34px;
+  transform: translate(-50%, -50%) scale(0.2) rotate(-32deg);
+}
+
+.help-portal-effect.is-active .help-portal-lightning-one {
+  animation: help-portal-lightning 620ms ease-out 210ms both;
+}
+
+.help-portal-effect.is-active .help-portal-lightning-two {
+  animation: help-portal-lightning 560ms ease-out 270ms both;
+}
+
+.help-portal-effect.is-active .help-portal-mascot {
+  animation: help-portal-mascot-emerge 1100ms cubic-bezier(0.16, 1, 0.3, 1) 500ms both;
+}
+
+@keyframes help-portal-shell-top {
+  0%, 19% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+  34% { transform: translateY(-12px) rotate(-16deg) scale(1.08); }
+  100% { opacity: 0; transform: translate(-12px, -38px) rotate(-32deg) scale(0.82); }
+}
+
+@keyframes help-portal-shell-bottom {
+  0%, 19% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+  34% { transform: translateY(12px) rotate(16deg) scale(1.08); }
+  100% { opacity: 0; transform: translate(12px, 38px) rotate(32deg) scale(0.82); }
+}
+
+@keyframes help-portal-flash {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+  24% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(3.2); }
+}
+
+@keyframes help-portal-lightning {
+  0%, 100% { opacity: 0; }
+  28% { opacity: 1; transform: translate(-50%, -50%) scale(1.15) rotate(0); }
+  72% { opacity: 0.9; transform: translate(-50%, -50%) scale(0.86) rotate(-8deg); }
+}
+
+@keyframes help-portal-mascot-emerge {
+  0% { opacity: 0; transform: translate(0, 0) scale(1, 1); }
+  12% { opacity: 1; filter: drop-shadow(0 0 18px rgba(255, 244, 182, 1)) brightness(1.4); }
+  48% {
+    opacity: 1;
+    transform: translate(var(--portal-mid-x), var(--portal-mid-y)) scale(var(--portal-mid-scale-x), var(--portal-mid-scale-y));
+    filter: drop-shadow(0 0 14px rgba(255, 231, 139, 0.9)) brightness(1.15);
   }
+  100% {
+    opacity: 1;
+    transform: translate(var(--portal-end-x), var(--portal-end-y)) scale(var(--portal-end-scale-x), var(--portal-end-scale-y));
+    filter: drop-shadow(0 0 10px rgba(255, 231, 139, 0.75));
+  }
+}
 
+@keyframes help-dialog-portal-enter {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .help-portal-effect.is-active .help-portal-shell-top,
+  .help-portal-effect.is-active .help-portal-shell-bottom,
+  .help-portal-effect.is-active .help-portal-flash,
+  .help-portal-effect.is-active .help-portal-lightning,
+  .help-portal-effect.is-active .help-portal-mascot,
   .help-dialog[open][data-entering="true"] {
-    animation: help-dialog-portal-enter 420ms ease-out both;
+    animation-duration: 1ms;
+    animation-delay: 0ms;
   }
+}
 
-  .help-portal-effect {
-    position: fixed;
-    z-index: 10000;
-    pointer-events: none;
-    filter: drop-shadow(0 0 10px rgba(255, 202, 71, 0.68));
-  }
-
-  .help-portal-effect[hidden] {
-    display: none !important;
-  }
-
-  .help-portal-shell-half,
-  .help-portal-mascot {
-    position: absolute;
-    inset: 0;
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-
-  .help-portal-shell-half {
-    z-index: 1;
-    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.8));
-  }
-
-  .help-portal-mascot {
-    z-index: 2;
-    object-fit: cover;
-    object-position: center 32%;
-    opacity: 0;
-    transform-origin: top left;
-    filter: drop-shadow(0 0 12px rgba(255, 231, 139, 0.95));
-  }
-
-  .help-portal-shell-top {
-    clip-path: inset(0 0 50% 0);
-  }
-
-  .help-portal-shell-bottom {
-    clip-path: inset(50% 0 0 0);
-  }
-
-  .help-portal-effect.is-active .help-portal-shell-top {
-    animation: help-portal-shell-top 1180ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
-  }
-
-  .help-portal-effect.is-active .help-portal-shell-bottom {
-    animation: help-portal-shell-bottom 1180ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
-  }
-
-  .help-portal-flash {
-    position: absolute;
-    z-index: 3;
-    top: 50%;
-    left: 50%;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: #fff;
-    box-shadow: 0 0 12px 7px #fff, 0 0 30px 16px #ffd65c, 0 0 52px 25px rgba(72, 190, 255, 0.82);
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0);
-  }
-
-  .help-portal-effect.is-active .help-portal-flash {
-    animation: help-portal-flash 660ms ease-out 180ms both;
-  }
-
-  .help-portal-lightning {
-    position: absolute;
-    z-index: 4;
-    top: 50%;
-    left: 50%;
-    width: 27px;
-    height: 48px;
-    background: #fff9d8;
-    clip-path: polygon(59% 0, 17% 53%, 45% 53%, 29% 100%, 84% 39%, 55% 39%);
-    filter: drop-shadow(0 0 5px #fff) drop-shadow(0 0 11px #ffd447);
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.2) rotate(24deg);
-  }
-
-  .help-portal-lightning-two {
-    width: 18px;
-    height: 34px;
-    transform: translate(-50%, -50%) scale(0.2) rotate(-32deg);
-  }
-
-  .help-portal-effect.is-active .help-portal-lightning-one {
-    animation: help-portal-lightning 620ms ease-out 210ms both;
-  }
-
-  .help-portal-effect.is-active .help-portal-lightning-two {
-    animation: help-portal-lightning 560ms ease-out 270ms both;
-  }
-
-  .help-portal-effect.is-active .help-portal-mascot {
-    animation: help-portal-mascot-emerge 1100ms cubic-bezier(0.16, 1, 0.3, 1) 500ms both;
-  }
-
-  @keyframes help-portal-shell-top {
-    0%, 19% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
-    34% { transform: translateY(-12px) rotate(-16deg) scale(1.08); }
-    100% { opacity: 0; transform: translate(-12px, -38px) rotate(-32deg) scale(0.82); }
-  }
-
-  @keyframes help-portal-shell-bottom {
-    0%, 19% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
-    34% { transform: translateY(12px) rotate(16deg) scale(1.08); }
-    100% { opacity: 0; transform: translate(12px, 38px) rotate(32deg) scale(0.82); }
-  }
-
-  @keyframes help-portal-flash {
-    0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
-    24% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-    100% { opacity: 0; transform: translate(-50%, -50%) scale(3.2); }
-  }
-
-  @keyframes help-portal-lightning {
-    0%, 100% { opacity: 0; }
-    28% { opacity: 1; transform: translate(-50%, -50%) scale(1.15) rotate(0); }
-    72% { opacity: 0.9; transform: translate(-50%, -50%) scale(0.86) rotate(-8deg); }
-  }
-
-  @keyframes help-portal-mascot-emerge {
-    0% { opacity: 0; transform: translate(0, 0) scale(1, 1); }
-    12% { opacity: 1; filter: drop-shadow(0 0 18px rgba(255, 244, 182, 1)) brightness(1.4); }
-    48% {
-      opacity: 1;
-      transform: translate(var(--portal-mid-x), var(--portal-mid-y)) scale(var(--portal-mid-scale-x), var(--portal-mid-scale-y));
-      filter: drop-shadow(0 0 14px rgba(255, 231, 139, 0.9)) brightness(1.15);
-    }
-    100% {
-      opacity: 1;
-      transform: translate(var(--portal-end-x), var(--portal-end-y)) scale(var(--portal-end-scale-x), var(--portal-end-scale-y));
-      filter: drop-shadow(0 0 10px rgba(255, 231, 139, 0.75));
-    }
-  }
-
-  @keyframes help-dialog-portal-enter {
-    from { opacity: 0; transform: scale(0.94); }
-    to { opacity: 1; transform: scale(1); }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .help-portal-effect.is-active .help-portal-shell-top,
-    .help-portal-effect.is-active .help-portal-shell-bottom,
-    .help-portal-effect.is-active .help-portal-flash,
-    .help-portal-effect.is-active .help-portal-lightning,
-    .help-portal-effect.is-active .help-portal-mascot,
-    .help-dialog[open][data-entering="true"] {
-      animation-duration: 1ms;
-      animation-delay: 0ms;
-    }
-  }
-
+@media (max-width: 600px) {
   .help-suggestions {
     grid-template-columns: 1fr;
     max-height: 132px;
