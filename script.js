@@ -809,11 +809,46 @@ async function claimSpinReward() {
 }
 
 function initializeRewardsSystem() {
+  const spinDialog = document.getElementById("spin-wheel-dialog");
+  const spinMusic = new Audio("UI%20images/UI%20sounds/Pokemon.mp3");
+  spinMusic.preload = "auto";
+  let spinMusicRequest = 0;
+  const startSpinMusic = () => {
+    const request = ++spinMusicRequest;
+    spinMusic.pause();
+    const playClip = () => {
+      if (request !== spinMusicRequest || !spinDialog?.open) return;
+      spinMusic.currentTime = 90;
+      spinMusic.play().catch(() => {});
+    };
+    if (spinMusic.readyState >= HTMLMediaElement.HAVE_METADATA) {
+      playClip();
+    } else {
+      spinMusic.addEventListener("loadedmetadata", playClip, { once: true });
+    }
+  };
+  spinMusic.addEventListener("timeupdate", () => {
+    if (spinDialog?.open && spinMusic.currentTime >= 130) spinMusic.currentTime = 90;
+  });
+  spinMusic.addEventListener("ended", () => {
+    if (!spinDialog?.open) return;
+    spinMusic.currentTime = 90;
+    spinMusic.play().catch(() => {});
+  });
+  spinDialog?.addEventListener("close", () => {
+    spinMusicRequest++;
+    spinMusic.pause();
+    if (spinMusic.readyState >= HTMLMediaElement.HAVE_METADATA) spinMusic.currentTime = 0;
+  });
+
   document.getElementById("sidebar-points")?.addEventListener("click", openCebuPointsDialog);
   document.getElementById("sidebar-rewards")?.addEventListener("click", openRewardCatalog);
   document.getElementById("sidebar-spin-wheel")?.addEventListener("click", () => {
     const dialog = document.getElementById("spin-wheel-dialog");
-    if (dialog) dialog.showModal();
+    if (dialog) {
+      dialog.showModal();
+      startSpinMusic();
+    }
     const spinCost = document.querySelector(".spin-cost");
     if (spinCost) spinCost.textContent = `1 Cebu Point per spin · Balance: ${getCebuPointsBalance()} pts`;
     const result = document.getElementById("spin-result");
