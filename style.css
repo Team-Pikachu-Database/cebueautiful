@@ -4998,23 +4998,6 @@ img {
   filter: drop-shadow(0 14px 22px rgba(3, 10, 25, 0.3));
 }
 
-.spin-wheel-retry-label {
-  position: absolute;
-  top: 24%;
-  left: 13%;
-  z-index: 1;
-  width: 25%;
-  color: #173c70;
-  font-size: clamp(0.55rem, 2.4vw, 0.78rem);
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  line-height: 1.15;
-  text-align: center;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
-  transform: rotate(-42deg);
-  pointer-events: none;
-}
-
 .spin-pointer {
   position: absolute;
   top: -8px;
