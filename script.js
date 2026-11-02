@@ -1226,11 +1226,11 @@ async function handlePaymentReturn() {
       const data = await requestApi(
         `/api/bookings/${encodeURIComponent(reference)}/payment-status`
       );
-      message = data.payment.paymentReference
-        ? `Xendit verified the payment for ${reference}. Payment reference: ${data.payment.paymentReference}. Your reservation is pending staff approval; you do not need to pay again.`
-        : data.payment.paymentStatus === "paid"
-          ? `Your reservation ${reference} was accepted and payment is confirmed. Total paid: ${pesoExact.format(data.payment.totalPrice)}.`
-          : "Xendit has not confirmed this payment yet. Check Reservation History before retrying; after provider confirmation, show the payment reference at the counter.";
+      message = data.payment.paymentStatus === "paid"
+        ? `Reservation ${reference} approved and payment confirmed. Total paid: ${pesoExact.format(data.payment.totalPrice)}.`
+        : data.payment.paymentReference
+          ? `Xendit verified your payment for ${reference}. Your room is reserved while staff reviews the reservation in the project dashboard. Payment reference: ${data.payment.paymentReference}.`
+          : "Xendit has not confirmed this payment yet. Check Reservation History before retrying. Unpaid room holds expire after 30 minutes.";
     } catch (error) {
       message = `We couldn't verify the payment status yet: ${error.message} Check Reservation History before trying to pay again.`;
     }
@@ -1747,7 +1747,7 @@ async function loadReservationHistory() {
           `${reservation.paymentProvider === "paymongo" ? "PayMongo" : "Xendit"} verified payment reference: ${reservation.paymentReference}. ${
             isPaid
               ? "Your reservation has been accepted."
-              : "Your reservation is pending staff approval; you do not need to pay again."
+              : "Your room is reserved while staff approval is pending; you do not need to pay again."
           }`;
         actionRow.append(paymentReference);
       } else if (
@@ -1758,7 +1758,7 @@ async function loadReservationHistory() {
         const paymentVerification = document.createElement("small");
         paymentVerification.className = "reservation-payment-reference";
         paymentVerification.textContent =
-          "The payment provider confirmed your payment. Your reservation is pending staff approval; you do not need to pay again.";
+          "The payment provider verified your payment. Your room is reserved while staff approval is pending; you do not need to pay again.";
         actionRow.append(paymentVerification);
       }
 
@@ -2422,7 +2422,7 @@ function updateBookingPaymentNote() {
     : "Reserve and pay online";
   document.getElementById("booking-payment-note").textContent = paymentMethod === "counter"
     ? "Pay at the hotel counter. Rooms are held for 30 minutes; the reservation expires if staff does not confirm payment before then."
-    : "Continue to Xendit's secure checkout and choose GCash for app payment or QRPh to scan a QR. Rooms are held for 30 minutes; payment is confirmed only after provider verification.";
+    : "Continue to Xendit's secure checkout with GCash or QRPh. Once payment is verified, your room is reserved while staff reviews the reservation in the project dashboard. Unpaid checkout holds expire after 30 minutes.";
 }
 
 function showBookingPaymentDialog(booking, checkoutUrl) {
@@ -2509,7 +2509,11 @@ document.getElementById("booking-form").addEventListener("submit", async event =
         );
         showBookingPaymentDialog(booking, checkout.checkout.checkoutUrl);
         status.textContent =
-          `Reservation ${booking.reference} is held for 30 minutes. Continue to secure checkout to pay by GCash or QRPh.`;
+          `Reservation ${booking.reference} is held while you complete checkout. Once payment is verified, the room stays reserved while staff reviews it in the project dashboard. ` +
+          `${booking.couponDiscount
+            ? `Voucher discount: ${pesoExact.format(booking.couponDiscount)}. `
+            : ""}` +
+          `Total due: ${pesoExact.format(booking.totalPrice)}.`;
       } else {
         status.textContent =
           `Reservation ${booking.reference} is held for 30 minutes. ` +

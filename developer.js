@@ -227,7 +227,7 @@ function openPaymentReview(reservation) {
   paymentReviewVerification.hidden = !isOnlinePayment;
   paymentReviewVerification.classList.toggle("is-verified", isOnlinePaymentVerified);
   paymentReviewVerification.textContent = isOnlinePaymentVerified
-    ? `Payment provider confirmed this payment. Match the customer's reference to the verified ${reservation.paymentProvider === "paymongo" ? "PayMongo" : "Xendit"} reference above, then accept the reservation. Room availability will update after acceptance.`
+    ? `This room is reserved because the provider confirmed payment. Match the customer's reference to the verified ${reservation.paymentProvider === "paymongo" ? "PayMongo" : "Xendit"} reference above, then approve the reservation.`
     : "Waiting for payment provider confirmation. This reservation cannot be marked paid yet.";
   updatePaymentReviewConfirmation();
   paymentReviewMessage.textContent = "";
