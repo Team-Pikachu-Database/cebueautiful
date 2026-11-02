@@ -903,8 +903,6 @@ function updateAccountDisplay(user) {
   if (sidebarGuestActions) sidebarGuestActions.hidden = isSignedIn;
   if (sidebarUserActions) sidebarUserActions.hidden = !isSignedIn;
   if (developerProjectLink) developerProjectLink.hidden = user?.role !== "developer";
-  const identityReviewsButton = document.getElementById("sidebar-identity-reviews");
-  if (identityReviewsButton) identityReviewsButton.hidden = user?.role !== "developer";
   const bookingForm = document.getElementById("booking-form");
   const bookingSignIn = document.getElementById("booking-sign-in");
   if (bookingSignIn) bookingSignIn.hidden = isSignedIn;
@@ -1125,114 +1123,9 @@ async function openMyQrDashboard() {
   }
 }
 
-async function loadStaffCounterChecks() {
-  const message = document.getElementById("staff-verification-message");
-  const list = document.getElementById("staff-verification-list");
-  message.textContent = "Loading staff-approved reservations…";
-  list.replaceChildren();
-  try {
-    const data = await requestApi("/api/staff/counter-id-checks/pending");
-    if (!data.reservations.length) {
-      message.textContent = "No staff-approved reservations are waiting for the counter ID check.";
-      return true;
-    }
-    message.textContent = `${data.reservations.length} approved reservation${data.reservations.length === 1 ? "" : "s"} waiting for two valid IDs at the counter.`;
-    data.reservations.forEach(reservation => {
-      const card = document.createElement("article");
-      card.className = "identity-staff-card";
-      const copy = document.createElement("div");
-      const title = document.createElement("h3");
-      title.textContent = `${reservation.guestName} · ${reservation.hotelName}`;
-      const meta = document.createElement("p");
-      meta.textContent = `Reservation ${reservation.reference} · ${formatIdentityDate(reservation.checkIn)} – ${formatIdentityDate(reservation.checkOut)} · approved and paid (${reservation.paymentMethod})`;
-      const instruction = document.createElement("p");
-      instruction.textContent = "Only confirm after staff has physically checked two valid IDs at the hotel counter.";
-      const qrCountLabel = document.createElement("label");
-      qrCountLabel.className = "identity-qr-count-label";
-      qrCountLabel.textContent = "Choose how many QR keycards to generate";
-      const qrCountSelect = document.createElement("select");
-      qrCountSelect.className = "identity-qr-count";
-      qrCountSelect.setAttribute("aria-label", `Number of QR keycards for ${reservation.reference}`);
-      for (let count = 1; count <= 4; count += 1) {
-        const option = document.createElement("option");
-        option.value = String(count);
-        option.textContent = String(count);
-        qrCountSelect.append(option);
-      }
-      qrCountLabel.append(qrCountSelect);
-      const confirmButton = document.createElement("button");
-      confirmButton.type = "button";
-      confirmButton.className = "btn btn-primary";
-      confirmButton.textContent = "Confirm 2 IDs & Generate QR";
-      confirmButton.addEventListener("click", () => {
-        void confirmCounterIds(reservation.reference, Number(qrCountSelect.value), confirmButton);
-      });
-      copy.append(title, meta, instruction, qrCountLabel);
-      card.append(copy, confirmButton);
-      list.append(card);
-    });
-    return true;
-  } catch (error) {
-    message.textContent = error.message;
-    return false;
-  }
-}
-
-async function confirmCounterIds(reference, qrCount, button) {
-  if (!window.confirm(`Confirm that staff checked two valid IDs in person for reservation ${reference} and generate ${qrCount} QR keycard${qrCount === 1 ? "" : "s"}?`)) {
-    return;
-  }
-  const message = document.getElementById("staff-verification-message");
-  button.disabled = true;
-  message.textContent = `Generating ${qrCount} QR keycard${qrCount === 1 ? "" : "s"} for ${reference}…`;
-  try {
-    const data = await requestApi(
-      `/api/staff/bookings/${encodeURIComponent(reference)}/confirm-ids`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ qrCount })
-      }
-    );
-    const refreshed = await loadStaffCounterChecks();
-    message.textContent = `${data.confirmation.message} Tell the guest to open My QR Keycard in the side panel.` +
-      (refreshed ? "" : " The staff queue could not refresh; reopen it to check the latest list.");
-  } catch (error) {
-    message.textContent = error.message;
-    button.disabled = false;
-  }
-}
-
 function initializeIdentityExperience() {
   document.getElementById("sidebar-qr-codes").addEventListener("click", () => {
     void openMyQrDashboard();
-  });
-  document.getElementById("sidebar-identity-reviews").addEventListener("click", () => {
-    closeIdentityDialogs();
-    document.getElementById("staff-verification-dialog").showModal();
-    void loadStaffCounterChecks();
-  });
-  document.getElementById("identity-qr-validation-form").addEventListener("submit", async event => {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const button = form.querySelector('button[type="submit"]');
-    const message = document.getElementById("identity-qr-validation-message");
-    button.disabled = true;
-    message.textContent = "Validating token with the server…";
-    try {
-      const data = await requestApi("/api/qr/validate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: form.elements.namedItem("token").value.trim() })
-      });
-      message.textContent = data.result.valid
-        ? `Valid for ${data.result.hotelName}, reservation ${data.result.reference}.`
-        : `This key card is not currently valid (${data.result.status.replaceAll("_", " ")}).`;
-    } catch (error) {
-      message.textContent = error.message;
-    } finally {
-      button.disabled = false;
-    }
   });
 }
 

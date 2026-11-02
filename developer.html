@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Developer workspace – CebuStays</title>
-  <link rel="stylesheet" href="style.css?v=20261102-staff-approval-reference-checkbox">
+  <link rel="stylesheet" href="style.css?v=20261102-qr-dashboard-v2">
   <link rel="icon" type="image/png" href="logo_folder/cebustays-transparent.png?v=20261101-transparent-icon">
 </head>
 <body class="developer-page">
@@ -61,6 +61,17 @@
             <tbody id="developer-bookings-list"></tbody>
           </table>
         </div>
+      </section>
+
+      <section class="developer-counter-checks" id="developer-counter-checks" aria-labelledby="counter-checks-title" hidden>
+        <div class="developer-bookings-heading">
+          <div>
+            <span class="destination-kicker">GUEST ACCESS</span>
+            <h2 id="counter-checks-title">Counter ID checks</h2>
+          </div>
+          <button class="btn btn-primary developer-counter-open" type="button" id="developer-counter-open">Open counter queue</button>
+        </div>
+        <p class="developer-bookings-note">Available only to developer accounts. Confirm two physical IDs at the hotel counter, then issue up to four QR Keycards.</p>
       </section>
 
       <div class="developer-destinations" id="developer-destinations" hidden>
@@ -125,6 +136,31 @@
     </section>
   </dialog>
 
+  <dialog class="payment-review-dialog developer-counter-dialog" id="developer-counter-dialog" aria-labelledby="developer-counter-dialog-title">
+    <section class="payment-review-panel developer-counter-panel">
+      <div class="developer-bookings-heading">
+        <div>
+          <span class="destination-kicker">GUEST ACCESS</span>
+          <h2 id="developer-counter-dialog-title">Counter ID checks</h2>
+        </div>
+        <div class="developer-counter-heading-actions">
+          <button class="btn developer-refresh" type="button" id="developer-counter-refresh" aria-label="Refresh counter queue" title="Refresh counter queue">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 7v5h-5"></path><path d="M19 12a7 7 0 1 1-2-4.9L20 12"></path></svg>
+          </button>
+          <button class="btn payment-review-close" type="button" id="developer-counter-close" aria-label="Close counter ID checks" title="Close">×</button>
+        </div>
+      </div>
+      <p class="developer-bookings-note">Confirm only after physically checking two valid IDs at the hotel counter. Choose 1–4 QR Keycards for each reservation.</p>
+      <p class="payment-review-message" id="developer-counter-status" aria-live="polite">Loading approved reservations…</p>
+      <div class="developer-counter-list" id="developer-counter-list"></div>
+      <form class="identity-qr-validation-form" id="developer-qr-validation-form">
+        <label for="developer-qr-token">Validate a QR Keycard</label>
+        <div><input id="developer-qr-token" name="token" autocomplete="off" placeholder="Scan or enter token" required><button class="btn btn-primary" type="submit">Validate</button></div>
+        <p class="payment-review-message" id="developer-qr-validation-message" aria-live="polite"></p>
+      </form>
+    </section>
+  </dialog>
+
   <dialog class="payment-review-dialog" id="cancellation-approval-dialog" aria-labelledby="cancellation-approval-title">
     <section class="payment-review-panel">
       <div class="developer-bookings-heading">
@@ -150,6 +186,6 @@
   </dialog>
 
   <script src="config.js"></script>
-  <script src="developer.js?v=20261102-paid-room-reservation"></script>
+  <script src="developer.js?v=20261102-qr-dashboard-v2"></script>
 </body>
 </html>

@@ -35,6 +35,10 @@ const actions = document.getElementById("developer-actions");
 const bookingsSection = document.getElementById("developer-bookings");
 const bookingsStatus = document.getElementById("developer-bookings-status");
 const bookingsList = document.getElementById("developer-bookings-list");
+const counterChecksSection = document.getElementById("developer-counter-checks");
+const counterDialog = document.getElementById("developer-counter-dialog");
+const counterStatus = document.getElementById("developer-counter-status");
+const counterList = document.getElementById("developer-counter-list");
 const paymentReviewDialog = document.getElementById("payment-review-dialog");
 const paymentReviewDetails = document.getElementById("payment-review-details");
 const paymentReviewChecked = document.getElementById("payment-review-checked");
@@ -53,6 +57,123 @@ const retryButton = document.getElementById("developer-retry");
 let selectedReservation = null;
 let selectedCancellation = null;
 let pendingBookingsRefreshTimer = null;
+
+function formatCounterDate(value) {
+  if (!value) return "Not available";
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" });
+}
+
+async function loadCounterChecks() {
+  counterStatus.textContent = "Loading approved reservations…";
+  counterList.replaceChildren();
+  try {
+    const data = await requestApi("/api/staff/counter-id-checks/pending");
+    if (!data.reservations.length) {
+      counterStatus.textContent = "No approved reservations are waiting for an in-person ID check.";
+      return;
+    }
+
+    counterStatus.textContent =
+      `${data.reservations.length} reservation${data.reservations.length === 1 ? "" : "s"} waiting for two valid IDs.`;
+    data.reservations.forEach(reservation => {
+      const card = document.createElement("article");
+      card.className = "developer-counter-card";
+      const details = document.createElement("div");
+      const title = document.createElement("h3");
+      title.textContent = `${reservation.guestName} · ${reservation.hotelName}`;
+      const meta = document.createElement("p");
+      meta.textContent =
+        `${reservation.reference} · ${formatCounterDate(reservation.checkIn)} – ${formatCounterDate(reservation.checkOut)} · approved and paid`;
+      const instruction = document.createElement("p");
+      instruction.textContent = "Verify two valid IDs in person before issuing keycards.";
+      const attestation = document.createElement("label");
+      attestation.className = "developer-counter-attestation";
+      const checked = document.createElement("input");
+      checked.type = "checkbox";
+      const attestationText = document.createElement("span");
+      attestationText.textContent = "I checked two valid IDs in person";
+      attestation.append(checked, attestationText);
+      const selectLabel = document.createElement("label");
+      selectLabel.className = "developer-counter-count-label";
+      selectLabel.textContent = "QR Keycards";
+      const select = document.createElement("select");
+      select.setAttribute("aria-label", `QR Keycards for ${reservation.reference}`);
+      for (let count = 1; count <= 4; count += 1) {
+        const option = document.createElement("option");
+        option.value = String(count);
+        option.textContent = `${count} QR${count === 1 ? "" : "s"}`;
+        select.append(option);
+      }
+      selectLabel.append(select);
+      const confirm = document.createElement("button");
+      confirm.className = "btn btn-primary";
+      confirm.type = "button";
+      confirm.textContent = "Confirm IDs & Generate";
+      confirm.disabled = true;
+      checked.addEventListener("change", () => {
+        confirm.disabled = !checked.checked;
+      });
+      confirm.addEventListener("click", () => {
+        void confirmCounterIds(reservation.reference, Number(select.value), confirm);
+      });
+      details.append(title, meta, instruction, attestation);
+      const actions = document.createElement("div");
+      actions.className = "developer-counter-card-actions";
+      actions.append(selectLabel, confirm);
+      card.append(details, actions);
+      counterList.append(card);
+    });
+  } catch (error) {
+    counterStatus.textContent = `${error.message} Refresh to try again.`;
+  }
+}
+
+async function confirmCounterIds(reference, qrCount, button) {
+  button.disabled = true;
+  counterStatus.textContent = `Generating ${qrCount} QR Keycard${qrCount === 1 ? "" : "s"}…`;
+  try {
+    const data = await requestApi(
+      `/api/staff/bookings/${encodeURIComponent(reference)}/confirm-ids`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ qrCount })
+      }
+    );
+    await loadCounterChecks();
+    counterStatus.textContent =
+      `${data.confirmation.message} The guest can retrieve them under My QR Keycard.`;
+  } catch (error) {
+    counterStatus.textContent = error.message;
+    button.disabled = false;
+  }
+}
+
+async function validateDeveloperQr(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = form.querySelector('button[type="submit"]');
+  const message = document.getElementById("developer-qr-validation-message");
+  button.disabled = true;
+  message.textContent = "Validating with the server…";
+  try {
+    const data = await requestApi("/api/qr/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: form.elements.namedItem("token").value.trim() })
+    });
+    message.textContent = data.result.valid
+      ? `Valid for ${data.result.hotelName}, reservation ${data.result.reference}.`
+      : `This keycard is not currently valid (${data.result.status.replaceAll("_", " ")}).`;
+  } catch (error) {
+    message.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+}
 
 async function requestApi(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -333,6 +454,7 @@ async function checkDeveloperSession() {
   destinations.hidden = true;
   actions.hidden = true;
   bookingsSection.hidden = true;
+  counterChecksSection.hidden = true;
 
   try {
     const data = await requestAccountApi("/me");
@@ -346,6 +468,7 @@ async function checkDeveloperSession() {
     destinations.hidden = false;
     actions.hidden = false;
     bookingsSection.hidden = false;
+    counterChecksSection.hidden = false;
     await loadPendingBookings();
     startPendingBookingsRefresh();
   } catch (error) {
@@ -357,6 +480,18 @@ async function checkDeveloperSession() {
 retryButton.addEventListener("click", checkDeveloperSession);
 document.getElementById("developer-bookings-refresh")
   .addEventListener("click", loadPendingBookings);
+document.getElementById("developer-counter-open").addEventListener("click", () => {
+  counterDialog.showModal();
+  void loadCounterChecks();
+});
+document.getElementById("developer-counter-refresh").addEventListener("click", loadCounterChecks);
+document.getElementById("developer-counter-close")
+  .addEventListener("click", () => counterDialog.close());
+counterDialog.addEventListener("click", event => {
+  if (event.target === counterDialog) counterDialog.close();
+});
+document.getElementById("developer-qr-validation-form")
+  .addEventListener("submit", validateDeveloperQr);
 document.getElementById("payment-review-close")
   .addEventListener("click", () => paymentReviewDialog.close());
 document.getElementById("cancellation-approval-close")
