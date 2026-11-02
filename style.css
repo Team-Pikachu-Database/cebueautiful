@@ -6437,6 +6437,26 @@ img {
   min-height: 40px;
 }
 
+.identity-qr-count-label {
+  display: grid;
+  gap: 6px;
+  max-width: 240px;
+  margin-top: 12px;
+  color: #263d58;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.identity-qr-count {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #cbd8e8;
+  border-radius: 8px;
+  color: #233247;
+  background: #fff;
+  font: inherit;
+}
+
 .identity-qr-validation-form {
   display: grid;
   gap: 8px;

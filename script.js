@@ -1024,7 +1024,8 @@ function renderMyQrCategory(category) {
     const copy = document.createElement("div");
     copy.className = "identity-qr-copy";
     const heading = document.createElement("h3");
-    heading.textContent = `${entry.hotelName} — ${entry.qrImage ? "My QR Keycard" : "Reservation status"}`;
+    const qrPosition = entry.qrCount > 1 ? ` (${entry.qrNumber} of ${entry.qrCount})` : "";
+    heading.textContent = `${entry.hotelName} — ${entry.qrImage ? `My QR Keycard${qrPosition}` : "Reservation status"}`;
     const reservation = document.createElement("p");
     reservation.textContent = `Reservation ID: ${entry.reference}`;
     const stay = document.createElement("p");
@@ -1043,18 +1044,18 @@ function renderMyQrCategory(category) {
       viewButton.addEventListener("click", () => {
         closeIdentityDialogs();
         document.getElementById("qr-view-title").textContent =
-          `${entry.hotelName} — My QR Keycard`;
+          `${entry.hotelName} — My QR Keycard${qrPosition}`;
         document.getElementById("qr-view-image").src = entry.qrImage;
         document.getElementById("qr-view-details").textContent =
           `Reservation ${entry.reference} · ${formatIdentityDate(entry.checkIn)} – ${formatIdentityDate(entry.checkOut)}`;
         const download = document.getElementById("qr-view-download");
         download.href = entry.qrImage;
-        download.download = `cebustays-${entry.reference}-qr-keycard.png`;
+        download.download = `cebustays-${entry.reference}-qr-keycard${entry.qrCount > 1 ? `-${entry.qrNumber}` : ""}.png`;
         document.getElementById("qr-view-dialog").showModal();
       });
       const download = document.createElement("a");
       download.href = entry.qrImage;
-      download.download = `cebustays-${entry.reference}-qr-keycard.png`;
+      download.download = `cebustays-${entry.reference}-qr-keycard${entry.qrCount > 1 ? `-${entry.qrNumber}` : ""}.png`;
       download.textContent = "Download QR Keycard";
       actions.append(viewButton, download);
       copy.append(status, actions);
@@ -1099,17 +1100,26 @@ async function openMyQrDashboard() {
       ["completed", "Past stays"],
       ["cancelled", "Cancelled / invalid"]
     ];
+    const defaultCategory = myQrCategories.active?.length
+      ? "active"
+      : myQrCategories.pendingVerification?.length
+        ? "pendingVerification"
+        : "active";
     labels.forEach(([category, label]) => {
       const button = document.createElement("button");
       button.type = "button";
       button.dataset.qrCategory = category;
       button.textContent = `${label} (${myQrCategories[category]?.length ?? 0})`;
-      button.setAttribute("aria-pressed", String(category === "active"));
+      button.setAttribute("aria-pressed", String(category === defaultCategory));
       button.addEventListener("click", () => renderMyQrCategory(category));
       tabs.append(button);
     });
-    message.textContent = "Your unique QR Keycard appears here after staff approves your reservation and confirms two valid IDs at the hotel counter.";
-    renderMyQrCategory("active");
+    message.textContent = myQrCategories.active?.length
+      ? "Your issued QR Keycards are ready to view or download."
+      : myQrCategories.pendingVerification?.length
+        ? "Your reservation status is shown below. QR Keycards are issued only after staff confirms two valid IDs at the hotel counter."
+        : "Your QR Keycard appears here after staff approves your reservation and confirms two valid IDs at the hotel counter.";
+    renderMyQrCategory(defaultCategory);
   } catch (error) {
     message.textContent = error.message;
   }
@@ -1137,14 +1147,27 @@ async function loadStaffCounterChecks() {
       meta.textContent = `Reservation ${reservation.reference} · ${formatIdentityDate(reservation.checkIn)} – ${formatIdentityDate(reservation.checkOut)} · approved and paid (${reservation.paymentMethod})`;
       const instruction = document.createElement("p");
       instruction.textContent = "Only confirm after staff has physically checked two valid IDs at the hotel counter.";
+      const qrCountLabel = document.createElement("label");
+      qrCountLabel.className = "identity-qr-count-label";
+      qrCountLabel.textContent = "Choose how many QR keycards to generate";
+      const qrCountSelect = document.createElement("select");
+      qrCountSelect.className = "identity-qr-count";
+      qrCountSelect.setAttribute("aria-label", `Number of QR keycards for ${reservation.reference}`);
+      for (let count = 1; count <= 4; count += 1) {
+        const option = document.createElement("option");
+        option.value = String(count);
+        option.textContent = String(count);
+        qrCountSelect.append(option);
+      }
+      qrCountLabel.append(qrCountSelect);
       const confirmButton = document.createElement("button");
       confirmButton.type = "button";
       confirmButton.className = "btn btn-primary";
       confirmButton.textContent = "Confirm 2 IDs & Generate QR";
       confirmButton.addEventListener("click", () => {
-        void confirmCounterIds(reservation.reference, confirmButton);
+        void confirmCounterIds(reservation.reference, Number(qrCountSelect.value), confirmButton);
       });
-      copy.append(title, meta, instruction);
+      copy.append(title, meta, instruction, qrCountLabel);
       card.append(copy, confirmButton);
       list.append(card);
     });
@@ -1155,17 +1178,21 @@ async function loadStaffCounterChecks() {
   }
 }
 
-async function confirmCounterIds(reference, button) {
-  if (!window.confirm(`Confirm that staff checked two valid IDs in person for reservation ${reference} and generate its QR Keycard?`)) {
+async function confirmCounterIds(reference, qrCount, button) {
+  if (!window.confirm(`Confirm that staff checked two valid IDs in person for reservation ${reference} and generate ${qrCount} QR keycard${qrCount === 1 ? "" : "s"}?`)) {
     return;
   }
   const message = document.getElementById("staff-verification-message");
   button.disabled = true;
-  message.textContent = `Generating the unique QR Keycard for ${reference}…`;
+  message.textContent = `Generating ${qrCount} QR keycard${qrCount === 1 ? "" : "s"} for ${reference}…`;
   try {
     const data = await requestApi(
       `/api/staff/bookings/${encodeURIComponent(reference)}/confirm-ids`,
-      { method: "POST" }
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ qrCount })
+      }
     );
     const refreshed = await loadStaffCounterChecks();
     message.textContent = `${data.confirmation.message} Tell the guest to open My QR Keycard in the side panel.` +
