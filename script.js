@@ -623,7 +623,6 @@ async function spinWheel() {
   const currentAngle = currentRotation % 360;
   const rotationDelta = 360 * 7 + (targetAngle - currentAngle + 360) % 360;
   const nextRotation = currentRotation + rotationDelta;
-  wheel.style.background = buildWheelGradient();
   wheel.dataset.rotation = String(nextRotation);
 
   result.textContent = "Spinning… good luck!";
@@ -800,11 +799,6 @@ async function claimSpinReward() {
 }
 
 function initializeRewardsSystem() {
-  const spinWheel = document.getElementById("spin-wheel");
-  if (spinWheel) {
-    spinWheel.style.background = buildWheelGradient();
-  }
-
   document.getElementById("sidebar-points")?.addEventListener("click", openCebuPointsDialog);
   document.getElementById("sidebar-rewards")?.addEventListener("click", openRewardCatalog);
   document.getElementById("sidebar-spin-wheel")?.addEventListener("click", () => {

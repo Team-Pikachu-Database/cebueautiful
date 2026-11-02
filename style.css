@@ -3158,6 +3158,167 @@ img {
   border-top: 1px solid var(--line);
 }
 
+#account-dialog {
+  width: min(480px, calc(100% - 28px));
+  border: 1px solid rgba(255, 212, 71, 0.52);
+  border-radius: 20px;
+  color: #fff8df;
+  background:
+    radial-gradient(ellipse at 100% 0, rgba(255, 212, 71, 0.12), transparent 42%),
+    linear-gradient(145deg, #10264a, #0a192f 68%);
+  box-shadow: 0 28px 80px rgba(0, 7, 24, 0.58), inset 0 1px rgba(255, 255, 255, 0.1);
+}
+
+#account-dialog::backdrop {
+  background: rgba(3, 10, 25, 0.76);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+}
+
+#account-dialog[open]::backdrop {
+  opacity: 1;
+}
+
+#account-dialog .account-panel {
+  padding: clamp(22px, 6vw, 32px);
+}
+
+#account-dialog .account-heading {
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(255, 212, 71, 0.22);
+}
+
+#account-dialog .account-kicker {
+  color: #ffd447;
+  letter-spacing: 0.15em;
+}
+
+#account-dialog .account-heading h2 {
+  margin-top: 7px;
+  color: #fff8df;
+  font-size: clamp(1.45rem, 5vw, 1.8rem);
+  letter-spacing: -0.035em;
+}
+
+#account-dialog .account-close {
+  border: 1px solid rgba(255, 212, 71, 0.25);
+  color: #ffe078;
+  background: rgba(255, 248, 223, 0.08);
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+#account-dialog .account-close:hover {
+  transform: rotate(90deg);
+  border-color: rgba(255, 212, 71, 0.7);
+  background: rgba(255, 212, 71, 0.16);
+}
+
+#account-dialog .account-intro {
+  margin: 0 0 18px;
+  color: rgba(255, 248, 223, 0.76);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+#account-dialog .account-message {
+  color: #ffb6a8;
+}
+
+#account-dialog .account-message:empty {
+  display: none;
+}
+
+#account-dialog .account-tabs {
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid rgba(255, 212, 71, 0.16);
+  border-radius: 11px;
+  background: rgba(2, 11, 29, 0.52);
+}
+
+#account-dialog .account-tabs button {
+  min-height: 42px;
+  border-radius: 8px;
+  color: rgba(255, 248, 223, 0.68);
+  font-size: 0.84rem;
+  transition: color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+#account-dialog .account-tabs button:hover {
+  color: #fff8df;
+  background: rgba(255, 248, 223, 0.08);
+}
+
+#account-dialog .account-tabs button[aria-selected="true"] {
+  border-color: rgba(255, 212, 71, 0.72);
+  color: #10203a;
+  background: linear-gradient(135deg, #ffe878, #ffc629);
+  box-shadow: 0 4px 14px rgba(255, 198, 41, 0.18);
+}
+
+#account-dialog .account-form {
+  gap: 16px;
+  margin-top: 20px;
+}
+
+#account-dialog .account-form label {
+  gap: 8px;
+  color: #fff2bd;
+}
+
+#account-dialog .account-form input {
+  min-height: 48px;
+  padding-inline: 13px;
+  border: 1px solid rgba(204, 220, 244, 0.25);
+  border-radius: 10px;
+  color: #fff8df;
+  background: rgba(2, 11, 29, 0.48);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+#account-dialog .account-form input::placeholder {
+  color: rgba(255, 248, 223, 0.42);
+}
+
+#account-dialog .account-form input:focus {
+  border-color: #ffd447;
+  outline: none;
+  background: rgba(2, 11, 29, 0.68);
+  box-shadow: 0 0 0 3px rgba(255, 212, 71, 0.16);
+}
+
+#account-dialog .account-hint {
+  margin-top: -10px;
+  color: rgba(255, 248, 223, 0.62);
+}
+
+#account-dialog .account-submit {
+  min-height: 48px;
+  margin-top: 2px;
+  border: 1px solid rgba(255, 231, 139, 0.72);
+  border-radius: 10px;
+  color: #10203a;
+  background: linear-gradient(135deg, #ffe878, #ffc629);
+  box-shadow: 0 8px 20px rgba(255, 198, 41, 0.18);
+  font-weight: 800;
+  transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+}
+
+#account-dialog .account-submit:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #ffed9a, #ffd447);
+  box-shadow: 0 10px 24px rgba(255, 198, 41, 0.28);
+}
+
+#account-dialog .account-submit:focus-visible,
+#account-dialog .account-tabs button:focus-visible,
+#account-dialog .account-close:focus-visible {
+  outline: 2px solid #fff2bd;
+  outline-offset: 3px;
+}
+
 /* =========================================
    SMOOTH LIQUID GLASS HOTEL DETAILS POPUP
 ========================================= */
@@ -4824,20 +4985,17 @@ img {
 }
 
 .spin-wheel {
+  position: relative;
+  z-index: 0;
   width: 100%;
   height: 100%;
-  border: 10px solid #fff;
   border-radius: 50%;
-  box-shadow: 0 15px 30px rgba(15, 23, 42, 0.18);
-  background: conic-gradient(#f1f5f9 0deg 30deg, #f59e0b 30deg 60deg, #10b981 60deg 90deg, #8b5cf6 90deg 120deg, #ec4899 120deg 150deg, #14b8a6 150deg 180deg, #fb7185 180deg 210deg, #60a5fa 210deg 240deg, #f97316 240deg 270deg, #22c55e 270deg 300deg, #a78bfa 300deg 330deg, #facc15 330deg 360deg);
-}
-
-.spin-wheel::before {
-  content: "";
-  position: absolute;
-  inset: 18px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.7);
+  background-color: transparent;
+  background-image: url("./UI%20images/Luxury%20Prize%20Wheel%20Giveaway.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  filter: drop-shadow(0 14px 22px rgba(3, 10, 25, 0.3));
 }
 
 .spin-pointer {

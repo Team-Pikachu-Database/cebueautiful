@@ -83,6 +83,10 @@ fs.copyFileSync(
   path.join(heroImageDirectory, "Elegant Blue and Gold Wave Background.png")
 );
 fs.copyFileSync(
+  path.join(projectRoot, "UI images", "Luxury Prize Wheel Giveaway.png"),
+  path.join(heroImageDirectory, "Luxury Prize Wheel Giveaway.png")
+);
+fs.copyFileSync(
   path.join(projectRoot, "UI images", "nya-removebg.png"),
   path.join(heroImageDirectory, "nya-removebg.png")
 );
