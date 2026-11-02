@@ -16,11 +16,12 @@ const DEFAULT_REWARD_CATALOG = [
 ];
 
 const SPIN_WHEEL_REWARDS = [
-  { id: "try-again", title: "Try again", weight: 70, color: "#e5e7eb", kind: "tryAgain" },
-  { id: "voucher-100", title: "₱50 café treat", weight: 12, color: "#fbbf24", kind: "reward", reward: DEFAULT_REWARD_CATALOG[0] },
-  { id: "market-voucher", title: "₱150 market voucher", weight: 7, color: "#f59e0b", kind: "reward", reward: DEFAULT_REWARD_CATALOG[1] },
-  { id: "spa-pack", title: "Spa & wellness pack", weight: 5, color: "#14b8a6", kind: "reward", reward: DEFAULT_REWARD_CATALOG[4] },
-  { id: "weekend-escape", title: "Weekend Cebu escape", weight: 4, color: "#8b5cf6", kind: "reward", reward: DEFAULT_REWARD_CATALOG[10] },
+  // Angles are measured clockwise from the top of the prize-wheel artwork.
+  { id: "try-again", title: "Try again", weight: 70, color: "#e5e7eb", kind: "tryAgain", imageAngle: 313 },
+  { id: "voucher-100", title: "₱50 café treat", weight: 12, color: "#fbbf24", kind: "reward", reward: DEFAULT_REWARD_CATALOG[0], imageAngle: 193 },
+  { id: "market-voucher", title: "₱150 market voucher", weight: 7, color: "#f59e0b", kind: "reward", reward: DEFAULT_REWARD_CATALOG[1], imageAngle: 114 },
+  { id: "spa-pack", title: "Spa & wellness pack", weight: 5, color: "#14b8a6", kind: "reward", reward: DEFAULT_REWARD_CATALOG[4], imageAngle: 73 },
+  { id: "weekend-escape", title: "Weekend Cebu escape", weight: 4, color: "#8b5cf6", kind: "reward", reward: DEFAULT_REWARD_CATALOG[10], imageAngle: 358 },
   {
     id: "grand-prize",
     title: "1 whole week free vacation",
@@ -34,7 +35,8 @@ const SPIN_WHEEL_REWARDS = [
       rewardType: "grand",
       code: "CB-GRAND-1-WEEK",
       description: "Seven nights at a hotel of your choice with all hotel amenities included. Subject to hotel availability and confirmation."
-    }
+    },
+    imageAngle: 244
   }
 ];
 
@@ -65,6 +67,16 @@ function buildWheelGradient() {
     return `${reward.color} ${start}deg ${angle}deg`;
   });
   return `conic-gradient(${stops.join(", ")})`;
+}
+
+function getWheelRewardAtPointer(rotation) {
+  const normalizedRotation = ((rotation % 360) + 360) % 360;
+  const pointerAngle = (360 - normalizedRotation) % 360;
+  return SPIN_WHEEL_REWARDS.reduce((closest, reward) => {
+    const distance = Math.abs(((pointerAngle - reward.imageAngle + 540) % 360) - 180);
+    const closestDistance = Math.abs(((pointerAngle - closest.imageAngle + 540) % 360) - 180);
+    return distance < closestDistance ? reward : closest;
+  });
 }
 
 const configuredApiBaseUrl = typeof window.CEBUSTAYS_CONFIG?.apiBaseUrl === "string"
@@ -613,12 +625,7 @@ async function spinWheel() {
   const spinCost = document.querySelector(".spin-cost");
   if (spinCost) spinCost.textContent = `1 Cebu Point per spin · Balance: ${getCebuPointsBalance()} pts`;
 
-  const winnerIndex = SPIN_WHEEL_REWARDS.findIndex(item => item.id === winner.id);
-  const winnerStart = SPIN_WHEEL_REWARDS
-    .slice(0, winnerIndex)
-    .reduce((angle, item) => angle + item.weight / SPIN_WHEEL_TOTAL_WEIGHT * 360, 0);
-  const winnerSize = winner.weight / SPIN_WHEEL_TOTAL_WEIGHT * 360;
-  const targetAngle = (360 - winnerStart - winnerSize / 2 + 360) % 360;
+  const targetAngle = (360 - winner.imageAngle + 360) % 360;
   const currentRotation = Number(wheel.dataset.rotation || 0);
   const currentAngle = currentRotation % 360;
   const rotationDelta = 360 * 7 + (targetAngle - currentAngle + 360) % 360;
@@ -634,6 +641,9 @@ async function spinWheel() {
     spinFinished = true;
     window.clearTimeout(fallbackTimer);
     wheel.style.transform = `rotate(${nextRotation}deg)`;
+    winner = getWheelRewardAtPointer(nextRotation);
+    pendingSpinReward = winner;
+    pendingSpinRewardOwner = signedInAccount.id;
     if (outcomeAudioContext) {
       try {
         playWheelOutcomeSound(outcomeAudioContext, winner.kind);
