@@ -1481,6 +1481,7 @@ async function submitForgotPasswordForm(event) {
       document.getElementById("forgot-otp-step").hidden = false;
       form.querySelector('input[name="otp"]').required = true;
       submit.textContent = "Verify OTP";
+      startForgotResendCooldown();
       accountMessage.textContent = "OTP sent. Enter it before choosing a new password.";
       return;
     }
@@ -1524,7 +1525,10 @@ async function submitForgotPasswordForm(event) {
 
 async function resendForgotPasswordOtp() {
   const form = document.getElementById("forgot-password-form");
+  const resendButton = document.getElementById("forgot-password-resend");
   const email = form.querySelector('input[name="email"]').value;
+  resendButton.disabled = true;
+  resendButton.textContent = "Sending…";
   try {
     const data = await requestAccountApi("/forgot-password/request-otp", {
       method: "POST",
@@ -1537,10 +1541,37 @@ async function resendForgotPasswordOtp() {
     form.querySelector('input[name="otp"]').value = "";
     document.getElementById("forgot-new-password").hidden = true;
     document.getElementById("forgot-password-submit").textContent = "Verify OTP";
+    startForgotResendCooldown();
     accountMessage.textContent = "A new OTP was sent to your Gmail.";
   } catch (error) {
     accountMessage.textContent = error.message;
+    resendButton.disabled = false;
+    resendButton.textContent = "Resend OTP";
   }
+}
+
+let forgotResendTimer = null;
+
+function startForgotResendCooldown(seconds = 30) {
+  const button = document.getElementById("forgot-password-resend");
+  const status = document.getElementById("forgot-resend-status");
+  if (!button || !status) return;
+  window.clearInterval(forgotResendTimer);
+  let remaining = seconds;
+  button.disabled = true;
+  button.textContent = "Resend OTP";
+  status.textContent = `You can resend in ${remaining}s.`;
+  forgotResendTimer = window.setInterval(() => {
+    remaining -= 1;
+    if (remaining <= 0) {
+      window.clearInterval(forgotResendTimer);
+      forgotResendTimer = null;
+      button.disabled = false;
+      status.textContent = "";
+      return;
+    }
+    status.textContent = `You can resend in ${remaining}s.`;
+  }, 1000);
 }
 
 function initializePasswordToggles() {
