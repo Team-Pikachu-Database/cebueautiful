@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+The account request could not be completed.<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -325,8 +325,7 @@
           <label>Display name<input name="displayName" type="text" autocomplete="name" maxlength="80"></label>
           <label>Email<input name="email" type="email" autocomplete="email" maxlength="254" required></label>
           <label>Password<span class="password-control"><input id="register-password" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><button class="password-toggle" type="button" data-password-toggle="register-password" aria-label="Show password" title="Show password"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg></button></span></label>
-          <span class="account-hint">Use at least 12 characters.</span>
-          <div class="account-otp-step" data-registration-otp hidden><label>6-digit Gmail code<input name="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6"></label><button class="account-resend-link" type="button" data-registration-resend>Resend OTP</button><span class="account-hint" data-registration-status></span></div>
+          <span class="account-hint">Use at least 12 characters and a Gmail address.</span>
           <button class="btn btn-primary account-submit" type="submit">Create standard account</button>
         </form>
 
@@ -335,7 +334,6 @@
           <label>Email<input name="email" type="email" autocomplete="email" maxlength="254" required></label>
           <label>Password<span class="password-control"><input id="developer-password" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><button class="password-toggle" type="button" data-password-toggle="developer-password" aria-label="Show password" title="Show password"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg></button></span></label>
           <label>Developer invite code<span class="password-control"><input id="developer-invite-code" name="inviteCode" type="password" autocomplete="off" required><button class="password-toggle" type="button" data-password-toggle="developer-invite-code" aria-label="Show invite code" title="Show invite code"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg></button></span></label>
-          <div class="account-otp-step" data-registration-otp hidden><label>6-digit Gmail code<input name="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6"></label><button class="account-resend-link" type="button" data-registration-resend>Resend OTP</button><span class="account-hint" data-registration-status></span></div>
           <button class="btn btn-primary account-submit" type="submit">Create developer account</button>
         </form>
       </div>
