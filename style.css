@@ -1822,6 +1822,13 @@ img {
   gap: 10px;
 }
 
+.forgot-resend-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
 .account-otp-step[hidden],
 .forgot-otp-step[hidden],
 .forgot-new-password[hidden] {

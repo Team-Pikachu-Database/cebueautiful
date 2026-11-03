@@ -344,7 +344,7 @@ The account request could not be completed.<!DOCTYPE html>
         <label>Gmail address<input name="email" type="email" autocomplete="email" maxlength="254" required></label>
         <div class="forgot-otp-step" id="forgot-otp-step" hidden>
           <label>6-digit OTP<input name="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6"></label>
-          <button class="account-resend-link" type="button" id="forgot-password-resend">Resend OTP</button>
+          <div class="forgot-resend-row"><button class="account-resend-link" type="button" id="forgot-password-resend">Resend OTP</button><span class="account-hint" id="forgot-resend-status" aria-live="polite"></span></div>
         </div>
         <div class="forgot-new-password" id="forgot-new-password" hidden>
           <label>New password<span class="password-control"><input id="forgot-new-password-input" name="newPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128"><button class="password-toggle" type="button" data-password-toggle="forgot-new-password-input" aria-label="Show new password" title="Show new password"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg></button></span></label>
