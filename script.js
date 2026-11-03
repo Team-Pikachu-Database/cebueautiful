@@ -927,6 +927,9 @@ function setAccountView(view) {
   document.querySelectorAll("[data-account-form]").forEach(form => {
     form.hidden = form.dataset.accountForm !== view;
   });
+  const forgotForm = document.getElementById("forgot-password-form");
+  if (forgotForm) forgotForm.hidden = true;
+  if (accountEntry && !signedInAccount) accountEntry.hidden = false;
 
   accountMessage.textContent = "";
 }
@@ -1384,6 +1387,175 @@ function showCouponWallet() {
     });
 }
 
+function registrationOtpEndpoint(form, role, verify = false) {
+  const prefix = role === "developer" ? "/developer/register" : "/register";
+  return `${prefix}/${verify ? "verify-otp" : "request-otp"}`;
+}
+
+async function submitRegistrationForm(event, role) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const submit = form.querySelector("button[type=submit]");
+  const values = Object.fromEntries(new FormData(form));
+  const verifying = Boolean(form.dataset.challengeId);
+  submit.disabled = true;
+  accountMessage.textContent = "";
+
+  try {
+    const data = await requestAccountApi(
+      registrationOtpEndpoint(form, role, verifying),
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(verifying
+          ? { email: values.email, challengeId: form.dataset.challengeId, otp: values.otp }
+          : { ...values, inviteCode: role === "developer" ? values.inviteCode : undefined })
+      }
+    );
+    if (!verifying) {
+      form.dataset.challengeId = data.challengeId;
+      form.querySelector("[data-registration-otp]").hidden = false;
+      form.querySelector('input[name="otp"]').required = true;
+      form.querySelector("[data-registration-status]").textContent = "OTP sent. Check your Gmail inbox.";
+      submit.textContent = role === "developer" ? "Verify code & create developer account" : "Verify code & create account";
+      return;
+    }
+    form.reset();
+    delete form.dataset.challengeId;
+    form.querySelector("[data-registration-otp]").hidden = true;
+    form.querySelector('input[name="otp"]').required = false;
+    submit.textContent = role === "developer" ? "Create developer account" : "Create standard account";
+    updateAccountDisplay(data.user);
+    if (data.user?.role === "developer") {
+      window.location.assign("developer.html");
+      return;
+    }
+    accountMessage.textContent = data.welcomeCouponAwarded
+      ? "Welcome to CebuStays! Your new-account coupon is now available in My Coupons."
+      : "You're signed in.";
+  } catch (error) {
+    accountMessage.textContent = error.message;
+  } finally {
+    submit.disabled = false;
+  }
+}
+
+async function resendRegistrationOtp(form, role) {
+  const values = Object.fromEntries(new FormData(form));
+  const status = form.querySelector("[data-registration-status]");
+  try {
+    const data = await requestAccountApi(registrationOtpEndpoint(form, role), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(values)
+    });
+    form.dataset.challengeId = data.challengeId;
+    form.querySelector('input[name="otp"]').value = "";
+    status.textContent = "A new OTP was sent to your Gmail.";
+  } catch (error) {
+    accountMessage.textContent = error.message;
+  }
+}
+
+async function submitForgotPasswordForm(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const submit = document.getElementById("forgot-password-submit");
+  const values = Object.fromEntries(new FormData(form));
+  const challengeId = form.dataset.challengeId;
+  const otpVerified = form.dataset.otpVerified === "true";
+  submit.disabled = true;
+  accountMessage.textContent = "";
+  try {
+    if (!challengeId) {
+      const data = await requestAccountApi("/forgot-password/request-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: values.email })
+      });
+      if (!data.eligible) {
+        accountMessage.textContent = "If this Gmail account is eligible, an OTP will be sent.";
+        return;
+      }
+      form.dataset.challengeId = data.challengeId;
+      document.getElementById("forgot-otp-step").hidden = false;
+      form.querySelector('input[name="otp"]').required = true;
+      submit.textContent = "Verify OTP";
+      accountMessage.textContent = "OTP sent. Enter it before choosing a new password.";
+      return;
+    }
+    if (!otpVerified) {
+      await requestAccountApi("/forgot-password/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ challengeId, email: values.email, otp: values.otp })
+      });
+      form.dataset.otpVerified = "true";
+      document.getElementById("forgot-new-password").hidden = false;
+      form.querySelector('input[name="newPassword"]').required = true;
+      form.querySelector('input[name="confirmPassword"]').required = true;
+      submit.textContent = "Reset password";
+      accountMessage.textContent = "OTP verified. You may now create a new password.";
+      return;
+    }
+    if (values.newPassword !== values.confirmPassword) {
+      throw new Error("The new password fields must match.");
+    }
+    await requestAccountApi("/forgot-password/reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ challengeId, email: values.email, newPassword: values.newPassword })
+    });
+    form.reset();
+    delete form.dataset.challengeId;
+    delete form.dataset.otpVerified;
+    document.getElementById("forgot-otp-step").hidden = true;
+    document.getElementById("forgot-new-password").hidden = true;
+    submit.textContent = "Send OTP";
+    setAccountView("login");
+    document.querySelector('#account-form-login input[name="email"]').value = values.email;
+    accountMessage.textContent = "Password updated. Sign in with your new password.";
+  } catch (error) {
+    accountMessage.textContent = error.message;
+  } finally {
+    submit.disabled = false;
+  }
+}
+
+async function resendForgotPasswordOtp() {
+  const form = document.getElementById("forgot-password-form");
+  const email = form.querySelector('input[name="email"]').value;
+  try {
+    const data = await requestAccountApi("/forgot-password/request-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+    if (!data.eligible) throw new Error("If this Gmail account is eligible, an OTP will be sent.");
+    form.dataset.challengeId = data.challengeId;
+    delete form.dataset.otpVerified;
+    form.querySelector('input[name="otp"]').value = "";
+    document.getElementById("forgot-new-password").hidden = true;
+    document.getElementById("forgot-password-submit").textContent = "Verify OTP";
+    accountMessage.textContent = "A new OTP was sent to your Gmail.";
+  } catch (error) {
+    accountMessage.textContent = error.message;
+  }
+}
+
+function initializePasswordToggles() {
+  document.querySelectorAll("[data-password-toggle]").forEach(button => {
+    button.addEventListener("click", () => {
+      const input = document.getElementById(button.dataset.passwordToggle);
+      if (!input) return;
+      const visible = input.type === "text";
+      input.type = visible ? "password" : "text";
+      button.setAttribute("aria-label", visible ? "Show password" : "Hide password");
+      button.title = visible ? "Show password" : "Hide password";
+    });
+  });
+}
+
 async function submitAccountForm(event, endpoint) {
   event.preventDefault();
   const form = event.currentTarget;
@@ -1545,20 +1717,43 @@ function initializeAccount() {
   const loginForm = document.getElementById("account-form-login");
   const registerForm = document.getElementById("account-form-register");
   const developerForm = document.getElementById("account-form-developer");
+  const forgotForm = document.getElementById("forgot-password-form");
 
   if (loginForm) {
     loginForm.addEventListener("submit", event => submitAccountForm(event, "/login"));
   }
 
   if (registerForm) {
-    registerForm.addEventListener("submit", event => submitAccountForm(event, "/register"));
+    registerForm.addEventListener("submit", event => submitRegistrationForm(event, "standard"));
+    registerForm.querySelector("[data-registration-resend]")
+      .addEventListener("click", () => resendRegistrationOtp(registerForm, "standard"));
   }
 
   if (developerForm) {
-    developerForm.addEventListener("submit", event =>
-      submitAccountForm(event, "/developer/register")
-    );
+    developerForm.addEventListener("submit", event => submitRegistrationForm(event, "developer"));
+    developerForm.querySelector("[data-registration-resend]")
+      .addEventListener("click", () => resendRegistrationOtp(developerForm, "developer"));
   }
+
+  document.getElementById("forgot-password-open")?.addEventListener("click", () => {
+    document.getElementById("account-entry").hidden = true;
+    forgotForm.hidden = false;
+    forgotForm.querySelector('input[name="email"]').focus();
+  });
+  document.getElementById("forgot-password-back")?.addEventListener("click", () => {
+    forgotForm.reset();
+    delete forgotForm.dataset.challengeId;
+    delete forgotForm.dataset.otpVerified;
+    document.getElementById("forgot-otp-step").hidden = true;
+    document.getElementById("forgot-new-password").hidden = true;
+    document.getElementById("forgot-password-submit").textContent = "Send OTP";
+    document.getElementById("account-entry").hidden = false;
+    forgotForm.hidden = true;
+    setAccountView("login");
+  });
+  forgotForm?.addEventListener("submit", submitForgotPasswordForm);
+  document.getElementById("forgot-password-resend")?.addEventListener("click", resendForgotPasswordOtp);
+  initializePasswordToggles();
 
   const logoutButton = document.getElementById("account-logout");
   if (logoutButton) {
