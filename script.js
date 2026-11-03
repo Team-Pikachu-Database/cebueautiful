@@ -1724,15 +1724,11 @@ function initializeAccount() {
   }
 
   if (registerForm) {
-    registerForm.addEventListener("submit", event => submitRegistrationForm(event, "standard"));
-    registerForm.querySelector("[data-registration-resend]")
-      .addEventListener("click", () => resendRegistrationOtp(registerForm, "standard"));
+    registerForm.addEventListener("submit", event => submitAccountForm(event, "/register"));
   }
 
   if (developerForm) {
-    developerForm.addEventListener("submit", event => submitRegistrationForm(event, "developer"));
-    developerForm.querySelector("[data-registration-resend]")
-      .addEventListener("click", () => resendRegistrationOtp(developerForm, "developer"));
+    developerForm.addEventListener("submit", event => submitAccountForm(event, "/developer/register"));
   }
 
   document.getElementById("forgot-password-open")?.addEventListener("click", () => {
