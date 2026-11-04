@@ -4589,16 +4589,28 @@ function initializeFloatingPokeball() {
 function initializeHomepageNavigation() {
   if (!homeNavToggle || !homeNavigationLinks) return;
 
+  const closeMenu = () => {
+    homeNavigationLinks.classList.remove("is-open");
+    homeNavToggle.setAttribute("aria-expanded", "false");
+  };
+
   homeNavToggle.addEventListener("click", () => {
     const isOpen = homeNavigationLinks.classList.toggle("is-open");
     homeNavToggle.setAttribute("aria-expanded", String(isOpen));
   });
 
+  homeNavigationLinks.addEventListener("click", event => {
+    if (event.target.closest("a, button")) closeMenu();
+  });
+
   document.addEventListener("click", event => {
     if (!homeNavigationLinks.contains(event.target) && !homeNavToggle.contains(event.target)) {
-      homeNavigationLinks.classList.remove("is-open");
-      homeNavToggle.setAttribute("aria-expanded", "false");
+      closeMenu();
     }
+  });
+
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape") closeMenu();
   });
 }
 
