@@ -4747,6 +4747,7 @@ function initializeHelpChat() {
 
   const typingId = "help-typing-indicator";
   let portalAnimationTimer = 0;
+  let portalAnimationHandler = null;
 
   const appendHelpMessage = (role, text, options = {}) => {
     const message = el("article", `help-message is-${role}${options.isError ? " is-error" : ""}`);
@@ -4892,6 +4893,10 @@ function initializeHelpChat() {
   dialog.addEventListener("close", () => {
     window.clearTimeout(portalAnimationTimer);
     portalAnimationTimer = 0;
+    if (portalAnimationHandler) {
+      portalEffect?.removeEventListener("animationend", portalAnimationHandler);
+      portalAnimationHandler = null;
+    }
     if (pokeballScream) {
       pokeballScream.pause();
       pokeballScream.currentTime = 0;
@@ -4943,6 +4948,25 @@ function initializeHelpChat() {
     portalMascot.style.setProperty("--portal-end-scale-y", endScaleY.toFixed(3));
     portalEffect.classList.remove("is-active");
     void portalEffect.offsetWidth;
+    const finishPortalAnimation = () => {
+      if (portalAnimationHandler) {
+        portalEffect.removeEventListener("animationend", portalAnimationHandler);
+        portalAnimationHandler = null;
+      }
+      window.clearTimeout(portalAnimationTimer);
+      portalEffect.hidden = true;
+      portalEffect.classList.remove("is-active");
+      portalAnimationTimer = 0;
+      delete dialog.dataset.preparing;
+      dialog.dataset.entering = "true";
+      input.focus();
+    };
+    portalAnimationHandler = event => {
+      if (event.target === portalMascot && event.animationName === "help-portal-mascot-emerge") {
+        finishPortalAnimation();
+      }
+    };
+    portalEffect.addEventListener("animationend", portalAnimationHandler);
     portalEffect.classList.add("is-active");
     if (pokeballScream) {
       pokeballScream.pause();
@@ -4950,16 +4974,8 @@ function initializeHelpChat() {
       pokeballScream.play()?.catch(() => {});
     }
 
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.clearTimeout(portalAnimationTimer);
-    portalAnimationTimer = window.setTimeout(() => {
-      portalEffect.hidden = true;
-      portalEffect.classList.remove("is-active");
-      portalAnimationTimer = 0;
-      delete dialog.dataset.preparing;
-      dialog.dataset.entering = "true";
-      input.focus();
-    }, reducedMotion ? 1 : 1660);
+    portalAnimationTimer = window.setTimeout(finishPortalAnimation, 3000);
     return true;
   };
 
