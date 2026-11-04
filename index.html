@@ -315,8 +315,16 @@ The account request could not be completed.<!DOCTYPE html>
         </div>
 
         <form class="account-form" id="account-form-login" data-account-form="login" role="tabpanel" aria-labelledby="account-tab-login">
-          <label>Email<input name="email" type="email" autocomplete="username" maxlength="254" required></label>
           <label>Password<span class="password-control"><input id="login-password" name="password" type="password" autocomplete="current-password" required><button class="password-toggle" type="button" data-password-toggle="login-password" aria-label="Show password" title="Show password"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg></button></span></label>
+            <div id="login-credentials">
+              <label>Email<input name="email" type="email" autocomplete="username" maxlength="254" required></label>
+              <label>Password<span class="password-control"><input id="login-password" name="password" type="password" autocomplete="current-password" required><button class="password-toggle" type="button" data-password-toggle="login-password" aria-label="Show password" title="Show password"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg></button></span></label>
+            </div>
+            <div class="forgot-otp-step" id="login-otp-step" hidden>
+              <p class="account-hint" id="login-otp-instructions">Enter the 6-digit code sent to your email.</p>
+              <label>6-digit login code<input name="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6"></label>
+              <div class="forgot-resend-row"><button class="account-resend-link" type="button" id="login-otp-resend">Resend code</button><span class="account-hint" id="login-otp-resend-status" aria-live="polite"></span></div>
+            </div>
           <button class="account-forgot-link" type="button" id="forgot-password-open">Forgot password?</button>
           <button class="btn btn-primary account-submit" type="submit">Sign in</button>
         </form>
@@ -931,6 +939,6 @@ The account request could not be completed.<!DOCTYPE html>
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""></script>
   <script defer src="map.js?v=hotel-directions-api-v3"></script>
-  <script defer src="script.js?v=20261102-payment-receipt-v1"></script>
+  <script defer src="script.js?v=20261104-login-otp-v3"></script>
 </body>
 </html>

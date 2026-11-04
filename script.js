@@ -887,6 +887,7 @@ const accountDialog = document.getElementById("account-dialog");
 const accountMessage = document.getElementById("account-message");
 const accountEntry = document.getElementById("account-entry");
 const signedInPanel = document.getElementById("account-signed-in");
+document.querySelector("#account-form-login > label")?.remove();
 
 function getCurrentView() {
   return new URLSearchParams(window.location.search).get("view") === "hotels" ? "hotels" : "home";
@@ -1592,17 +1593,43 @@ async function submitAccountForm(event, endpoint) {
   const form = event.currentTarget;
   const submit = form.querySelector("button[type=submit]");
   const values = Object.fromEntries(new FormData(form));
+  const isLogin = endpoint === "/login";
+  const challengeId = isLogin ? form.dataset.challengeId : "";
+  const verifyingLogin = Boolean(challengeId);
 
   submit.disabled = true;
   accountMessage.textContent = "";
 
   try {
-    const data = await requestAccountApi(endpoint, {
+    const data = await requestAccountApi(verifyingLogin ? "/login/verify-otp" : endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values)
+      body: JSON.stringify(verifyingLogin
+        ? { email: values.email, challengeId, otp: values.otp }
+        : values)
     });
+    if (isLogin && !verifyingLogin) {
+      form.dataset.challengeId = data.challengeId;
+      document.getElementById("login-credentials").hidden = true;
+      document.getElementById("login-otp-step").hidden = false;
+      document.getElementById("forgot-password-open").hidden = true;
+      form.querySelector('input[name="otp"]').required = true;
+      submit.textContent = "Verify code";
+      startLoginResendCooldown();
+      document.getElementById("login-otp-instructions").textContent = `Login code sent to ${values.email}. Enter it to finish signing in.`;
+      accountMessage.textContent = "Check your email for the login code.";
+      return;
+    }
     form.reset();
+    if (isLogin) {
+      delete form.dataset.challengeId;
+      document.getElementById("login-credentials").hidden = false;
+      document.getElementById("login-otp-step").hidden = true;
+      document.getElementById("forgot-password-open").hidden = false;
+      form.querySelector('input[name="otp"]').required = false;
+      submit.textContent = "Sign in";
+      clearLoginResendCooldown();
+    }
     updateAccountDisplay(data.user);
     if (data.user && endpoint !== "/register") accountDialog.close();
     if (data.user?.role === "developer") {
@@ -1617,6 +1644,60 @@ async function submitAccountForm(event, endpoint) {
   } finally {
     submit.disabled = false;
   }
+}
+
+async function resendLoginOtp() {
+  const form = document.getElementById("account-form-login");
+  const resendButton = document.getElementById("login-otp-resend");
+  const values = Object.fromEntries(new FormData(form));
+  resendButton.disabled = true;
+  resendButton.textContent = "Sending…";
+  try {
+    const data = await requestAccountApi("/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: values.email, password: values.password })
+    });
+    form.dataset.challengeId = data.challengeId;
+    form.querySelector('input[name="otp"]').value = "";
+    startLoginResendCooldown();
+    document.getElementById("login-otp-instructions").textContent = `A new login code was sent to ${values.email}.`;
+    accountMessage.textContent = "A new login code was sent to your email.";
+  } catch (error) {
+    accountMessage.textContent = error.message;
+    resendButton.disabled = false;
+    resendButton.textContent = "Resend code";
+  }
+}
+
+let loginResendTimer = null;
+
+function startLoginResendCooldown(seconds = 30) {
+  const button = document.getElementById("login-otp-resend");
+  const status = document.getElementById("login-otp-resend-status");
+  if (!button || !status) return;
+  window.clearInterval(loginResendTimer);
+  let remaining = seconds;
+  button.disabled = true;
+  button.textContent = "Resend code";
+  status.textContent = `You can resend in ${remaining}s.`;
+  loginResendTimer = window.setInterval(() => {
+    remaining -= 1;
+    if (remaining <= 0) {
+      clearLoginResendCooldown();
+      return;
+    }
+    status.textContent = `You can resend in ${remaining}s.`;
+  }, 1000);
+}
+
+function clearLoginResendCooldown() {
+  window.clearInterval(loginResendTimer);
+  loginResendTimer = null;
+  const button = document.getElementById("login-otp-resend");
+  const status = document.getElementById("login-otp-resend-status");
+  if (button) button.disabled = false;
+  if (status) status.textContent = "";
 }
 
 async function handlePaymentReturn() {
@@ -1752,6 +1833,7 @@ function initializeAccount() {
 
   if (loginForm) {
     loginForm.addEventListener("submit", event => submitAccountForm(event, "/login"));
+    document.getElementById("login-otp-resend")?.addEventListener("click", resendLoginOtp);
   }
 
   if (registerForm) {

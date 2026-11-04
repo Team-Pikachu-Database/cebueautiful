@@ -40,9 +40,13 @@ if (configuredApiUrl) {
 
 fs.mkdirSync(outputDirectory, { recursive: true });
 
-for (const file of ["index.html", "developer.html", "script.js", "developer.js", "map.js", "style.css"]) {
+for (const file of ["developer.html", "script.js", "developer.js", "map.js", "style.css"]) {
   fs.copyFileSync(path.join(projectRoot, file), path.join(outputDirectory, file));
 }
+
+const indexHtml = fs.readFileSync(path.join(projectRoot, "index.html"), "utf8")
+  .replace(/script\.js\?v=[^"]+/, "script.js?v=20261104-login-otp-v3");
+fs.writeFileSync(path.join(outputDirectory, "index.html"), indexHtml);
 
 fs.copyFileSync(
   path.join(projectRoot, "logo_folder", "cebustays.jpeg"),
