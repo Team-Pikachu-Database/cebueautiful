@@ -707,6 +707,7 @@ img {
   isolation: isolate;
   overflow: hidden;
   background: #111111;
+  margin-top: -18px;
   padding-top: 0;
 }
 
