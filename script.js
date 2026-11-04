@@ -4891,11 +4891,13 @@ function initializeHelpChat() {
   document.getElementById("help-close")?.addEventListener("click", () => dialog.close());
   dialog.addEventListener("close", () => {
     window.clearTimeout(portalAnimationTimer);
+    portalAnimationTimer = 0;
     if (pokeballScream) {
       pokeballScream.pause();
       pokeballScream.currentTime = 0;
     }
     delete dialog.dataset.portalAnimation;
+    delete dialog.dataset.preparing;
     delete dialog.dataset.entering;
     if (portalEffect) {
       portalEffect.hidden = true;
@@ -4912,10 +4914,10 @@ function initializeHelpChat() {
   });
 
   const triggerHelpPortalAnimation = () => {
-    if (!pokeballLauncher || !portalEffect) return;
+    if (!pokeballLauncher || !portalEffect) return false;
     const mascot = dialog.querySelector(".help-mascot");
     const portalMascot = portalEffect.querySelector(".help-portal-mascot");
-    if (!mascot || !portalMascot) return;
+    if (!mascot || !portalMascot) return false;
 
     const launcherRect = pokeballLauncher.getBoundingClientRect();
     const dialogRect = dialog.getBoundingClientRect();
@@ -4954,19 +4956,31 @@ function initializeHelpChat() {
       portalEffect.hidden = true;
       portalEffect.classList.remove("is-active");
       portalAnimationTimer = 0;
+      delete dialog.dataset.preparing;
+      dialog.dataset.entering = "true";
+      input.focus();
     }, reducedMotion ? 1 : 1660);
+    return true;
   };
 
   document.querySelectorAll("[data-help-open]").forEach(button => {
     button.addEventListener("click", () => {
       selectedHelpHotelId = activeDetailHotel?.id ?? null;
-      dialog.dataset.entering = "true";
+      const launchingFromPokeball = button === pokeballLauncher;
+      if (launchingFromPokeball) {
+        dialog.dataset.preparing = "true";
+        delete dialog.dataset.entering;
+      } else {
+        dialog.dataset.entering = "true";
+      }
       dialog.showModal();
-      if (button === pokeballLauncher) {
-        triggerHelpPortalAnimation();
+      const portalStarted = launchingFromPokeball && triggerHelpPortalAnimation();
+      if (!portalStarted) {
+        delete dialog.dataset.preparing;
+        dialog.dataset.entering = "true";
+        input.focus();
       }
       if (pokeballLauncher) pokeballLauncher.hidden = true;
-      input.focus();
       homeNavigationLinks?.classList.remove("is-open");
       homeNavToggle?.setAttribute("aria-expanded", "false");
       sidebar?.classList.remove("is-open");
