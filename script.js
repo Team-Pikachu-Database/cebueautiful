@@ -1397,6 +1397,7 @@ async function submitRegistrationForm(event, role) {
   event.preventDefault();
   const form = event.currentTarget;
   const submit = form.querySelector("button[type=submit]");
+  const credentials = form.querySelector("[data-registration-credentials]");
   const values = Object.fromEntries(new FormData(form));
   const verifying = Boolean(form.dataset.challengeId);
   submit.disabled = true;
@@ -1415,6 +1416,7 @@ async function submitRegistrationForm(event, role) {
     );
     if (!verifying) {
       form.dataset.challengeId = data.challengeId;
+      if (credentials) credentials.hidden = true;
       form.querySelector("[data-registration-otp]").hidden = false;
       form.querySelector('input[name="otp"]').required = true;
       form.querySelector("[data-registration-status]").textContent = "OTP sent. Check your Gmail inbox.";
@@ -1423,6 +1425,7 @@ async function submitRegistrationForm(event, role) {
     }
     form.reset();
     delete form.dataset.challengeId;
+    if (credentials) credentials.hidden = false;
     form.querySelector("[data-registration-otp]").hidden = true;
     form.querySelector('input[name="otp"]').required = false;
     submit.textContent = role === "developer" ? "Create developer account" : "Create standard account";
@@ -1837,11 +1840,11 @@ function initializeAccount() {
   }
 
   if (registerForm) {
-    registerForm.addEventListener("submit", event => submitAccountForm(event, "/register"));
+    registerForm.addEventListener("submit", event => submitRegistrationForm(event, "standard"));
   }
 
   if (developerForm) {
-    developerForm.addEventListener("submit", event => submitAccountForm(event, "/developer/register"));
+    developerForm.addEventListener("submit", event => submitRegistrationForm(event, "developer"));
   }
 
   document.getElementById("forgot-password-open")?.addEventListener("click", () => {
