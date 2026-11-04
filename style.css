@@ -5893,6 +5893,8 @@ img {
   border-radius: 24px;
   color: #17324b;
   background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   box-shadow: 0 24px 72px rgba(8, 34, 52, 0.2);
 }
 
@@ -6578,7 +6580,7 @@ img {
 @keyframes help-dialog-portal-enter {
   from {
     opacity: 0;
-    transform: translate(calc(-50% - 140px), -50%) scale(0.94);
+    transform: translate(calc(-50% - 100vw), -50%) scale(0.94);
   }
   to {
     opacity: 1;
@@ -6815,7 +6817,7 @@ img {
 @keyframes help-dialog-portal-enter {
   from {
     opacity: 0;
-    transform: translate(calc(-50% - 140px), -50%) scale(0.94);
+    transform: translate(calc(-50% - 100vw), -50%) scale(0.94);
   }
   to {
     opacity: 1;
