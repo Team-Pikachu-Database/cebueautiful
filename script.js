@@ -4921,10 +4921,16 @@ function initializeHelpChat() {
     const launcherRect = pokeballLauncher.getBoundingClientRect();
     const dialogRect = dialog.getBoundingClientRect();
     const mascotRect = mascot.getBoundingClientRect();
-    const endX = mascotRect.left - launcherRect.left;
-    const endY = mascotRect.top - launcherRect.top;
-    const endScaleX = mascotRect.width / Math.max(launcherRect.width, 1);
-    const endScaleY = mascotRect.height / Math.max(launcherRect.height, 1);
+    portalEffect.style.left = `${launcherRect.left - dialogRect.left}px`;
+    portalEffect.style.top = `${launcherRect.top - dialogRect.top}px`;
+    portalEffect.style.width = `${launcherRect.width}px`;
+    portalEffect.style.height = `${launcherRect.height}px`;
+    portalEffect.hidden = false;
+    const portalRect = portalEffect.getBoundingClientRect();
+    const endX = mascotRect.left - portalRect.left;
+    const endY = mascotRect.top - portalRect.top;
+    const endScaleX = mascotRect.width / Math.max(portalRect.width, 1);
+    const endScaleY = mascotRect.height / Math.max(portalRect.height, 1);
 
     portalMascot.style.setProperty("--portal-mid-x", `${endX * 0.55}px`);
     portalMascot.style.setProperty("--portal-mid-y", `${endY * 0.55}px`);
@@ -4934,11 +4940,6 @@ function initializeHelpChat() {
     portalMascot.style.setProperty("--portal-end-y", `${endY}px`);
     portalMascot.style.setProperty("--portal-end-scale-x", endScaleX.toFixed(3));
     portalMascot.style.setProperty("--portal-end-scale-y", endScaleY.toFixed(3));
-    portalEffect.style.left = `${launcherRect.left - dialogRect.left}px`;
-    portalEffect.style.top = `${launcherRect.top - dialogRect.top}px`;
-    portalEffect.style.width = `${launcherRect.width}px`;
-    portalEffect.style.height = `${launcherRect.height}px`;
-    portalEffect.hidden = false;
     portalEffect.classList.remove("is-active");
     void portalEffect.offsetWidth;
     portalEffect.classList.add("is-active");

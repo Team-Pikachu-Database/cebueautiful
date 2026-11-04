@@ -5966,23 +5966,31 @@ img {
   flex: 1 1 auto;
   min-width: 0;
   max-width: 72%;
+  padding: 8px 14px 10px;
+  border: 1px solid rgba(255, 210, 105, 0.72);
+  border-left: 4px solid #ffd568;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(7, 30, 75, 0.94), rgba(11, 48, 96, 0.86));
+  box-shadow: 0 8px 20px rgba(4, 17, 47, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
 }
 
 .help-heading-copy h2 {
   margin: 2px 0 4px;
-  color: #123b50;
+  color: #fff9e8;
   font-size: clamp(1.2rem, 3vw, 1.55rem);
 }
 
 .help-heading-copy p,
 .help-composer-hint {
   margin: 0;
-  color: #466476;
+  color: rgba(255, 248, 225, 0.9);
   font-size: 0.84rem;
 }
 
 .help-header .account-kicker {
-  color: #168a8a;
+  color: #ffda78;
 }
 
 .help-header-actions {
@@ -6239,6 +6247,7 @@ img {
 
   .help-heading-copy {
     max-width: calc(100% - 104px);
+    padding: 6px 9px;
   }
 
   .help-heading-copy h2 {
@@ -6396,8 +6405,8 @@ img {
 
 .help-portal-mascot {
   z-index: 2;
-  object-fit: cover;
-  object-position: center 32%;
+  object-fit: contain;
+  object-position: center;
   opacity: 0;
   transform-origin: top left;
   filter: drop-shadow(0 0 12px rgba(255, 231, 139, 0.95));
