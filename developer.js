@@ -67,7 +67,6 @@ const pinInput = document.getElementById("developer-pin-input");
 const pinLabel = document.getElementById("developer-pin-label");
 const pinStatus = document.getElementById("developer-pin-status");
 const pinForgotButton = document.getElementById("developer-pin-forgot");
-const pinSubmitButton = document.getElementById("developer-pin-submit");
 let selectedReservation = null;
 let selectedCancellation = null;
 let pendingBookingsRefreshTimer = null;
@@ -91,7 +90,6 @@ function setPinStep(step, message) {
   pinInput.value = "";
   pinForgotButton.hidden = !["unlock", "recovery-otp"].includes(step);
   pinForgotButton.textContent = step === "recovery-otp" ? "Resend code" : "Forgot PIN?";
-  pinSubmitButton.textContent = step === "recovery-otp" ? "Verify code" : "Continue";
   pinInput.focus();
 }
 
@@ -142,7 +140,6 @@ async function handleDeveloperPinSubmit(event) {
   if (!new RegExp(`^\\d{${expectedLength}}$`).test(value)) return;
   pinSubmissionPending = true;
   pinInput.disabled = true;
-  pinSubmitButton.disabled = true;
   pinForgotButton.disabled = true;
 
   try {
@@ -223,7 +220,6 @@ async function handleDeveloperPinSubmit(event) {
   } finally {
     pinSubmissionPending = false;
     pinInput.disabled = false;
-    pinSubmitButton.disabled = false;
     pinForgotButton.disabled = false;
     if (pinDialog.open) pinInput.focus();
   }
