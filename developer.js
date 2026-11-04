@@ -791,11 +791,7 @@ async function checkDeveloperSession() {
     }
 
     document.getElementById("developer-email").textContent = data.user.email;
-    const pin = await requestAccountApi("/developer/pin/status");
-    if (pin.unlocked) {
-      await showDeveloperDashboard(pin.unlockExpiresAt);
-      return;
-    }
+    const pin = await requestAccountApi("/developer/pin/open", { method: "POST" });
     if (!pinDialog.open) pinDialog.showModal();
     setPinStep(
       pin.configured ? "unlock" : "setup-first",
@@ -821,6 +817,12 @@ pinForgotButton.addEventListener("click", requestDeveloperPinReset);
 pinDialog.addEventListener("cancel", event => event.preventDefault());
 window.addEventListener("pagehide", () => {
   if (pinUnlockTimer) window.clearTimeout(pinUnlockTimer);
+});
+window.addEventListener("pageshow", event => {
+  if (event.persisted) {
+    lockDeveloperDashboard();
+    void checkDeveloperSession();
+  }
 });
 retryButton.addEventListener("click", checkDeveloperSession);
 document.getElementById("developer-bookings-refresh")
