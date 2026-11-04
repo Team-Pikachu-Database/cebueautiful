@@ -1847,6 +1847,55 @@ img {
   font-size: 0.76rem;
 }
 
+.password-strength {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: -9px;
+}
+
+.password-strength-track {
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.password-strength-bar {
+  display: block;
+  width: 20%;
+  height: 100%;
+  border-radius: inherit;
+  background: #ef6262;
+  transition: width 180ms ease, background-color 180ms ease;
+}
+
+.password-strength[data-level="moderate"] .password-strength-bar {
+  width: 62%;
+  background: #f0c64c;
+}
+
+.password-strength[data-level="strong"] .password-strength-bar {
+  width: 100%;
+  background: #42cf83;
+}
+
+.password-strength-label {
+  min-width: 62px;
+  color: #ef7777;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.password-strength[data-level="moderate"] .password-strength-label {
+  color: #f0c64c;
+}
+
+.password-strength[data-level="strong"] .password-strength-label {
+  color: #42cf83;
+}
+
 .account-submit {
   width: 100%;
   min-height: 44px;

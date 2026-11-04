@@ -1592,6 +1592,61 @@ function initializePasswordToggles() {
   });
 }
 
+function initializePasswordStrength() {
+  for (const id of ["register-password", "developer-password", "forgot-new-password-input"]) {
+    const input = document.getElementById(id);
+    const label = input?.closest("label");
+    if (!input || !label || document.getElementById(`${id}-strength`)) continue;
+
+    const indicator = document.createElement("div");
+    indicator.id = `${id}-strength`;
+    indicator.className = "password-strength";
+    indicator.dataset.level = "weak";
+
+    const progress = document.createElement("div");
+    progress.className = "password-strength-track";
+    progress.setAttribute("role", "progressbar");
+    progress.setAttribute("aria-label", "Password strength");
+    progress.setAttribute("aria-valuemin", "0");
+    progress.setAttribute("aria-valuemax", "5");
+    progress.setAttribute("aria-valuenow", "0");
+    progress.setAttribute("aria-valuetext", "Weak");
+
+    const bar = document.createElement("span");
+    bar.className = "password-strength-bar";
+    progress.append(bar);
+
+    const status = document.createElement("span");
+    status.className = "password-strength-label";
+    status.setAttribute("aria-live", "polite");
+    status.textContent = "Weak";
+
+    indicator.append(progress, status);
+    label.insertAdjacentElement("afterend", indicator);
+
+    const update = () => {
+      const password = input.value;
+      const criteria = [
+        [...password].length >= 12,
+        /[a-z]/.test(password),
+        /[A-Z]/.test(password),
+        /[0-9]/.test(password),
+        /[^A-Za-z0-9\s]/.test(password) && new TextEncoder().encode(password).length <= 128
+      ];
+      const score = criteria.filter(Boolean).length;
+      const level = score === criteria.length ? "strong" : score >= 3 ? "moderate" : "weak";
+      const labelText = level.charAt(0).toUpperCase() + level.slice(1);
+      indicator.dataset.level = level;
+      progress.setAttribute("aria-valuenow", String(score));
+      progress.setAttribute("aria-valuetext", labelText);
+      status.textContent = labelText;
+    };
+
+    input.addEventListener("input", update);
+    update();
+  }
+}
+
 async function submitAccountForm(event, endpoint) {
   event.preventDefault();
   const form = event.currentTarget;
@@ -1867,6 +1922,7 @@ function initializeAccount() {
   forgotForm?.addEventListener("submit", submitForgotPasswordForm);
   document.getElementById("forgot-password-resend")?.addEventListener("click", resendForgotPasswordOtp);
   initializePasswordToggles();
+  initializePasswordStrength();
 
   const logoutButton = document.getElementById("account-logout");
   if (logoutButton) {
