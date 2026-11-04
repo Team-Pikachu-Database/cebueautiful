@@ -1173,51 +1173,39 @@ img {
 
 @media (max-width: 700px) {
   .home-navigation {
+    flex-wrap: wrap;
     width: calc(100% - 24px);
     min-height: 60px;
   }
 
   .home-nav-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 42px;
+    display: none;
   }
 
   .home-navigation-links {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    left: 0;
-    display: none;
-    flex-direction: column;
+    position: static;
+    display: grid;
+    flex: 1 0 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: stretch;
     gap: 6px;
-    max-height: calc(100svh - 92px);
-    overflow-y: auto;
-    padding: 12px;
-    border: 1px solid rgba(255, 212, 71, 0.42);
-    border-radius: 8px;
-    background: rgba(31, 22, 10, 0.98);
-    box-shadow: 0 20px 40px rgba(20, 13, 4, 0.32);
-    backdrop-filter: blur(16px);
-  }
-
-  .home-navigation-links.is-open {
-    display: flex;
+    width: 100%;
+    margin-top: 8px;
   }
 
   .home-navigation-links > a,
   .home-navigation-links > button {
     width: 100%;
     min-height: 44px;
-    justify-content: flex-start;
-    padding-inline: 14px;
-    text-align: left;
+    justify-content: center;
+    padding-inline: 8px;
+    font-size: 0.78rem;
+    text-align: center;
   }
 
   .home-account-actions {
     display: grid;
+    grid-column: 1 / -1;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     width: 100%;
@@ -1232,33 +1220,16 @@ img {
     padding-inline: 8px;
     white-space: normal;
   }
+
+  .home-hero {
+    padding-top: 250px;
+  }
 }
 
 @media (max-width: 560px) {
   .home-navigation {
     top: 10px;
     padding: 9px 10px;
-  }
-
-  .home-navigation-links {
-    position: absolute;
-    top: 72px;
-    right: 16px;
-    left: 16px;
-    display: none;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 18px;
-    border: 1px solid rgba(255, 212, 71, 0.42);
-    border-radius: 8px;
-    background: rgba(31, 22, 10, 0.96);
-    box-shadow: 0 20px 40px rgba(20, 13, 4, 0.32);
-    backdrop-filter: blur(16px);
-  }
-
-  .home-navigation-links.is-open {
-    display: flex;
   }
 
   .home-account-actions {
@@ -1276,7 +1247,7 @@ img {
   .home-hero {
     min-height: 100vh;
     min-height: 100svh;
-    padding: 116px 24px 88px;
+    padding: 250px 24px 88px;
   }
 
   .public-home::before {
