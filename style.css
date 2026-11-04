@@ -16,10 +16,23 @@
   --radius: 12px;
 }
 
+.help-suggestions {
+  position: relative;
+  inset: auto;
+  grid-area: topics;
+}
+
 *,
 *::before,
 *::after {
   box-sizing: border-box;
+}
+
+@media (max-height: 700px) and (min-width: 681px) {
+  .help-suggestions {
+    max-height: none;
+    padding: 20px 8px 8px;
+  }
 }
 
 html {
@@ -1100,7 +1113,8 @@ img {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
     gap: 6px;
     margin-top: 10px;
-    padding: 7px;
+    max-height: none;
+    padding: 20px 8px 8px;
   }
 
   .search-bar .field {
@@ -6025,8 +6039,8 @@ img {
   position: relative;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: center 9%;
+  object-fit: contain;
+  object-position: center;
   background: transparent;
   filter: drop-shadow(0 5px 9px rgba(10, 59, 69, 0.25));
   pointer-events: none;
@@ -6054,14 +6068,16 @@ img {
 }
 
 .help-suggestions {
-  grid-area: topics;
+  position: absolute;
+  inset: 43.5% 1.2% 2.5% 77.5%;
+  grid-area: auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-content: start;
   gap: 4px;
   min-height: 0;
   margin: 0;
-  padding: clamp(44px, 8vh, 62px) 8px 8px;
+  padding: 20px 8px 8px;
   overflow: auto;
   overscroll-behavior: contain;
 }
@@ -6416,8 +6432,8 @@ img {
 
 .help-portal-mascot {
   z-index: 2;
-  object-fit: cover;
-  object-position: center 9%;
+  object-fit: contain;
+  object-position: center;
   opacity: 0;
   transform-origin: top left;
   filter: drop-shadow(0 0 12px rgba(255, 231, 139, 0.95));
@@ -6628,8 +6644,8 @@ img {
 
 .help-portal-mascot {
   z-index: 2;
-  object-fit: cover;
-  object-position: center 9%;
+  object-fit: contain;
+  object-position: center;
   opacity: 0;
   transform-origin: top left;
   filter: drop-shadow(0 0 12px rgba(255, 231, 139, 0.95));
@@ -6817,7 +6833,7 @@ img {
   }
 
   .help-suggestions {
-    max-height: 94px;
+    max-height: none;
     margin-top: 0;
   }
 
