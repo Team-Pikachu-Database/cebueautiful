@@ -6410,6 +6410,13 @@ img {
 .help-dialog[open][data-preparing="true"]::backdrop {
   opacity: 0;
   transition: none;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.help-dialog[open][data-preparing="true"] {
+  box-shadow: none;
 }
 
 .help-dialog[data-preparing="true"] .help-modal-skin,
@@ -6639,6 +6646,13 @@ img {
 .help-dialog[open][data-preparing="true"]::backdrop {
   opacity: 0;
   transition: none;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.help-dialog[open][data-preparing="true"] {
+  box-shadow: none;
 }
 
 .help-dialog[data-preparing="true"] .help-modal-skin,
