@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Developer workspace – CebuStays</title>
-  <link rel="stylesheet" href="style.css?v=20261102-pokeball-catalogue-v2">
+  <link rel="stylesheet" href="style.css?v=20261104-developer-pin-v1">
 </head>
 <body class="developer-page">
   <img
@@ -106,6 +106,28 @@
     </section>
   </main>
 
+  <dialog class="payment-review-dialog developer-pin-dialog" id="developer-pin-dialog" aria-labelledby="developer-pin-title">
+    <section class="payment-review-panel">
+      <span class="destination-kicker">SECURE DEVELOPER ACCESS</span>
+      <h2 id="developer-pin-title">Dashboard PIN</h2>
+      <p class="developer-bookings-note" id="developer-pin-status" aria-live="polite"></p>
+      <form id="developer-pin-form" novalidate>
+        <label id="developer-pin-label" for="developer-pin-input">4-digit PIN</label>
+        <input
+          id="developer-pin-input"
+          type="password"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+          pattern="[0-9]{4}"
+          maxlength="4"
+          required>
+        <button class="btn btn-primary" type="submit" id="developer-pin-submit">Continue</button>
+        <button class="account-forgot-link" type="button" id="developer-pin-forgot" hidden>Forgot PIN?</button>
+        <a class="developer-home" href="./">Return to CebuStays</a>
+      </form>
+    </section>
+  </dialog>
+
   <dialog class="payment-review-dialog" id="payment-review-dialog" aria-labelledby="payment-review-title">
     <section class="payment-review-panel">
       <div class="developer-bookings-heading">
@@ -201,6 +223,6 @@
   </dialog>
 
   <script src="config.js"></script>
-  <script src="developer.js?v=20261102-door-scanner-v1"></script>
+  <script src="developer.js?v=20261104-developer-pin-v1"></script>
 </body>
 </html>

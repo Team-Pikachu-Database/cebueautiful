@@ -6823,6 +6823,37 @@ img {
   width: min(800px, calc(100% - 24px));
 }
 
+.developer-pin-dialog {
+  width: min(420px, calc(100% - 24px));
+}
+
+#developer-pin-form {
+  display: grid;
+  gap: 12px;
+}
+
+#developer-pin-form label {
+  color: #fffaf0;
+  font-weight: 700;
+}
+
+#developer-pin-input {
+  width: 100%;
+  min-height: 52px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 12px;
+  background: rgba(8, 15, 29, 0.82);
+  color: #fffaf0;
+  font-size: 1.5rem;
+  letter-spacing: 0.5em;
+  text-align: center;
+}
+
+#developer-pin-input:focus-visible {
+  outline: 2px solid #fbbf24;
+  outline-offset: 2px;
+}
+
 .developer-counter-panel {
   gap: 16px;
 }

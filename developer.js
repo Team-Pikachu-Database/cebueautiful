@@ -61,13 +61,191 @@ const cancellationApprovalMessage = document.getElementById("cancellation-approv
 const cancellationApprovalConfirm = document.getElementById("cancellation-approval-confirm");
 const cancellationApprovalCancel = document.getElementById("cancellation-approval-cancel");
 const retryButton = document.getElementById("developer-retry");
+const pinDialog = document.getElementById("developer-pin-dialog");
+const pinForm = document.getElementById("developer-pin-form");
+const pinInput = document.getElementById("developer-pin-input");
+const pinLabel = document.getElementById("developer-pin-label");
+const pinStatus = document.getElementById("developer-pin-status");
+const pinForgotButton = document.getElementById("developer-pin-forgot");
+const pinSubmitButton = document.getElementById("developer-pin-submit");
 let selectedReservation = null;
 let selectedCancellation = null;
 let pendingBookingsRefreshTimer = null;
+let pinStep = "unlock";
+let pinChallengeId = "";
+let firstPin = "";
+let pinSubmissionPending = false;
+let pinUnlockTimer = null;
 let qrCameraStream = null;
 let qrDetector = null;
 let qrScanFrame = null;
 let qrValidationInProgress = false;
+
+function setPinStep(step, message) {
+  pinStep = step;
+  pinStatus.textContent = message;
+  pinLabel.textContent = step === "recovery-otp" ? "6-digit Gmail code" : "4-digit PIN";
+  pinInput.maxLength = step === "recovery-otp" ? 6 : 4;
+  pinInput.pattern = step === "recovery-otp" ? "[0-9]{6}" : "[0-9]{4}";
+  pinInput.autocomplete = step === "recovery-otp" ? "one-time-code" : "off";
+  pinInput.value = "";
+  pinForgotButton.hidden = !["unlock", "recovery-otp"].includes(step);
+  pinForgotButton.textContent = step === "recovery-otp" ? "Resend code" : "Forgot PIN?";
+  pinSubmitButton.textContent = step === "recovery-otp" ? "Verify code" : "Continue";
+  pinInput.focus();
+}
+
+function lockDeveloperDashboard() {
+  if (pendingBookingsRefreshTimer) {
+    window.clearInterval(pendingBookingsRefreshTimer);
+    pendingBookingsRefreshTimer = null;
+  }
+  destinations.hidden = true;
+  actions.hidden = true;
+  bookingsSection.hidden = true;
+  counterChecksSection.hidden = true;
+  bookingsList.replaceChildren();
+  if (counterDialog.open) counterDialog.close();
+  if (paymentReviewDialog.open) paymentReviewDialog.close();
+  if (cancellationApprovalDialog.open) cancellationApprovalDialog.close();
+  stopQrCamera();
+  if (!pinDialog.open) pinDialog.showModal();
+  setPinStep("unlock", "Your dashboard session expired. Enter your 4-digit PIN to continue.");
+}
+
+async function showDeveloperDashboard(unlockExpiresAt = null) {
+  const remainingUnlockTime = unlockExpiresAt
+    ? Date.parse(unlockExpiresAt) - Date.now()
+    : 30 * 60 * 1000;
+  if (!Number.isFinite(remainingUnlockTime)) {
+    throw new Error("The PIN session could not be verified. Try again.");
+  }
+  pinDialog.close();
+  pinInput.value = "";
+  firstPin = "";
+  if (pinUnlockTimer) window.clearTimeout(pinUnlockTimer);
+  pinUnlockTimer = window.setTimeout(lockDeveloperDashboard, Math.max(0, remainingUnlockTime));
+  status.textContent = "You're signed in as a developer. Choose a project to continue.";
+  destinations.hidden = false;
+  actions.hidden = false;
+  bookingsSection.hidden = false;
+  counterChecksSection.hidden = false;
+  await loadPendingBookings();
+  startPendingBookingsRefresh();
+}
+
+async function handleDeveloperPinSubmit(event) {
+  event.preventDefault();
+  if (pinSubmissionPending) return;
+  const expectedLength = pinStep === "recovery-otp" ? 6 : 4;
+  const value = pinInput.value;
+  if (!new RegExp(`^\\d{${expectedLength}}$`).test(value)) return;
+  pinSubmissionPending = true;
+  pinInput.disabled = true;
+  pinSubmitButton.disabled = true;
+  pinForgotButton.disabled = true;
+
+  try {
+    if (pinStep === "setup-first") {
+      firstPin = value;
+      setPinStep("setup-confirm", "Enter the same 4-digit PIN again to confirm it.");
+      return;
+    }
+    if (pinStep === "setup-confirm") {
+      if (value !== firstPin) {
+        firstPin = "";
+        setPinStep("setup-first", "The PINs did not match. Start again and enter the same PIN twice.");
+        return;
+      }
+      await requestAccountApi("/developer/pin/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin: firstPin, confirmPin: value })
+      });
+      firstPin = "";
+      await showDeveloperDashboard();
+      return;
+    }
+    if (pinStep === "unlock") {
+      await requestAccountApi("/developer/pin/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin: value })
+      });
+      await showDeveloperDashboard();
+      return;
+    }
+    if (pinStep === "recovery-otp") {
+      await requestAccountApi("/developer/pin/forgot/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ challengeId: pinChallengeId, otp: value })
+      });
+      setPinStep("recovery-first", "Email verified. Choose a new 4-digit dashboard PIN.");
+      return;
+    }
+    if (pinStep === "recovery-first") {
+      firstPin = value;
+      setPinStep("recovery-confirm", "Enter the new 4-digit PIN again to confirm it.");
+      return;
+    }
+    if (pinStep === "recovery-confirm") {
+      if (value !== firstPin) {
+        firstPin = "";
+        setPinStep("recovery-first", "The PINs did not match. Choose a new PIN and enter it twice.");
+        return;
+      }
+      await requestAccountApi("/developer/pin/forgot/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          challengeId: pinChallengeId,
+          pin: firstPin,
+          confirmPin: value
+        })
+      });
+      firstPin = "";
+      pinChallengeId = "";
+      await showDeveloperDashboard();
+    }
+  } catch (error) {
+    pinStatus.textContent = error.message;
+    pinInput.value = "";
+    if (pinStep === "setup-confirm") {
+      firstPin = "";
+      setPinStep("setup-first", error.message);
+    } else if (pinStep === "recovery-confirm") {
+      firstPin = "";
+      setPinStep("recovery-first", error.message);
+    } else {
+      pinInput.focus();
+    }
+  } finally {
+    pinSubmissionPending = false;
+    pinInput.disabled = false;
+    pinSubmitButton.disabled = false;
+    pinForgotButton.disabled = false;
+    if (pinDialog.open) pinInput.focus();
+  }
+}
+
+async function requestDeveloperPinReset() {
+  pinForgotButton.disabled = true;
+  pinStatus.textContent = "Sending a verification code to your account Gmail…";
+  try {
+    const result = await requestAccountApi("/developer/pin/forgot/request-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}"
+    });
+    pinChallengeId = result.challengeId;
+    setPinStep("recovery-otp", "Enter the 6-digit code sent to your account Gmail.");
+  } catch (error) {
+    pinStatus.textContent = error.message;
+  } finally {
+    pinForgotButton.disabled = false;
+  }
+}
 
 function formatCounterDate(value) {
   if (!value) return "Not available";
@@ -613,19 +791,37 @@ async function checkDeveloperSession() {
     }
 
     document.getElementById("developer-email").textContent = data.user.email;
-    status.textContent = "You're signed in as a developer. Choose a project to continue.";
-    destinations.hidden = false;
-    actions.hidden = false;
-    bookingsSection.hidden = false;
-    counterChecksSection.hidden = false;
-    await loadPendingBookings();
-    startPendingBookingsRefresh();
+    const pin = await requestAccountApi("/developer/pin/status");
+    if (pin.unlocked) {
+      await showDeveloperDashboard(pin.unlockExpiresAt);
+      return;
+    }
+    if (!pinDialog.open) pinDialog.showModal();
+    setPinStep(
+      pin.configured ? "unlock" : "setup-first",
+      pin.configured
+        ? "Enter your 4-digit dashboard PIN to continue."
+        : "Create a 4-digit PIN, then enter it again to confirm."
+    );
   } catch (error) {
     status.textContent = `${error.message} Check your connection and try again.`;
     retryButton.hidden = false;
   }
 }
 
+pinInput.addEventListener("input", () => {
+  const expectedLength = pinStep === "recovery-otp" ? 6 : 4;
+  pinInput.value = pinInput.value.replace(/\D/g, "").slice(0, expectedLength);
+  if (pinInput.value.length === expectedLength) {
+    void handleDeveloperPinSubmit(new Event("submit", { cancelable: true }));
+  }
+});
+pinForm.addEventListener("submit", handleDeveloperPinSubmit);
+pinForgotButton.addEventListener("click", requestDeveloperPinReset);
+pinDialog.addEventListener("cancel", event => event.preventDefault());
+window.addEventListener("pagehide", () => {
+  if (pinUnlockTimer) window.clearTimeout(pinUnlockTimer);
+});
 retryButton.addEventListener("click", checkDeveloperSession);
 document.getElementById("developer-bookings-refresh")
   .addEventListener("click", loadPendingBookings);

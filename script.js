@@ -1432,12 +1432,14 @@ async function submitRegistrationForm(event, role) {
     submit.textContent = role === "developer" ? "Create developer account" : "Create standard account";
     updateAccountDisplay(data.user);
     if (data.user?.role === "developer") {
-      window.location.assign("developer.html");
+      accountDialog.close();
       return;
     }
     accountMessage.textContent = data.welcomeCouponAwarded
       ? "Welcome to CebuStays! Your new-account coupon is now available in My Coupons."
-      : "You're signed in.";
+      : data.user?.role === "developer"
+        ? "You're signed in. Choose Developer dashboard from the side panel to continue."
+        : "You're signed in.";
   } catch (error) {
     accountMessage.textContent = error.message;
   } finally {
@@ -1703,13 +1705,11 @@ async function submitAccountForm(event, endpoint) {
     }
     updateAccountDisplay(data.user);
     if (data.user && endpoint !== "/register") accountDialog.close();
-    if (data.user?.role === "developer") {
-      window.location.assign("developer.html");
-      return;
-    }
     accountMessage.textContent = data.welcomeCouponAwarded
       ? "Welcome to CebuStays! Your new-account coupon is now available in My Coupons."
-      : "You're signed in.";
+      : data.user?.role === "developer"
+        ? "You're signed in. Choose Developer dashboard from the side panel to continue."
+        : "You're signed in.";
   } catch (error) {
     accountMessage.textContent = error.message;
   } finally {
