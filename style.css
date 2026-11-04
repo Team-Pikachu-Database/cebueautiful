@@ -1859,7 +1859,7 @@ img {
 .forgot-resend-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: baseline;
   gap: 8px;
 }
 
