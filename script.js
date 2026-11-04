@@ -1602,6 +1602,7 @@ function initializePasswordStrength() {
     indicator.id = `${id}-strength`;
     indicator.className = "password-strength";
     indicator.dataset.level = "weak";
+    indicator.hidden = true;
 
     const progress = document.createElement("div");
     progress.className = "password-strength-track";
@@ -1626,6 +1627,15 @@ function initializePasswordStrength() {
 
     const update = () => {
       const password = input.value;
+      if (!password) {
+        indicator.hidden = true;
+        delete input.dataset.passwordStrength;
+        progress.setAttribute("aria-valuenow", "0");
+        progress.setAttribute("aria-valuetext", "Not entered");
+        status.textContent = "";
+        return;
+      }
+
       const criteria = [
         [...password].length >= 12,
         /[a-z]/.test(password),
@@ -1636,7 +1646,9 @@ function initializePasswordStrength() {
       const score = criteria.filter(Boolean).length;
       const level = score === criteria.length ? "strong" : score >= 3 ? "moderate" : "weak";
       const labelText = level.charAt(0).toUpperCase() + level.slice(1);
+      indicator.hidden = false;
       indicator.dataset.level = level;
+      input.dataset.passwordStrength = level;
       progress.setAttribute("aria-valuenow", String(score));
       progress.setAttribute("aria-valuetext", labelText);
       status.textContent = labelText;

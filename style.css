@@ -1854,6 +1854,10 @@ img {
   margin-top: -2px;
 }
 
+.password-strength[hidden] {
+  display: none;
+}
+
 .password-strength-track {
   flex: 1;
   height: 6px;
@@ -3510,6 +3514,33 @@ img {
   outline: none;
   background: rgba(2, 11, 29, 0.68);
   box-shadow: 0 0 0 3px rgba(255, 212, 71, 0.16);
+}
+
+#account-dialog .account-form input[data-password-strength="weak"] {
+  border-color: #ef7777;
+  box-shadow: 0 0 0 1px rgba(239, 98, 98, 0.2);
+}
+
+#account-dialog .account-form input[data-password-strength="weak"]:focus {
+  box-shadow: 0 0 0 3px rgba(239, 98, 98, 0.24);
+}
+
+#account-dialog .account-form input[data-password-strength="moderate"] {
+  border-color: #f0c64c;
+  box-shadow: 0 0 0 1px rgba(240, 198, 76, 0.2);
+}
+
+#account-dialog .account-form input[data-password-strength="moderate"]:focus {
+  box-shadow: 0 0 0 3px rgba(240, 198, 76, 0.24);
+}
+
+#account-dialog .account-form input[data-password-strength="strong"] {
+  border-color: #42cf83;
+  box-shadow: 0 0 0 1px rgba(66, 207, 131, 0.2);
+}
+
+#account-dialog .account-form input[data-password-strength="strong"]:focus {
+  box-shadow: 0 0 0 3px rgba(66, 207, 131, 0.26);
 }
 
 #account-dialog .account-hint {
