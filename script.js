@@ -4896,7 +4896,6 @@ function initializeHelpChat() {
       pokeballScream.currentTime = 0;
     }
     delete dialog.dataset.portalAnimation;
-    delete dialog.dataset.preparing;
     delete dialog.dataset.entering;
     if (portalEffect) {
       portalEffect.hidden = true;
@@ -4954,8 +4953,6 @@ function initializeHelpChat() {
     portalAnimationTimer = window.setTimeout(() => {
       portalEffect.hidden = true;
       portalEffect.classList.remove("is-active");
-      delete dialog.dataset.preparing;
-      dialog.dataset.entering = "true";
       portalAnimationTimer = 0;
     }, reducedMotion ? 1 : 1660);
   };
@@ -4963,7 +4960,7 @@ function initializeHelpChat() {
   document.querySelectorAll("[data-help-open]").forEach(button => {
     button.addEventListener("click", () => {
       selectedHelpHotelId = activeDetailHotel?.id ?? null;
-      if (button === pokeballLauncher) dialog.dataset.preparing = "true";
+      dialog.dataset.entering = "true";
       dialog.showModal();
       if (button === pokeballLauncher) {
         triggerHelpPortalAnimation();
