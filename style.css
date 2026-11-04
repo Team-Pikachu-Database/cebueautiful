@@ -6405,6 +6405,7 @@ img {
   animation: none;
   opacity: 1;
   transform: translate(-50%, -50%);
+  overflow: visible;
 }
 
 .help-dialog[open][data-preparing="true"]::backdrop {
@@ -6641,6 +6642,7 @@ img {
   animation: none;
   opacity: 1;
   transform: translate(-50%, -50%);
+  overflow: visible;
 }
 
 .help-dialog[open][data-preparing="true"]::backdrop {
