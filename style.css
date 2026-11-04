@@ -5893,6 +5893,8 @@ img {
 
 .help-dialog::backdrop {
   background: rgba(8, 28, 43, 0.3);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   opacity: 0;
   transition: opacity 0.35s ease;
 }
