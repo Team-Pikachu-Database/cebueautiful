@@ -1419,8 +1419,9 @@ async function submitRegistrationForm(event, role) {
       if (credentials) credentials.hidden = true;
       form.querySelector("[data-registration-otp]").hidden = false;
       form.querySelector('input[name="otp"]').required = true;
-      form.querySelector("[data-registration-status]").textContent = "OTP sent. Check your Gmail inbox.";
+      form.querySelector("[data-registration-status]").textContent = "Enter the code sent to your Gmail to finish creating the account.";
       submit.textContent = role === "developer" ? "Verify code & create developer account" : "Verify code & create account";
+      accountMessage.textContent = "Your account will only be created after the code is verified.";
       return;
     }
     form.reset();
