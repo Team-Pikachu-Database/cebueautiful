@@ -6037,6 +6037,7 @@ img {
   --portal-start-y: 0px;
   --portal-start-scale: 1;
   position: relative;
+  top: -6%;
   width: 72%;
   height: 72%;
   object-fit: contain;
