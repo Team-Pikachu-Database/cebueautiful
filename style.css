@@ -3435,12 +3435,12 @@ img {
 ========================================= */
 
 .site-footer {
-  background: #f1f5f9;
+  background: linear-gradient(115deg, rgba(18, 52, 90, 0.98), rgba(10, 25, 47, 0.99));
   padding: 24px 0;
-  color: var(--muted);
+  color: rgba(255, 248, 223, 0.82);
   font-size: 0.85rem;
   text-align: center;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid rgba(255, 212, 71, 0.3);
 }
 
 #account-dialog {
