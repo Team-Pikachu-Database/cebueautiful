@@ -46,7 +46,7 @@ for (const file of ["developer.html", "script.js", "developer.js", "map.js", "st
 
 const indexHtml = fs.readFileSync(path.join(projectRoot, "index.html"), "utf8")
   .replace(/style\.css\?v=[^"]+/, "style.css?v=20261105-receipt-price-v21")
-  .replace(/script\.js\?v=[^"]+/, "script.js?v=20261105-images7-v6");
+  .replace(/script\.js\?v=[^"]+/, "script.js?v=20261105-promotion-hotels-navigation-v1");
 fs.writeFileSync(path.join(outputDirectory, "index.html"), indexHtml);
 
 fs.copyFileSync(
