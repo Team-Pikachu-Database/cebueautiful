@@ -4735,6 +4735,7 @@ function initializePageLinks() {
         nextUrl.searchParams.set("view", "hotels");
       }
       event.preventDefault();
+      document.querySelectorAll("dialog[open]").forEach(dialog => dialog.close());
       window.history.pushState({}, "", nextUrl);
       applyCurrentView(target);
     });
