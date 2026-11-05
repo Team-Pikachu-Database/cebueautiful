@@ -139,22 +139,35 @@ function hotelPriceText(hotel, nightCount = nights()) {
 
 /* ---------- HOTEL IMAGE HELPERS ---------- */
 
+function hotelImages(hotel) {
+  const images = Array.isArray(hotel.images) ? hotel.images : [];
+  if (!images.some(image => image?.url?.startsWith("/images7/"))) return images;
+
+  return images.filter(image =>
+    /^\/images7\/1\.(?:[1-9]|1[0-4])\.jpg$/i.test(image?.url ?? "")
+  );
+}
+
 function hotelImageCount(hotel) {
-  return Array.isArray(hotel.images) ? hotel.images.length : 0;
+  return hotelImages(hotel).length;
 }
 
 function hotelImagePath(hotel, index) {
-  const imageUrl = hotel.images?.[index - 1]?.url ?? "";
+  const imageUrl = hotelImages(hotel)[index - 1]?.url ?? "";
   if (!imageUrl.startsWith("/") || imageUrl.startsWith("//")) {
     return imageUrl;
   }
 
   const siteRoot = new URL(".", document.baseURI);
-  return new URL(imageUrl.slice(1), siteRoot).href;
+  const url = new URL(imageUrl.slice(1), siteRoot);
+  if (imageUrl.startsWith("/images7/")) {
+    url.searchParams.set("v", "20261105-images7");
+  }
+  return url.href;
 }
 
 function hotelImageAlt(hotel, index) {
-  return hotel.images?.[index - 1]?.alt ||
+  return hotelImages(hotel)[index - 1]?.alt ||
     `${hotel.name} - photo ${index}`;
 }
 
